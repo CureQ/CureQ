@@ -1,4 +1,9 @@
-### Hi there 👋
+### CureQ - HvA
+
+This is the repository of the CureQ consortium.
+This repository contains a library with functions for analyzing a MEA file.
+This repository is maintained by the Amsterdam University of Applied Sciences.
+https://cureq.nl/
 
 <!--
 **CureQ/CureQ** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
