@@ -6,4 +6,5 @@ CureQ/mea.py
 CureQ.egg-info/PKG-INFO
 CureQ.egg-info/SOURCES.txt
 CureQ.egg-info/dependency_links.txt
+CureQ.egg-info/requires.txt
 CureQ.egg-info/top_level.txt

@@ -7,14 +7,23 @@ with open("README.md", "r") as fh:
 # Setup metadata for initializing the library
 setuptools.setup(
     name="CureQ",
-    version="0.0.2",
-    author="Jesse Antonissen",
+    version="0.0.5",
+    author="CureQ",
     author_email="cureq-ft@hva.nl",
     description="Library for analyzing MEA files.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/CureQ/CureQ.git",
     packages=setuptools.find_packages(),
+    install_requires=[          # Installs all required libraries to run the pipeline analysis correctly
+        "matplotlib>=3.7.3",     # For visualisation plots of the data
+        "numpy>=1.26.4",        # For array computing in python
+        "h5py>=3.9.0",          # For reading the HDF5 file in python
+        "pandas>=2.1.4",        # For creating and using a 2D Dataframe
+        "scipy>=1.11.4",        # For scientific functions in Python
+        "scikit-learn>=1.3.0",  # For basic Machine Learning modules
+        "seaborn>=0.13.2"       # For statistical data visualization
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
