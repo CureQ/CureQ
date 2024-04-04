@@ -1,4 +1,4 @@
-# Version 0.1.0
+# Version 0.1.1
 
 '''This file contains the entire MEA_analyzer pipeline, contained in functions'''
 # Imports
@@ -183,6 +183,8 @@ def spike_validation_DMP_noisebased(data, electrode, threshold, hertz, spikedura
     #Plot the data of the entire electrode
     if plot_validation:
         #%matplotlib widget
+        # Creates a new figure for every plot in the program
+        plt.figure()
         # Plot the MEA signal
         plt.cla()
 
@@ -212,7 +214,6 @@ def spike_validation_DMP_noisebased(data, electrode, threshold, hertz, spikedura
         plt.ylabel("Micro voltage")
         plt.xlim([time_seconds.min(), time_seconds.max()])
         plt.ylim([np.min(data[i])-100, np.max(data[i])+100])
-        plt.show()
     
     # Save the spike data to a .csv file
     if True:
@@ -305,6 +306,8 @@ def spike_validation_DMP(data, electrode, threshold, hertz, spikeduration, exit_
                         # If not, the spike will be removed
                         spikes[j]=False
     if plot_validation:
+        # Creates a new figure for every plot in the program
+        plt.figure()
         # Plot the MEA signal
         plt.cla()
 
@@ -333,7 +336,6 @@ def spike_validation_DMP(data, electrode, threshold, hertz, spikeduration, exit_
         plt.ylabel("Micro voltage")
         plt.xlim([time_seconds.min(), time_seconds.max()])
         plt.ylim([np.min(data)*1.2, np.max(data)*1.2])
-        plt.show()
     # Save the spike data to a .csv file
     if True:
         filename=filename[:-3]
@@ -448,6 +450,8 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
             
         # Plot the smoothed histogram
         if True:
+            # Creates a new figure for every plot in the program
+            plt.figure()
             plt.scatter(x[peaks], y[peaks], color="red")
             if valid_peaks:
                 plt.scatter(valley_x, y[np.where(y==g_min)])
@@ -459,7 +463,6 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
             plt.title(f"Well: { well}, Electrode: {electrode}")
             plt.xlabel("Inter-spike interval")
             plt.ylabel("Amount")
-            plt.show()
 
         # Apply the threshold
         burst_cores=[]
@@ -579,6 +582,8 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
 
         # Plot the data and mark the bursts
         if True:
+            # Creates a new figure for every plot in the program
+            plt.figure()
             #%matplotlib widget
             plt.cla()
             plt.clf()
@@ -617,7 +622,6 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
             plt.ylabel("Micro voltage")
             plt.xlim([time_seconds.min(), time_seconds.max()])
             plt.ylim([np.min(data[electrode_number])-100, np.max(data[electrode_number])+100])
-            plt.show()
     else:
         print(f"No burst detection possible for well {well}, electrode {electrode} - not enough values")
         burst_spikes=[]
@@ -701,6 +705,8 @@ def raster(electrodes, electrode_amnt, samples, hertz, filename):
             if ((electrodes[i]+1)%electrode_amnt)==0: break
             i+=1
         amount_of_electrodes=len(burst_spikes)
+        # Creates a new figure for every plot in the program
+        plt.figure()
         plt.cla()
         plt.rcParams["figure.figsize"] = (22,5)
         end_electrode=((electrodes[i-1]+1)%12)+1
@@ -714,7 +720,6 @@ def raster(electrodes, electrode_amnt, samples, hertz, filename):
         plt.title(f"Well {well}")
         plt.xlabel("Time in seconds")
         plt.ylabel("Electrode")
-        plt.show()
         i+=1
 
 '''Takes two burst values and calculates whether they overlap or not'''
@@ -737,6 +742,8 @@ def network_burst_detection(filename, wells, electrode_amnt, measurements, hertz
     total_network_burst=[]
     
     for well in wells:
+        # Creates a new figure for every plot in the program
+        plt.figure()
         fig, ax = plt.subplots(4,1, sharex=True, figsize=(16,5), gridspec_kw={'height_ratios': [3, 1, 1, 1]})
         ax[1].set_ylabel("Burst\namount")
         ax[0].set_xlim([0,measurements/hertz])
@@ -869,7 +876,6 @@ def network_burst_detection(filename, wells, electrode_amnt, measurements, hertz
                     
             ax[2].set_ylabel("Spike\nactivity\n(KDE)")
             ax[3].set_ylabel("Burst\nspike\nactivity\n(KDE)")
-            plt.show()
         else:
             total_network_burst.append([[]])
     path = f'{filename}/network_data'
@@ -1202,7 +1208,13 @@ def analyse_electrode(filename,                             # Where is the data 
     # Calculate the features
     print("Calculating features")
     features_df=features(filename, electrodes, electrode_amnt, data.shape[1], hertz)
-    return features_df, data.shape[1]
+
+    # Adds a final plt.show() to show all plots during runtime (otherwise every figure needs to be closed individually to continue the program)
+    if raster_plot:
+        return features_df, data.shape[1], plt.show()
+    else:
+        return features_df, data.shape[1]
+
 
 '''Analyse an entire well'''
 def analyse_well(filename,                                  # Where is the data file stored
@@ -1249,4 +1261,6 @@ def analyse_well(filename,                                  # Where is the data 
         fancyplot(filename, [well], electrode_amnt, measurements, hertz, resolution, kernel_size, aspectratios, colormap)
         print(output)
         all_features.append(output)
-    return all_features
+
+    # Adds a final plt.show() to show all plots during runtime (otherwise every figure will be closed at the end of the program)
+    return all_features, plt.show()
