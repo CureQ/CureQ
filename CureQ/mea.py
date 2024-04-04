@@ -1209,7 +1209,7 @@ def analyse_electrode(filename,                             # Where is the data 
     print("Calculating features")
     features_df=features(filename, electrodes, electrode_amnt, data.shape[1], hertz)
 
-    # Adds a final plt.show() to show all plots during runtime (otherwise every figure needs to be closed individually to continue the program)
+    # Adds a final plt.show() to show all plots at the end of the program instead of during runtime (otherwise every figure needs to be closed manually closed to continue the program)
     if raster_plot:
         return features_df, data.shape[1], plt.show()
     else:
@@ -1262,5 +1262,5 @@ def analyse_well(filename,                                  # Where is the data 
         print(output)
         all_features.append(output)
 
-    # Adds a final plt.show() to show all plots during runtime (otherwise every figure will be closed at the end of the program)
+    # Adds a final plt.show() to show all plots at the end of the program instead of during runtime (otherwise every figure needs to be closed manually closed to continue the program)
     return all_features, plt.show()
