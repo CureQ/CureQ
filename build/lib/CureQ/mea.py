@@ -1,23 +1,24 @@
-# Version 0.0.5
+# Version 0.1.0
 
 '''This file contains the entire MEA_analyzer pipeline, contained in functions'''
 # Imports
 import numpy as np
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
 from scipy.signal import butter, lfilter
 from scipy.stats import norm
 import h5py
 import os
 import seaborn as sns
+import pandas as pd
+import statsmodels.api as sm
+import statsmodels
+from skimage import filters
+import plotly.graph_objects as go
+from functools import partial
 
 
 '''Gives the function of the the library'''
 def get_library_function(message="This library analyzes MEA files!"):
-    return message
-
-
-'''Test the library functions with a nice message'''
-def get_nice_message(message="Have fun with all our functions by analyzing your MEA files!"):
     return message
 
 
@@ -222,7 +223,7 @@ def spike_validation_DMP_noisebased(data, electrode, threshold, hertz, spikedura
         filename=filename+"_values"
         if not os.path.exists(filename):
             os.makedirs(filename)
-        path = f'{filename}/spike_values_DMP_noisebased'
+        path = f'{filename}/spike_values'
         if not os.path.exists(path):
             os.makedirs(path)
         spike_x_values = time_seconds[spikes]
@@ -339,7 +340,7 @@ def spike_validation_DMP(data, electrode, threshold, hertz, spikeduration, exit_
         filename=filename+"_values"
         if not os.path.exists(filename):
             os.makedirs(filename)
-        path = f'{filename}/spike_values_DMP'
+        path = f'{filename}/spike_values'
         if not os.path.exists(path):
             os.makedirs(path)
         spike_x_values = time_seconds[spikes]
@@ -354,7 +355,7 @@ def spike_validation_DMP(data, electrode, threshold, hertz, spikeduration, exit_
     return spikes
                 
 
-def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, smallerneighbours, minspikes_burst, maxISI_outliers, default_threshold, validation_method, filename):
+def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, smallerneighbours, minspikes_burst, maxISI_outliers, default_threshold, filename):
     electrode_number=electrode
     # Calculate the well and electrode values to load in the spikedata
     well = round(electrode_number / electrode_amnt + 0.505)
@@ -363,7 +364,7 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
     
     filename=filename[:-3]
     filename=filename+"_values"
-    path=f'{filename}/spike_values_{validation_method}'
+    path=f'{filename}/spike_values'
     spikedata=np.load(f'{path}/well_{well}_electrode_{electrode}_spikes.npy')
     # Calculate the inter-spike intervals
     ISI=[]
@@ -427,8 +428,8 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
             peak1=y[peaks[0]]
             peak2=y[peaks[1]]      
             # Calculate the void parameter
-            void=1-(g_min/(np.sqrt(peak1*peak2)))
-            print(f"Void parameter: {void}")
+            # void=1-(g_min/(np.sqrt(peak1*peak2)))
+            # print(f"Void parameter: {void}")
             valley_x=x[np.where(y==g_min)]
             logvalley=np.mean(valley_x)
             if logvalley<default_threshold:
@@ -463,6 +464,7 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
         # Apply the threshold
         burst_cores=[]
         burst_spikes=[]
+        burst_counter=0
 
         # The seemingly random +1 and -1 in the following code
         # are because the ISI list is not equal in length to the spike_values list
@@ -478,15 +480,20 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
                 if np.max(ISI[i:i+min_spikes_burstcore-1])<=ISIth1:
                     # A burst has been found
                     start_burst=spikedata[i][0]
+                    start_burst_index=spikedata[i][2]
                     # Add all the spikes in the burst to the burst_spikes array
                     for l in range(min_spikes_burstcore):
-                        burst_spikes.append(spikedata[i+l])
+                        temp_burst=spikedata[i+l]
+                        temp_burst=np.append(temp_burst, burst_counter)
+                        burst_spikes.append(temp_burst)
                     # Move the index to the end of the burst core
                     i+=minspikes_burst-1
                     # Loop through each spike and check if it should be added to the burst
                     # Keep increasing the steps (i) while doing this
                     while ISI[i]<ISIth1:
-                        burst_spikes.append(spikedata[i+1])
+                        temp_burst=spikedata[i+1]
+                        temp_burst=np.append(temp_burst, burst_counter)
+                        burst_spikes.append(temp_burst)
                         # If you have reached the end of the list, stop
                         if i+1==len(ISI):
                             i+=1
@@ -494,7 +501,9 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
                         i+=1
                     # Add the found values to the list
                     end_burst=spikedata[i][0]
-                    burst_cores.append([start_burst, end_burst])
+                    end_burst_index=spikedata[i][2]
+                    burst_cores.append([start_burst, end_burst, start_burst_index, end_burst_index, burst_counter])
+                    burst_counter+=1
                 i+=1
         if use_pasquale:
             min_spikes_burstcore=minspikes_burst
@@ -506,20 +515,28 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
                 if np.max(ISI[i:i+min_spikes_burstcore-1])<=ISIth1:
                     # A burst has been found
                     start_burst=spikedata[i][0]
+                    start_burst_index=spikedata[i][2]
                     for l in range(min_spikes_burstcore):
-                        burst_spikes.append(spikedata[i+l])
+                        temp_burst=spikedata[i+l]
+                        temp_burst=np.append(temp_burst, burst_counter)
+                        burst_spikes.append(temp_burst)
                     # Start moving backwards to append any spikes distanced less than ISIth2
                     j=i-1
                     while j>=0 and ISI[j]<ISIth2:
                         start_burst=spikedata[j][0]
-                        burst_spikes.append(spikedata[j])
+                        start_burst_index=spikedata[j][2]
+                        temp_burst=spikedata[j]
+                        temp_burst=np.append(temp_burst, burst_counter)
+                        burst_spikes.append(temp_burst)
                         j-=1
                     # Move the index to the end of the burst
                     i+=minspikes_burst-1
                     # Loop through each spike and check if it should be added to the burst
                     # Keep increasing the steps (i) while doing this
                     while ISI[i]<ISIth2:
-                        burst_spikes.append(spikedata[i+1])
+                        temp_burst=spikedata[i+1]
+                        temp_burst=np.append(temp_burst, burst_counter)
+                        burst_spikes.append(temp_burst)
                         # If you have reached the end of the list, stop
                         if i+1==len(ISI):
                             i+=1
@@ -527,7 +544,9 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
                         i+=1
                     # Add the found values to the list
                     end_burst=spikedata[i][0]
-                    burst_cores.append([start_burst, end_burst])
+                    end_burst_index=spikedata[i][2]
+                    burst_cores.append([start_burst, end_burst, start_burst_index, end_burst_index, burst_counter])
+                    burst_counter+=1
                 i+=1
 
             # Calculate the average burst length
@@ -602,7 +621,7 @@ def burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, small
     else:
         print(f"No burst detection possible for well {well}, electrode {electrode} - not enough values")
         burst_spikes=[]
-        burst_cores=[[]]
+        burst_cores=[]
     # Save the spike data to a .csv file
     if True:
         if not os.path.exists(filename):
@@ -656,8 +675,8 @@ def get_files(MEA_folder):
     
     return MEA_files
 
-def raster(electrodes, electrode_amnt, samples, hertz, validation_method, filename):
-    print("starting")
+'''Create raster plots for all the electrodes'''
+def raster(electrodes, electrode_amnt, samples, hertz, filename):
     # Check which electrodes are given, and how these will be plotted
     i=0
     
@@ -670,7 +689,7 @@ def raster(electrodes, electrode_amnt, samples, hertz, validation_method, filena
         while i<len(electrodes): # and ((electrodes[i])%electrode_amnt)!=0:
             electrode = electrodes[i] % electrode_amnt + 1
             well = round(electrodes[i] / electrode_amnt + 0.505)
-            path=f'spike_values_{validation_method}'
+            path=f'spike_values'
             spikedata=np.load(f'{filename}/{path}/well_{well}_electrode_{electrode}_spikes.npy')
             path='burst_values'
             burstdata=np.load(f'{filename}/{path}/well_{well}_electrode_{electrode}_burst_spikes.npy')
@@ -698,6 +717,424 @@ def raster(electrodes, electrode_amnt, samples, hertz, validation_method, filena
         plt.show()
         i+=1
 
+'''Takes two burst values and calculates whether they overlap or not'''
+def overlap(burst1, burst2):
+    if burst1[1]<burst2[0] or burst2[1]<burst1[0]:
+        return False
+    else:
+        return True
+
+'''Detect network bursts'''
+def network_burst_detection(filename, wells, electrode_amnt, measurements, hertz, min_channels, threshold_method):
+    # Convert the filename so the algorithm can look through the folders
+    filename=filename[:-3]
+    filename=filename+"_values"
+    spikepath=f'{filename}/spike_values'
+    burstpath=f'{filename}/burst_values'
+
+    min_channels=round(min_channels*electrode_amnt)
+    print(f"Minimal amount of channels required for network burst: {min_channels}")
+    total_network_burst=[]
+    
+    for well in wells:
+        fig, ax = plt.subplots(4,1, sharex=True, figsize=(16,5), gridspec_kw={'height_ratios': [3, 1, 1, 1]})
+        ax[1].set_ylabel("Burst\namount")
+        ax[0].set_xlim([0,measurements/hertz])
+        ax[0].set_ylim([0,electrode_amnt+1])
+        ax[0].set_yticks(np.arange(1, electrode_amnt+1, 1))
+        ax[3].set_xlabel("Time in seconds")
+        ax[1].set_ylim([0, electrode_amnt+1])
+        ax[0].set_ylabel("Electrode")
+        well_spikes=[]
+        burst_spikes=[]
+        spikes_for_kde=np.array([])
+        burst_spikes_for_kde=np.array([])
+        for electrode in range(1,electrode_amnt+1):
+            # Load in spikedata
+            spikedata=np.load(f'{spikepath}/well_{well}_electrode_{electrode}_spikes.npy')
+            burstdata=np.load(f'{burstpath}/well_{well}_electrode_{electrode}_burst_spikes.npy')
+            well_spikes.append(spikedata[:,0])
+            spikes_for_kde = np.append(spikes_for_kde, spikedata[:, 0])
+            if len(burstdata)>0:
+                burst_spikes.append(burstdata[:,0])
+                burst_spikes_for_kde = np.append(burst_spikes_for_kde, burstdata[:,0])
+            else:
+                burst_spikes.append([])
+        lineoffsets1=np.arange(1,13)
+        ax[0].eventplot(well_spikes, alpha=0.5, lineoffsets=lineoffsets1)
+        ax[0].eventplot(burst_spikes, alpha=0.25, color='red', lineoffsets=lineoffsets1)
+
+        # Plot the burst frequency
+        time_seconds = np.arange(0, measurements) / hertz
+        burst_freq=np.zeros(measurements)
+
+        burst_cores_list=[]     # List that contains all the burst of an electrode
+
+        # Load in burst core data
+        for electrode in range(1,electrode_amnt+1):
+            # Load in spikedata
+            burst_cores=np.load(f'{burstpath}/well_{well}_electrode_{electrode}_burst_cores.npy')
+            burst_cores_list.append(burst_cores)
+            for burstcore in burst_cores:
+                burst_freq[int(burstcore[2]):int(burstcore[3])]+=1
+                    
+        ax[1].plot(time_seconds, burst_freq)
+        ax[0].set_title(f"Well {well}")
+
+        data_time=measurements/hertz
+        # Plot the spike frequency using kernel density estimate
+        gridsize=int(data_time*100)  # 10 milisecond precision when determining NBs
+        kdedata=sns.kdeplot(spikes_for_kde, ax=ax[2], bw_adjust=0.01, gridsize=gridsize)
+        line = kdedata.lines[0]
+        x, y = line.get_data()
+        y = (y - np.min(y)) / (np.max(y) - np.min(y))
+        ax[2].clear()
+        ax[2].plot(x,y)
+        
+        if len(burst_spikes_for_kde)>0:     # Check if there are bursts
+            # Plot the spike frequency of spikes contained in bursts
+            kdedata = sns.kdeplot(burst_spikes_for_kde, ax=ax[3], bw_adjust=0.01, gridsize=gridsize)
+            line = kdedata.lines[0]
+            x, y = line.get_data()
+            ax[3].clear()
+            y = (y - np.min(y)) / (np.max(y) - np.min(y))
+            # Determine the threshold
+            if threshold_method=='yen':
+                threshold=filters.threshold_yen(y, nbins=1000)
+            elif threshold_method=='otsu':
+                threshold=filters.threshold_otsu(y, nbins=1000)
+            else:
+                raise ValueError(f"\"{threshold_method}\" is not a valid thresholding method")
+            print(f"Threshold using {threshold_method} method set at: {threshold}")
+            ax[3].plot(x,y)
+            ax[3].axhline(y=threshold, color='red', linestyle='-', linewidth=1) 
+
+            # Identify regions that cross the threshold
+            network_burst_cores=[]
+            above_threshold=y>threshold
+            i=0
+            # Loop through the data
+            while i < len(above_threshold):
+                if above_threshold[i]:
+                    # A threshold crossing has been found
+                    start=x[i]
+                    while above_threshold[i] and i+1<len(above_threshold):
+                        i+=1
+                    # When this while loop stops, the line has dropped below the threshold
+                    end=x[i]
+                    network_burst_cores.append([start, end])
+                i+=1
+
+            # Validate the network bursts by checking how many channels are participating
+            unvalid_burst=[]
+            for i in range(len(network_burst_cores)):
+                channels_participating=0
+                for channel in burst_cores_list:
+                    channel_participates=False
+                    for burst in channel:
+                        if overlap(network_burst_cores[i], burst):
+                            channel_participates=True
+                    if channel_participates: channels_participating+=1
+                if channels_participating<min_channels:
+                    unvalid_burst.append(i)
+            # Now remove all the network bursts that are not valid
+            for j in sorted(unvalid_burst, reverse=True):
+                del network_burst_cores[j]
+
+            # Calculate which SCBs were participating in the network bursts, and add their extremes as the outer edges of the network burst
+            for i in range(len(network_burst_cores)):
+                outer_start=network_burst_cores[i][0]
+                outer_end=network_burst_cores[i][1]
+                participating_bursts=[]
+                for j in range(len(burst_cores_list)):
+                    for burst in burst_cores_list[j]:
+                        if overlap(network_burst_cores[i], burst):
+                            if burst[0]<outer_start: outer_start=burst[0]
+                            if burst[1]>outer_end: outer_end=burst[1]
+                            # Add the identifiers (channel en burst number) to the list
+                            participating_bursts.append([j, int(burst[4])])
+                network_burst_cores[i].append(outer_start)
+                network_burst_cores[i].append(outer_end)
+                #network_burst_cores[i].append(participating_bursts)
+            total_network_burst=(network_burst_cores)
+            # Highlight the burst cores in every graph except te top one
+            for graph in ax[:]:
+                for network_burst in network_burst_cores:
+                    temp=np.array(network_burst[:4])
+                    graph.axvspan(temp[0], temp[1], facecolor='green', alpha=0.75)
+                    graph.axvspan(temp[2], temp[3], facecolor='green', alpha=0.5)
+            # # Add rectangles to the top graph
+            # for network_burst in network_burst_cores:
+            #     ax[0].add_patch(Rectangle((network_burst[0], 0.5), network_burst[1]-network_burst[0], electrode_amnt, edgecolor='green', facecolor='none', linewidth=2, zorder=10))
+                    
+            ax[2].set_ylabel("Spike\nactivity\n(KDE)")
+            ax[3].set_ylabel("Burst\nspike\nactivity\n(KDE)")
+            plt.show()
+        else:
+            total_network_burst.append([[]])
+    path = f'{filename}/network_data'
+    if not os.path.exists(path):
+        os.makedirs(path)
+    np.savetxt(f'{path}/well_{well}_network_bursts.csv', total_network_burst, delimiter = ",")
+    np.save(f'{path}/well_{well}_network_bursts', total_network_burst)
+    return total_network_burst
+
+'''Calculate the features for all the electrodes'''
+def features(filename, electrodes, electrode_amnt, measurements, hertz):
+    # Define all lists for the features
+    wells_df, electrodes_df, spikes, mean_firingrate, mean_ISI, median_ISI, ratio_median_over_mean, IIV, CVI, PACF  = [], [], [], [], [], [], [], [], [], []
+    burst_amnt, avg_burst_len, burst_var, burst_CV, mean_IBI, IBI_var, IBI_CV= [], [], [], [], [], [], []
+    intraBFR, interBFR, mean_spikes_per_burst, isolated_spikes, MAD_spikes_per_burst = [], [], [], [], []
+    
+    # Convert the filename so the algorithm can look through the folders
+    filename=filename[:-3]
+    filename=filename+"_values"
+    spikepath=f'{filename}/spike_values'
+    burstpath=f'{filename}/burst_values'
+    
+    # Loop through all the measured electrodes
+    for electrode in electrodes:
+        # Calculate current well number and append to list
+        well_nr = round(electrode / electrode_amnt + 0.505)
+        wells_df.append(well_nr)
+
+        # Calculate current MEA electrode number and append to list
+        electrode_nr = electrode % electrode_amnt + 1
+        electrodes_df.append(electrode_nr)
+
+        # Load in the spikedata
+        spikedata=np.load(f'{spikepath}/well_{well_nr}_electrode_{electrode_nr}_spikes.npy')
+
+        # Calculate the total amount of spikes
+        spike=spikedata.shape[0]
+        spikes.append(spike)
+
+        # Calculate the average firing frequency frequency
+        firing_frequency=spike/(measurements/hertz)
+        mean_firingrate.append(firing_frequency)
+
+        # Calculate mean inter spike interval
+        spikeintervals = []
+        # Iterate over every registered spike
+        if spikedata.shape[0]<2:
+            mean_ISI.append(float("NaN"))
+        else:
+            for i in range(spikedata.shape[0]-1):
+                time_to_next_spike = (spikedata[i+1][0]) - (spikedata[i][0])
+                spikeintervals.append(time_to_next_spike)
+            mean_ISI_electrode=np.mean(spikeintervals)
+            mean_ISI.append(mean_ISI_electrode)
+        
+        # Calculate the median of the ISIs
+        median_ISI_electrode=np.median(spikeintervals)
+        median_ISI.append(median_ISI_electrode)
+
+        # Calculate the ratio of median ISI over mean ISI
+        ratio_median_over_mean.append(median_ISI_electrode/mean_ISI_electrode)
+
+        # Calculate Interspike interval variance
+        if spikedata.shape[0]<3:
+            IIV.append(float("NaN"))
+        else:
+            IIV.append(np.var(spikeintervals))
+
+        # Calculate the coeficient of variation of the interspike intervals
+        if spikedata.shape[0]<3:
+            CVI.append(float("NaN"))
+        else:
+            CVI.append(np.std(spikeintervals)/np.mean(spikeintervals))
+
+        # Calculate the partial autocorrelation function
+        if len(spikeintervals)<3:
+            PACF.append(float("NaN"))
+        else:
+            #sm.graphics.tsa.plot_pacf(spikeintervals, lags=10, method="ywm")
+            PACF.append(statsmodels.tsa.stattools.pacf(spikeintervals, nlags=1, method='yw')[1])
+
+        # Open the burstfiles
+        burst_cores=np.load(f'{burstpath}/well_{well_nr}_electrode_{electrode_nr}_burst_cores.npy')
+        burst_spikes=np.load(f'{burstpath}/well_{well_nr}_electrode_{electrode_nr}_burst_spikes.npy')
+
+        # Calculate the total amount of bursts
+        burst_amnt.append(len(burst_cores))
+
+        # Calculate the average length of the bursts
+        burst_lens=[]
+        for k in burst_cores:
+            burst_lens.append(k[1]-k[0])
+        if len(burst_lens)==0:
+            avg=float("NaN")
+        else:
+            avg=np.mean(burst_lens)
+        avg_burst_len.append(avg)
+
+        # Calculate the variance of the burst length
+        if len(burst_lens)<2:
+            burst_var.append(float("NaN"))
+        else:
+            burst_var.append(np.var(burst_lens))
+
+        # Calculate the coefficient of variation of the burst lengths
+        if len(burst_lens)<2:
+            burst_CV.append(float("NaN"))
+        else:
+            burst_CV.append(np.std(burst_lens)/np.mean(burst_lens))
+
+        # Calculate the average time between bursts
+        IBIs=[]
+        for i in range(len(burst_cores)-1):
+            time_to_next_burst=burst_cores[i+1][0]-burst_cores[i][1]
+            IBIs.append(time_to_next_burst)
+        if len(IBIs)==0:
+            mean_IBI.append(float("NaN"))
+        else:
+            mean_IBI.append(np.mean(IBIs))
+
+        # Calculate the variance of interburst intervals
+        if len(IBIs)<2:
+            IBI_var.append(float("NaN"))
+        else:
+            IBI_var.append(np.var(IBIs))
+
+        # Calculate the coefficient of variation of the interburst intervals
+        if len(IBIs)<2:
+            IBI_CV.append(float("NaN"))
+        else:
+            IBI_CV.append(np.std(IBIs)/np.mean(IBIs))
+
+        # Calculate the mean intraburst firing rate and average amount of spikes per burst
+        IBFRs=[]
+        spikes_per_burst=[]
+        # Iterate over all the bursts
+        for i in range(len(burst_cores)):
+            locs=np.where(burst_spikes[:,3]==i)
+            total_burst_spikes = len(locs[0])
+            spikes_per_burst.append(total_burst_spikes)
+            firingrate=total_burst_spikes/burst_lens[i]
+            IBFRs.append(firingrate)
+        intraBFR.append(np.mean(IBFRs))
+        mean_spikes_per_burst.append(np.mean(spikes_per_burst))
+
+        # Calculate the mean absolute deviation of the amount of spikes per burst
+        MAD_spikes_per_burst.append(np.mean(np.absolute(spikes_per_burst - np.mean(spikes_per_burst))))
+
+        # Calculte the % of spikes that are isolated (not in a burst)
+        if burst_spikes.shape[0]>0 and spike>0:
+            isolated_spikes.append(1-(burst_spikes.shape[0]/spike))
+        else:
+            isolated_spikes.append(float("NaN"))
+
+        
+    # Create pandas dataframe with all features as columns 
+    features_df = pd.DataFrame({
+        "Well": wells_df,
+        "Electrode": electrodes_df, 
+        "Spikes": spikes,
+        "Mean_FiringRate": mean_firingrate,
+        "Mean_ISI": mean_ISI,
+        "Median_ISI": median_ISI,
+        "Ratio_median_ISI_over_mean_ISI": ratio_median_over_mean,
+        "Interspike_interval_variance": IIV,
+        "Coefficient_of_variation_ISI": CVI,
+        "Partial_Autocorrelaction_Function": PACF,
+        "Total_number_of_bursts": burst_amnt,
+        "Average_length_of_bursts": avg_burst_len,
+        "Burst_length_variance": burst_var,
+        "Coefficient_of_variation_burst_length": burst_CV,
+        "Mean_interburst_interval": mean_IBI,
+        "Variance_interburst_interval": IBI_var,
+        "Coefficient_of_variation_IBI": IBI_CV,
+        "Mean_intra_burst_firing_rate": intraBFR,
+        "Mean_spikes_per_burst": mean_spikes_per_burst,
+        "MAD_spikes_per_burst": MAD_spikes_per_burst,
+        "Isolated_spikes": isolated_spikes
+    })
+    return features_df    
+
+'''Calculate the features per well'''
+def well_features():
+    pass
+
+'''This function will calculate a 3d guassian kernel'''
+def K(x, H):
+    # unpack two dimensions
+    x1, x2 = x
+    # extract four components from the matrix inv(H)
+    a, b, c, d = np.linalg.inv(H).flatten()
+    # calculate scaling coeff to shorten the equation
+    scale = 2*np.pi*np.sqrt( np.linalg.det(H))
+    return np.exp(-(a*x1**2 + d*x2**2 + (b+c)*x1*x2)/2) / scale
+
+'''This function will insert a 3d gaussian kernel at the location of every datapoint/spike'''
+def KDE(x, H, data):
+    # unpack two dimensions
+    x1, x2 = x
+    # prepare the grid for output values
+    output = np.zeros_like(x1)
+    # process every sample
+    for sample in data:
+        output += K([x1-sample[0], x2-sample[1]], H)
+    return output
+
+'''Create a 3D view of a single well. Every spike will be represented as a 3D gaussian kernel'''
+def fancyplot(filename, wells, electrode_amnt, measurements, hertz, resolution, kernel_size, aspectratios, colormap):
+    # Convert the filename so the algorithm can look through the folders
+    filename=filename[:-3]
+    filename=filename+"_values"
+    spikepath=f'{filename}/spike_values'
+    for well in wells:
+        kdedata=[]
+        for electrode in range(1,electrode_amnt+1):
+            # Load in spikedata
+            spikedata=np.load(f'{spikepath}/well_{well}_electrode_{electrode}_spikes.npy')
+            spikedata=spikedata[:,:2]
+            spikedata[:,1]=electrode
+            for spike in spikedata:
+                kdedata.append(spike)
+        time=measurements/hertz
+
+        # covariance matrix
+        # This determines the shape of the gaussian kernel
+        H = [[1, 0],
+            [0, 1]]
+
+        data = np.array(kdedata)
+        # fix arguments 'H' and 'data' of KDE function for further calls
+        KDE_partial = partial(KDE, H=kernel_size*np.array(H), data=data)
+
+        # draw contour and surface plots
+        func=KDE_partial
+
+        # create a np xy grid using the dimensions of the data
+        yres=int(resolution*time)
+        xres=int(resolution*electrode_amnt)
+        y_range = np.linspace(start=0, stop=time, num=yres)
+        x_range = np.linspace(start=0, stop=electrode_amnt, num=xres)
+        print(f"Creating 3D plot, resolution x: {xres} by y: {yres}")
+
+        y_grid, X_grid = np.meshgrid(y_range, x_range)
+        Z_grid = func([y_grid, X_grid])
+        
+        fig = go.Figure(data=[go.Surface(y=y_grid, x=X_grid, z=Z_grid, colorscale=colormap)])
+        fig.update_layout(
+        scene = dict(
+            xaxis = dict(range=[0,electrode_amnt]),
+            yaxis = dict(range=[0,time]),
+            ),
+        margin=dict(r=20, l=10, b=10, t=10))
+
+        # change the aspect ratio's of the plot
+        fig.update_layout(scene_aspectmode='manual',
+                            title=f"Well: {well}",
+                            scene_aspectratio=dict(x=(electrode_amnt/10)*aspectratios[0],
+                                           y=(time/10)*aspectratios[1],
+                                           z=1*aspectratios[2]))
+        fig.update_layout(scene = dict(
+                    xaxis_title='Electrode',
+                    yaxis_title='Time in seconds',
+                    zaxis_title='KDE'),)
+        fig.show()
+
 '''Analyse a single electrode'''
 def analyse_electrode(filename,                             # Where is the data file stored
                       electrodes,                           # Which electrodes do you want to analyze
@@ -714,27 +1151,36 @@ def analyse_electrode(filename,                             # Where is the data 
                       electrode_amnt=12,                    # The amount of electrodes per well
                       kde_bandwidth=1,                      # The bandwidth of the kernel density estimate
                       smallerneighbours=10,                 # The amount of smaller neighbours a peak should have before being considered as one
-                      minspikes_burst=5,                    # The minimal amount of spikes a burst can have
+                      minspikes_burst=5,                    # The minimal amount of spikes a burst should have
                       maxISI_outliers=1000,                 # The maximal ISIth2 that can be used in burst detection
                       default_threshold=100,                # The default value for ISIth1
                       heightexception=2,                    # Multiplied with the spike detection threshold, if a spike exceeds this value, it does not have to drop amplitude fast to be validated
                       max_boxheight=2,                      # Multiplied with the spike detection threshold, will be the maximal value the box for DMP_noisebased validation can be
                       amplitude_drop_sd=5,                  # Multiplied with the SD of surrounding noise, will be the boxheight for DMP_noisebased validation
-                      stdevmultiplier=5,                    # The amount of SD a value needs to be from the mean to be considered a possible spike in the threshold detection
-                      RMSmultiplier=5                       # Multiplied with the RMS of the spike-free noise, used to determine the threshold
+                      stdevmultiplier=5,                    # The amount of SD a value needs to be from the mean to be considered a possible spike in the noise detection
+                      RMSmultiplier=5,                      # Multiplied with the RMS of the spike-free noise, used to determine the threshold
+                      raster_plot=True                      # Whether a raster plot should be shown
                       ):                 
     # Open the data file
-    data=openHDF5_SCA1(filename)
     print("MEA-analyzer. Developed by Jesse Antonissen and Joram van Beem for the CureQ research consortium")
+    print(f"Analyzing electrodes: {electrodes}")
+
+    # Open  the datafile
+    data=openHDF5_SCA1(filename)
+
+    # Loop through all the electrodes
     for electrode in electrodes:
         print(f'Analyzing {filename} - Electrode: {electrode}')
+
         # Filter the data
         print("Applying bandpass filter")
         data[electrode]=butter_bandpass_filter(data[electrode], low_cutoff, high_cutoff, hertz, order)
+        
         # Calculate the threshold
         print(f'Calculating the threshold')
         threshold_value=threshold(data[electrode], hertz, stdevmultiplier, RMSmultiplier)
         print(f'Threshold for electrode {electrode} set at: {threshold_value}')
+        
         # Calculate spike values
         print('Validating the spikes')
         if validation_method=="DMP":
@@ -743,13 +1189,24 @@ def analyse_electrode(filename,                             # Where is the data 
             spike_validation_DMP_noisebased(data, electrode, threshold_value, hertz, spikeduration, exit_time_s, amplitude_drop_sd, plot_validation, electrode_amnt, heightexception, max_boxheight, filename)
         else:
             raise ValueError(f"\"{validation_method}\" is not a valid spike validation method")
+        
+        # Detect the bursts
         print("Detecting bursts")
-        burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, smallerneighbours, minspikes_burst, maxISI_outliers, default_threshold, validation_method, filename)
-    raster(electrodes, electrode_amnt, data.shape[1], hertz, validation_method, filename)
+        burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, smallerneighbours, minspikes_burst, maxISI_outliers, default_threshold, filename)
+    
+    # Create raster plots
+    if raster_plot:
+        print("Creating raster plots")
+        raster(electrodes, electrode_amnt, data.shape[1], hertz, filename)
 
-'''Analyse an entire well, this allows for raster plots to be created'''
+    # Calculate the features
+    print("Calculating features")
+    features_df=features(filename, electrodes, electrode_amnt, data.shape[1], hertz)
+    return features_df, data.shape[1]
+
+'''Analyse an entire well'''
 def analyse_well(filename,                                  # Where is the data file stored
-                      well,                                 # Which wells do you want to analyze
+                      wells,                                # Which wells do you want to analyze
                       hertz,                                # What is the sampling frequency of the MEA
                       validation_method="DMP_noisebased",   # Which validation method do you want to use, possible: "DMP", "DMP_noisebased"
                       low_cutoff=200,                       # The low_cutoff for the bandpass filter
@@ -763,17 +1220,33 @@ def analyse_well(filename,                                  # Where is the data 
                       electrode_amnt=12,                    # The amount of electrodes per well
                       kde_bandwidth=1,                      # The bandwidth of the kernel density estimate
                       smallerneighbours=10,                 # The amount of smaller neighbours a peak should have before being considered as one
-                      minspikes_burst=5,                    # The minimal amount of spikes a burst can have
+                      minspikes_burst=5,                    # The minimal amount of spikes a burst should have
                       maxISI_outliers=1000,                 # The maximal ISIth2 that can be used in burst detection
                       default_threshold=100,                # The default value for ISIth1
                       heightexception=2,                    # Multiplied with the spike detection threshold, if a spike exceeds this value, it does not have to drop amplitude fast to be validated
                       max_boxheight=2,                      # Multiplied with the spike detection threshold, will be the maximal value the box for DMP_noisebased validation can be
                       amplitude_drop_sd=5,                  # Multiplied with the SD of surrounding noise, will be the boxheight for DMP_noisebased validation
                       stdevmultiplier=5,                    # The amount of SD a value needs to be from the mean to be considered a possible spike in the threshold detection
-                      RMSmultiplier=5                       # Multiplied with the RMS of the spike-free noise, used to determine the threshold
-                      ):                 
-    electrodes=np.arange((well-1)*12, well*12)
-    print(f"Analyzing well: {well}, consisting of electrodes: {electrodes}")
-    analyse_electrode(filename, electrodes, hertz, validation_method, low_cutoff, high_cutoff, order, spikeduration, exit_time_s, amplitude_drop_threshold, plot_validation, well_amnt, electrode_amnt, kde_bandwidth, smallerneighbours,
-                      minspikes_burst, maxISI_outliers, default_threshold, heightexception, max_boxheight, amplitude_drop_sd, stdevmultiplier, RMSmultiplier)
-    
+                      RMSmultiplier=5,                      # Multiplied with the RMS of the spike-free noise, used to determine the threshold
+                      min_channels=0.5,                     # Minimal % of channels that should participate in a burst
+                      threshold_method='yen',               # Threshold method to decide whether activity is a network burst or not - possible: 'yen', 'otsu'
+                      
+                      # Parameters for the 3D plot
+                      resolution=5,                         # Creates a resolution*electrode_amnt by resolution*time_seconds grid for the 3D plot. E.g. a measurement time of 150s with 12 electrodes and resolution 10 would give a 1500*120 grid. Higher resolution means longer computing times
+                      kernel_size=1,                        # The size of the 3D gaussian kernel
+                      aspectratios=[0.5,0.25,0.5],          # The aspect ratios of the plot. multiplied with the length of the xyz axis'.
+                      colormap="Blues"                      # Colormap of the 3D plot
+                      ):
+    # Create a list that will hold all features calculated per electrode
+    all_features=[]                 
+    for well in wells:
+        electrodes=np.arange((well-1)*electrode_amnt, well*electrode_amnt)
+        print(f"Analyzing well: {well}")
+        output, measurements=analyse_electrode(filename, electrodes, hertz, validation_method, low_cutoff, high_cutoff, order, spikeduration, exit_time_s, amplitude_drop_threshold, plot_validation, well_amnt, electrode_amnt, kde_bandwidth, smallerneighbours,
+                        minspikes_burst, maxISI_outliers, default_threshold, heightexception, max_boxheight, amplitude_drop_sd, stdevmultiplier, RMSmultiplier, raster_plot=False)
+        print(f"Calculating network bursts of well: {well}")
+        network_burst_detection(filename, [well], electrode_amnt, measurements, hertz, min_channels, threshold_method)
+        fancyplot(filename, [well], electrode_amnt, measurements, hertz, resolution, kernel_size, aspectratios, colormap)
+        print(output)
+        all_features.append(output)
+    return all_features
