@@ -28,24 +28,17 @@ conda install CureQ::CureQ
 Now you can try the CureQ library functions in your Python environment. <br>
 Import the function you need, call this function and watch how the pipeline analyzes your MEA file!
 
-#### Example for analyzing MEA electrodes
-```python
-from CureQ.mea import analyse_electrode          # Library function for analyzing electrodes
-
-file_path = 'path/to/your/mea_file.h5'           # Path to your MEA file
-hertz = 20000                                    # Sampling frequency of MEA system
-electrodes = [109, 110]                          # Electrodes to be analyzed
-analyse_electrode(file_path, electrodes, hertz)  # Analyzes specified electrodes in the MEA file
-```
-
-#### Example for analyzing a MEA well
+#### Example for analyzing all MEA wells
 ```python
 from CureQ.mea import analyse_well               # Library function for analyzing wells
 
 file_path = 'path/to/your/mea_file.h5'           # Path to your MEA file
 hertz = 20000                                    # Sampling frequency of MEA system
-wells = [10]                                     # Wells to be analyzed
-analyse_well(filename, wells, hertz)             # Analyzes specified wells in the MEA file
+electrodes = 12                                  # Electrode amount per well
+
+# Analyzes all wells in the MEA file
+if __name__=='__main__':
+   analyse_well(fileadress=file_path, hertz=hertz, electrode_amnt=electrodes)
 ```
 
 ---
@@ -53,16 +46,16 @@ analyse_well(filename, wells, hertz)             # Analyzes specified wells in t
 ## Example visualisations of the MEA analysis pipeline
 
 #### Spike detection
-![Spike detection well 10 electrode 2](Example_visualisations/Spike_detection_well_10_electrode_2.png)
+![Spike detection well 10 electrode 2](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/Spike_detection_well_10_electrode_2.png)
 
 #### Inter-spike interval
-![Inter-spike interval well 15 electrode 3](Example_visualisations/Inter-spike_interval_well_15_electrode_3.png)
+![Inter-spike interval well 15 electrode 3](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/Inter-spike_interval_well_15_electrode_3.png)
 
 #### Single burst detection
-![Single burst detection well 15 electrode 3](Example_visualisations/Single_burst_detection_well_15_electrode_3.png)
+![Single burst detection well 15 electrode 3](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/Single_burst_detection_well_15_electrode_3.png)
 
 #### Network burst detection
-![Network burst detection well 10](Example_visualisations/Network_burst_detection_well_10.png)
+![Network burst detection well 10](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/Network_burst_detection_well_10.png)
 
 <!--
 **CureQ/CureQ** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.

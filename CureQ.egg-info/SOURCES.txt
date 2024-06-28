@@ -2,8 +2,15 @@ LICENSE
 README.md
 setup.py
 CureQ/__init__.py
+CureQ/bandpass.py
+CureQ/burst_detection.py
+CureQ/features.py
 CureQ/mea.py
-CureQ/mea_02_04.py
+CureQ/network_burst_detection.py
+CureQ/open_file.py
+CureQ/plotting.py
+CureQ/spike_validation.py
+CureQ/threshold.py
 CureQ.egg-info/PKG-INFO
 CureQ.egg-info/SOURCES.txt
 CureQ.egg-info/dependency_links.txt
