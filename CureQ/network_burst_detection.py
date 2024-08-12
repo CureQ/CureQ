@@ -1,5 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.gridspec import GridSpec
 from KDEpy import FFTKDE
 from skimage import filters
 
@@ -38,7 +40,19 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
     # Iterate over the wells (usually only one)
     for well in wells:
         # Create matplotlib figure
-        fig, ax = plt.subplots(4,1, sharex=True, gridspec_kw={'height_ratios': [3, 1, 1, 1]}, figsize=(16,9))
+        fig = Figure(figsize=(16, 9))
+
+        # Create a GridSpec with specified height ratios
+        gs = GridSpec(4, 1, height_ratios=[3, 1, 1, 1], figure=fig)
+
+        # Add subplots to the figure
+        ax1 = fig.add_subplot(gs[0])
+        ax2 = fig.add_subplot(gs[1], sharex=ax1)
+        ax3 = fig.add_subplot(gs[2], sharex=ax1)
+        ax4 = fig.add_subplot(gs[3], sharex=ax1)
+        
+        ax=[ax1, ax2, ax3, ax4]
+
         # Plot layout
         ax[1].set_ylabel("Active\nbursts")
         ax[0].set_xlim([0,measurements/hertz])

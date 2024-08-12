@@ -3,7 +3,14 @@ import pandas as pd
 from statsmodels.tsa.stattools import pacf
 
 '''Calculate the features for all the electrodes'''
-def electrode_features(outputpath, electrodes, electrode_amnt, measurements, hertz, activity_threshold, remove_inactive_electrodes):
+def electrode_features(outputpath,                      # Where to retrieve the data required for feature calculations
+                       electrodes,                      # Which electrodes to analyse
+                       electrode_amnt,                  # Amount of electrodes in a well
+                       measurements,                    # Measurements done (time*sampling rate)
+                       hertz,                           # Sampling rate
+                       activity_threshold,              # Miniumum spike frequency an electrode should have to be considered 'active' (in Hz)
+                       remove_inactive_electrodes       # Whether to remove inactive electrodes from feature calculations
+                       ):
     
     # Define all lists for the features
     wells_df, electrodes_df, spikes, mean_firingrate, mean_ISI, median_ISI, ratio_median_over_mean, IIV, CVI, ISIPACF  = [], [], [], [], [], [], [], [], [], []
@@ -388,15 +395,14 @@ def well_features(outputpath, well, electrode_amnt, measurements, hertz):
  
 '''This function will take the electrode and well features, clean them up an give back the output'''
 def feature_output(electrode_features, well_features, electrode_amnt):
-    active_electrodes=len(electrode_features)
-
     # Take the average of all the single-electrode features
     avg_electrode_features=pd.DataFrame(electrode_features.mean()).transpose()
 
     # Remove unnecessary columns
     avg_electrode_features=avg_electrode_features.drop(columns=["Electrode"])
-
     well_features=well_features.drop(columns=["Well"])
+
     # Combine the dataframes
     avg_electrode_features = pd.concat([avg_electrode_features, well_features], axis=1, join='inner')
+    
     return avg_electrode_features

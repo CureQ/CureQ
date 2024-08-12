@@ -63,38 +63,24 @@ def analyse_well(fileadress,                                # Where is the data 
                       order=2,                              # The order for the bandpass filter
                       spikeduration=0.001,                  # The amount of time only 1 spike should be registered, aka refractory period
                       exit_time_s=0.00024,                  # The amount of time a spike gets to drop amplitude in the validation methods
-                      plot_electrodes=True,                 # Plot the single electrode visualizations
-                      well_amnt=24,                         # The amount of wells present in the MEA
                       kde_bandwidth=1,                      # The bandwidth of the kernel density estimate
                       smallerneighbours=10,                 # The amount of smaller neighbours a peak should have before being considered as one
                       minspikes_burst=5,                    # The minimal amount of spikes a burst should have
-                      max_threshold=1000,                 # The maximal ISIth2 that can be used in burst detection
+                      max_threshold=1000,                   # The maximal ISIth2 that can be used in burst detection
                       default_threshold=100,                # The default value for ISIth1
                       heightexception=1.5,                  # Multiplied with the spike detection threshold, if a spike exceeds this value, it does not have to drop amplitude fast to be validated
-                      max_drop_amount=2,                      # Multiplied with the spike detection threshold, will be the maximal value the box for DMP_noisebased validation can be
+                      max_drop_amount=2,                    # Multiplied with the spike detection threshold, will be the maximal value the box for DMP_noisebased validation can be
                       amplitude_drop_sd=5,                  # Multiplied with the SD of surrounding noise, will be the boxheight for DMP_noisebased validation
                       stdevmultiplier=5,                    # The amount of SD a value needs to be from the mean to be considered a possible spike in the threshold detection
                       RMSmultiplier=5,                      # Multiplied with the RMS of the spike-free noise, used to determine the threshold
                       min_channels=0.5,                     # Minimal % of channels that should participate in a burst
                       threshold_method='yen',               # Threshold method to decide whether activity is a network burst or not - possible: 'yen', 'otsu'
-                      
-                      # Parameters for the 3D plot
-                    #   resolution=5,                         # Creates a resolution*electrode_amnt by resolution*time_seconds grid for the 3D plot. E.g. a measurement time of 150s with 12 electrodes and resolution 10 would give a 1500*120 grid. Higher resolution means longer computing times
-                    #   kernel_size=1,                        # The size of the 3D gaussian kernel
-                    #   aspectratios=[0.5,0.25,0.5],          # The aspect ratios of the plot. multiplied with the length of the xyz axis'.
-                    #   colormap="deep",                      # Colormap of the 3D plot
-
-                      spikes_are_analysed=False,            # If this values is true, the algorithm will search for the spikefiles instead of recalculating these values
                       activity_threshold=0.1,               # The lowest frequency an electrode can have before being removed from the analysis
-                      threshold_portion=0.1,                  # How much of the electrode do you want to use to calculate the threshold. Higher number = higher runtime
+                      threshold_portion=0.1,                # How much of the electrode do you want to use to calculate the threshold. Higher number = higher runtime
                       remove_inactive_electrodes=True,      # Whether you want to remove inactive electrodes
-
-                      # Parameters for cutting up the data
-                      cut_data_bool=False,
-                      parts=10,
-                      recordingtime=120,
-
-                      use_multiprocessing=False
+                      cut_data_bool=False,                  # Whether you want to cut the data
+                      parts=10,                             # In how many parts
+                      use_multiprocessing=False             # Whether to use multiprocessing
                       ):
 
     # Advertisement
@@ -146,6 +132,8 @@ def analyse_well(fileadress,                                # Where is the data 
 
     # Flag for if it is the first iteration
     first_iteration=True
+
+    plot_electrodes=False
 
     # Save the parameters that have been given in a JSON file 
     parameters={

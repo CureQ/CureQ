@@ -3,49 +3,6 @@ import numpy as np
 import plotly.graph_objects as go
 from functools import partial
 from KDEpy import FFTKDE
-import seaborn
-
-'''Create raster plots for all the electrodes'''
-def raster(electrodes, electrode_amnt, samples, hertz, filename):
-    # Check which electrodes are given, and how these will be plotted
-    i=0
-    
-    filename=filename[:-3]
-    filename=filename+"_values"
-    while i < len(electrodes):
-        well_spikes=[]
-        burst_spikes=[]
-        # Collect all the data from a single well
-        while i<len(electrodes): # and ((electrodes[i])%electrode_amnt)!=0:
-            electrode = electrodes[i] % electrode_amnt + 1
-            well = round(electrodes[i] / electrode_amnt + 0.505)
-            path=f'spike_values'
-            spikedata=np.load(f'{filename}/{path}/well_{well}_electrode_{electrode}_spikes.npy')
-            path='burst_values'
-            burstdata=np.load(f'{filename}/{path}/well_{well}_electrode_{electrode}_burst_spikes.npy')
-            well_spikes.append(spikedata[:,0])
-            if len(burstdata)>0:
-                burst_spikes.append(burstdata[:,0])
-            else:
-                burst_spikes.append([])
-            if ((electrodes[i]+1)%electrode_amnt)==0: break
-            i+=1
-        amount_of_electrodes=len(burst_spikes)
-        plt.cla()
-        plt.rcParams["figure.figsize"] = (22,5)
-        end_electrode=((electrodes[i-1]+1)%12)+1
-        start_electrode = end_electrode-amount_of_electrodes
-        lineoffsets1=np.arange(start_electrode+1, end_electrode+1)
-        plt.eventplot(well_spikes, alpha=0.5, lineoffsets=lineoffsets1)
-        plt.eventplot(burst_spikes, alpha=0.5, color='red', lineoffsets=lineoffsets1)
-        plt.xlim([0,samples/hertz])
-        plt.ylim([start_electrode, end_electrode+1])
-        plt.yticks(lineoffsets1)
-        plt.title(f"Well {well}")
-        plt.xlabel("Time in seconds")
-        plt.ylabel("Electrode")
-        plt.show()
-        i+=1
 
 '''This function will calculate a 3d guassian kernel'''
 def K(x, H):
@@ -69,11 +26,21 @@ def KDE(x, H, data):
     return output
 
 '''Create a 3D view of a single well. Every spike will be represented as a 3D gaussian kernel'''
-def fancyplot(filename, wells, electrode_amnt, measurements, hertz, resolution, kernel_size, aspectratios, colormap):
-    # Convert the filename so the algorithm can look through the folders
-    filename=filename[:-3]
-    filename=filename+"_values"
-    spikepath=f'{filename}/spike_values'
+def fancyplot(outputpath,       # Where to find the spikedata
+              wells,            # Which wells to generate a plot for
+              electrode_amnt,   # Amount of electrodes in a well
+              measurements,     # Measurements done (time*sampling rate)
+              hertz,            # Sampling rate
+              resolution,       # Resolution of the 3d graph - higher resolution lead to significantly more processing time
+              kernel_size,      # Size of the gaussian kernel
+              aspectratios,     # Ratios of the 3d plot
+              colormap          # Colourmap used - can be any colourmap supported by plotly
+              ):
+
+    # Example usage:
+    # fancyplot("C:/MEA_data/output_folder_of_experiment", [15], 12, 3000000, 20000, 5, 1, [0.5,0.25,0.5], "deep")
+
+    spikepath=f'{outputpath}/spike_values'
     for well in wells:
         kdedata=[]
         for electrode in range(1,electrode_amnt+1):
@@ -125,16 +92,26 @@ def fancyplot(filename, wells, electrode_amnt, measurements, hertz, resolution, 
                     xaxis_title='Electrode',
                     yaxis_title='Time in seconds',
                     zaxis_title='KDE'),)
-        return fig
-        # fig.show()
-        # fig.write_html(f"{filename}/well_{well}_graph.html")
+        fig.write_html(f"{outputpath}/figures/well_{well}_3dgraph.html")
 
 '''Plots the KDE of all electrodes (x) of a well in x amount of subplots'''
-def well_electrodes_kde(outputpath, well, electrode_amnt, measurements, hertz, bandwidth=1):
+def well_electrodes_kde(outputpath,         # Where to find the spike information
+                        well,               # Which well to analyse
+                        electrode_amnt,     # Amount of electrodes per well
+                        measurements,       # Measurements done (time*sampling rate)
+                        hertz,              # Sampling frequency
+                        bandwidth=1         # Bandwidth of the KDE
+                        ):
+    # Where to find the spike-data
     spikepath=f'{outputpath}/spike_values'
     data_time=measurements/hertz
+
+    # Create matplotlib figure
     fig, ax = plt.subplots(electrode_amnt, 1, sharex=True, sharey=True)
+
+    # Loop through all electrodes
     for electrode in range(electrode_amnt):
+        # Load in the spike data and create a KDE using KDEpy for each well
         spikedata=np.load(f'{spikepath}/well_{well}_electrode_{electrode+1}_spikes.npy')
         if len(spikedata[:,0])>0:
             y = FFTKDE(bw=bandwidth, kernel='gaussian').fit(spikedata[:,0]).evaluate(grid_points=np.arange(0, data_time, 0.001))
@@ -143,9 +120,12 @@ def well_electrodes_kde(outputpath, well, electrode_amnt, measurements, hertz, b
         else:
             x=np.arange(0, data_time, 0.001)
             y=np.zeros(len(x))
+        # Plot the KDE and give the subplot a label
         ax[electrode].plot(x,y)
         ax[electrode].set_ylabel(f"E: {electrode+1}")
+    # Plot layout
     ax[-1].set_xlabel("Time in seconds")
     ax[0].set_xlim([0, measurements/hertz])
     ax[0].set_title(f"Well: {well} activity")
+    
     return fig

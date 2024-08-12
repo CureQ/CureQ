@@ -3,27 +3,12 @@ import h5py
 import os
 
 '''Open the HDF5 file'''
-def openHDF5_SCA1(adress):
+def openHDF5(adress):
     with h5py.File(adress, "r") as file_data:
-        # Returns HDF5 dataset objects
+        # Retrieve the data from the correct location in the hdf5 file
         dataset = file_data["Data"]["Recording_0"]["AnalogStream"]["Stream_0"]["ChannelData"]
-        # Convert to numpy array: (Adding [:] returns a numpy array)
+        # Convert to numpy array
         data=dataset[:]
-    return data
-
-
-'''Open the HDF5 file from nature'''
-def openHDF5_Nature(adress):
-    with h5py.File(adress, "r") as file_data:
-        dataset=[]
-        # Returns HDF5 dataset objects
-        # Iterate over every single electrode, and add them to the list
-        for electrode in file_data["Data"]["A3"]:
-            dataset.append(file_data["Data"]["A3"][electrode])
-        # Convert to numpy array: (Adding [:] returns a numpy array)
-        data=np.array(dataset)
-        data=np.reshape(data, (data.shape[0], data.shape[1]))
-        print(data.shape)
     return data
 
 '''Cut the data into smaller parts'''
@@ -38,7 +23,6 @@ def cut_data(data, parts, electrodes_per_well):
         for part in range(parts):
             for electrode in range(electrodes_per_well):
                 electrode_id=well*electrodes_per_well+electrode
-                #print(f"Creating new well from electrode_id {electrode_id} part {part}")
                 new_data.append(data[electrode_id, part*partsize:(part+1)*partsize])
     new_data=np.array(new_data)
     print(f"Data converted from shape: {shape_before} to shape: {new_data.shape}")
