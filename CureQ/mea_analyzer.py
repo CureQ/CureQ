@@ -1,11 +1,11 @@
-from CureQ.bandpass import *
-from CureQ.burst_detection import *
-from CureQ.features import *
-from CureQ.network_burst_detection import *
-from CureQ.open_file import *
-from CureQ.plotting import *
-from CureQ.spike_validation import *
-from CureQ.threshold import *
+from bandpass import *
+from burst_detection import *
+from features import *
+from network_burst_detection import *
+from open_file import *
+from plotting import *
+from spike_validation import *
+from threshold import *
 import time
 import multiprocessing
 from multiprocessing.managers import SharedMemoryManager
@@ -13,17 +13,24 @@ import gc
 import json
 from datetime import date
 from datetime import datetime
+import os
+import numpy as np
+import pandas as pd
 
-'''Analyse electrode as subprocess'''
+
+'''Analyse electrode as subprocess
+This is the subproces that gets called when multiprocessing is turned on'''
 def _electrode_subprocess(outputpath, memory_id, shape, _type, electrode, hertz, low_cutoff, high_cutoff, order, stdevmultiplier,
                         RMSmultiplier, threshold_portion, spikeduration, exit_time_s,
                         amplitude_drop_sd, plot_electrodes, electrode_amnt,
-                        heightexception, max_boxheight, kde_bandwidth, smallerneighbours,
-                        minspikes_burst, maxISI_outliers, default_threshold,
+                        heightexception, max_drop_amount, kde_bandwidth, smallerneighbours,
+                        minspikes_burst, max_threshold, default_threshold,
                         validation_method, progressfile):
-    # Attach to the existing shared memory block
+    # Load in the data from the shared memory block in the RAM
     existing_shm = multiprocessing.shared_memory.SharedMemory(name=memory_id)
     funcdata=np.ndarray(shape, _type, buffer=existing_shm.buf)
+
+    # From all the data, select the electrode
     data=funcdata[electrode]
 
     # Filter the data
@@ -34,14 +41,15 @@ def _electrode_subprocess(outputpath, memory_id, shape, _type, electrode, hertz,
     
     # Calculate spike values
     if validation_method=="DMP_noisebased":
-        spike_validation(data, electrode, threshold_value, hertz, spikeduration, exit_time_s, amplitude_drop_sd, plot_electrodes, electrode_amnt, heightexception, max_boxheight, outputpath)
+        spike_validation(data, electrode, threshold_value, hertz, spikeduration, exit_time_s, amplitude_drop_sd, plot_electrodes, electrode_amnt, heightexception, max_drop_amount, outputpath)
     elif validation_method=='none':
-        spike_validation(data, electrode, threshold_value, hertz, spikeduration, exit_time_s, 0, plot_electrodes, electrode_amnt, heightexception, max_boxheight, outputpath)
+        spike_validation(data, electrode, threshold_value, hertz, spikeduration, exit_time_s, 0, plot_electrodes, electrode_amnt, heightexception, max_drop_amount, outputpath)
     else:
         raise ValueError(f"\"{validation_method}\" is not a valid spike validation method")
     
     # Detect the bursts
-    burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, smallerneighbours, minspikes_burst, maxISI_outliers, default_threshold, outputpath, plot_electrodes)
+    burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, smallerneighbours, minspikes_burst, max_threshold, default_threshold, outputpath, plot_electrodes)
+
     print(f"Calculated electrode: {electrode}")
 
 '''Analyse an entire well'''
@@ -53,17 +61,17 @@ def analyse_well(fileadress,                                # Where is the data 
                       low_cutoff=200,                       # The low_cutoff for the bandpass filter
                       high_cutoff=3500,                     # The high_cutoff for the bandpass filter
                       order=2,                              # The order for the bandpass filter
-                      spikeduration=0.002,                  # The amount of time only 1 spike should be registered, aka refractory period
+                      spikeduration=0.001,                  # The amount of time only 1 spike should be registered, aka refractory period
                       exit_time_s=0.00024,                  # The amount of time a spike gets to drop amplitude in the validation methods
                       plot_electrodes=True,                 # Plot the single electrode visualizations
                       well_amnt=24,                         # The amount of wells present in the MEA
                       kde_bandwidth=1,                      # The bandwidth of the kernel density estimate
                       smallerneighbours=10,                 # The amount of smaller neighbours a peak should have before being considered as one
                       minspikes_burst=5,                    # The minimal amount of spikes a burst should have
-                      maxISI_outliers=1000,                 # The maximal ISIth2 that can be used in burst detection
+                      max_threshold=1000,                 # The maximal ISIth2 that can be used in burst detection
                       default_threshold=100,                # The default value for ISIth1
                       heightexception=1.5,                  # Multiplied with the spike detection threshold, if a spike exceeds this value, it does not have to drop amplitude fast to be validated
-                      max_boxheight=2,                      # Multiplied with the spike detection threshold, will be the maximal value the box for DMP_noisebased validation can be
+                      max_drop_amount=2,                      # Multiplied with the spike detection threshold, will be the maximal value the box for DMP_noisebased validation can be
                       amplitude_drop_sd=5,                  # Multiplied with the SD of surrounding noise, will be the boxheight for DMP_noisebased validation
                       stdevmultiplier=5,                    # The amount of SD a value needs to be from the mean to be considered a possible spike in the threshold detection
                       RMSmultiplier=5,                      # Multiplied with the RMS of the spike-free noise, used to determine the threshold
@@ -95,6 +103,7 @@ def analyse_well(fileadress,                                # Where is the data 
     # Create a directory which will contain the output
     outputpath=os.path.splitext(fileadress)[0]#remove the file extension
     outputpath=outputpath+"_output"
+
     # Add current datetime
     outputpath=outputpath+f"_{date.today()}"
     now = datetime.now()
@@ -108,24 +117,34 @@ def analyse_well(fileadress,                                # Where is the data 
     os.makedirs(f"{outputpath}/network_data")
     os.makedirs(f"{outputpath}/figures")
 
-
     # Create a file to commmunicate the progress with the GUI
     progressfile=f'{os.path.split(fileadress)[0]}/progress.npy'
     np.save(progressfile, ['starting'])
+    
+    # Call the freeze_support function to make sure multiprocessing still works properly when the algorithm is frozen
+    multiprocessing.freeze_support()
 
-    if not spikes_are_analysed:
-        print("Opening the data")
-        data=openHDF5_SCA1(fileadress)
+    # Open the raw data
+    print("Opening the data")
+    data=openHDF5(fileadress)
+
+    # If all wells should be analysed, generate a list of wells
     if wells=='all':
         wells=list(range(1,int(data.shape[0]/electrode_amnt)+1))
+
+    # Should the data bet cut into smaller parts - see documentation
     if cut_data_bool:
-        print("Dividing the data")
+        # Cut the data
         data=cut_data(data, parts, electrode_amnt)
+        # Calculate the new well numbers
         new_wells=np.array([])
         for well in wells:
             temp=(np.arange((well-1)*parts+1, (well)*(parts)+1))
             new_wells=np.append(new_wells, temp)
         wells=new_wells.astype(int)
+        wells=wells.tolist()
+
+    # Flag for if it is the first iteration
     first_iteration=True
 
     # Save the parameters that have been given in a JSON file 
@@ -145,10 +164,10 @@ def analyse_well(fileadress,                                # Where is the data 
         'exit time' : exit_time_s,
         'drop amplitude' : amplitude_drop_sd,
         'height exception' : heightexception,
-        'max drop amount' : max_boxheight,
+        'max drop amount' : max_drop_amount,
         'minimal amount of spikes' : minspikes_burst,
         'default interval threshold' : default_threshold,
-        'max interval threshold' : maxISI_outliers,
+        'max interval threshold' : max_threshold,
         'KDE bandwidth' : kde_bandwidth,
         'smaller neighbours' : smallerneighbours,
         'min channels' : min_channels,
@@ -166,39 +185,54 @@ def analyse_well(fileadress,                                # Where is the data 
     # With multiprocessing
     if use_multiprocessing:
         # Save the data in shared memory
+        print("Loading data into shared memory")
+        # Create space on the RAM
         sharedmemory=multiprocessing.shared_memory.SharedMemory(create=True, size=data.nbytes)
         shape=data.shape
-        np.save(progressfile, [(0)*electrode_amnt, shape[0]])
         _type=data.dtype
+        # Communicate file size with GUI
+        np.save(progressfile, [(0)*electrode_amnt, shape[0]])
+        # Put data into shared memory
         data_shared=np.ndarray(shape, dtype=_type, buffer=sharedmemory.buf)
         data_shared[:]=data[:]
+        # Get the memory ID
         memory_id=sharedmemory.name
         measurements=data.shape[1]
-        data=[] # hopefully this clears up memory space
+        # Clear up memory
+        data=[] 
 
         # Start up a process for every single electrode
+        print("Initializing processes")
         with multiprocessing.Pool(processes=electrode_amnt) as pool:
+            # Iterate over all wells
             for well in wells:
                 start=time.time()
+                # Calculate which electrodes belong to this well
                 electrodes=np.arange((well-1)*electrode_amnt, well*electrode_amnt)
                 print(f"Analyzing well: {well}, consisting of electrodes: {electrodes}")
 
                 # Divide the tasks to the processes
-                args=[(outputpath, memory_id, shape, _type, electrode, hertz, low_cutoff, high_cutoff, order, stdevmultiplier, RMSmultiplier, threshold_portion, spikeduration, exit_time_s, amplitude_drop_sd, plot_electrodes, electrode_amnt, heightexception, max_boxheight, kde_bandwidth, smallerneighbours, minspikes_burst, maxISI_outliers, default_threshold, validation_method, progressfile) for electrode in electrodes]
+                args=[(outputpath, memory_id, shape, _type, electrode, hertz, low_cutoff, high_cutoff, order, stdevmultiplier, RMSmultiplier, threshold_portion, spikeduration, exit_time_s, amplitude_drop_sd, plot_electrodes, electrode_amnt, heightexception, max_drop_amount, kde_bandwidth, smallerneighbours, minspikes_burst, max_threshold, default_threshold, validation_method, progressfile) for electrode in electrodes]
                 pool.starmap(_electrode_subprocess, args)
 
                 # Calculate the network bursts
-                network_burst_detection(outputpath, [well], electrode_amnt, measurements, hertz, min_channels, threshold_method, plot_electrodes)
+                network_burst_detection(outputpath=outputpath, wells=[well], electrode_amnt=electrode_amnt, measurements=measurements, hertz=hertz, min_channels=min_channels, threshold_method=threshold_method, plot_electrodes=plot_electrodes, save_figures=True)
 
+                # Calculate electrode and well features
                 features_df=electrode_features(outputpath, electrodes, electrode_amnt, measurements, hertz, activity_threshold, remove_inactive_electrodes)
                 well_features_df=well_features(outputpath, well, electrode_amnt, measurements, hertz)
+
+                # If its the first iteration, create the dataframe
                 if first_iteration:
                     first_iteration=False
                     output=feature_output(features_df, well_features_df, electrode_amnt)
+                # If its not the first iteration, keep appending to the dataframe
                 else:
                     output=pd.concat([output, feature_output(features_df, well_features_df, electrode_amnt)], axis=0)
                 end=time.time()
                 print(f"It took {end-start} seconds to analyse well: {well}")
+
+                # Communicate progression with GUI
                 np.save(progressfile, [(well)*electrode_amnt, shape[0]])
         # Clean up the shared memory
         sharedmemory.close()
@@ -207,55 +241,60 @@ def analyse_well(fileadress,                                # Where is the data 
     else:
         for well in wells:
             start=time.time()
+            # Calculate which electrodes belong to this well
             electrodes=np.arange((well-1)*electrode_amnt, well*electrode_amnt)
             print(f"Analyzing well: {well}, consisting of electrodes: {electrodes}")
 
-            # We don't have to analyse the spikes again if the files are already there
-            if not spikes_are_analysed:
-                # Loop through all the electrodes
-                for electrode in electrodes:
-                    # Filter the data
-                    data[electrode]=butter_bandpass_filter(data[electrode], low_cutoff, high_cutoff, hertz, order)
-                    
-                    # Calculate the threshold
-                    threshold_value=fast_threshold(data[electrode], hertz, stdevmultiplier, RMSmultiplier, threshold_portion)
-                    
-                    # Calculate spike values
-                    if validation_method=="DMP_noisebased":
-                        spike_validation(data[electrode], electrode, threshold_value, hertz, spikeduration, exit_time_s, amplitude_drop_sd, plot_electrodes, electrode_amnt, heightexception, max_boxheight, outputpath)
-                    elif validation_method=='none':
-                        spike_validation(data[electrode], electrode, threshold_value, hertz, spikeduration, exit_time_s, 0, plot_electrodes, electrode_amnt, heightexception, max_boxheight, outputpath)
-                    else:
-                        raise ValueError(f"\"{validation_method}\" is not a valid spike validation method")
-                    
-                    # Detect the bursts
-                    burst_detection(data[electrode], electrode, electrode_amnt, hertz, kde_bandwidth, smallerneighbours, minspikes_burst, maxISI_outliers, default_threshold, outputpath, plot_electrodes)
-                    np.save(progressfile, [electrode+1, data.shape[0]])
-                    print(f"Calculated electrode: {electrode}")
-            if spikes_are_analysed:
-                measurements=recordingtime*hertz
-            else:
-                measurements=data.shape[1]
+            # Loop through all the electrodes
+            for electrode in electrodes:
+                # Filter the data
+                data[electrode]=butter_bandpass_filter(data[electrode], low_cutoff, high_cutoff, hertz, order)
+                
+                # Calculate the threshold
+                threshold_value=fast_threshold(data[electrode], hertz, stdevmultiplier, RMSmultiplier, threshold_portion)
+                
+                # Calculate spike values
+                if validation_method=="DMP_noisebased":
+                    spike_validation(data[electrode], electrode, threshold_value, hertz, spikeduration, exit_time_s, amplitude_drop_sd, plot_electrodes, electrode_amnt, heightexception, max_drop_amount, outputpath)
+                elif validation_method=='none':
+                    spike_validation(data[electrode], electrode, threshold_value, hertz, spikeduration, exit_time_s, 0, plot_electrodes, electrode_amnt, heightexception, max_drop_amount, outputpath)
+                else:
+                    raise ValueError(f"\"{validation_method}\" is not a valid spike validation method")
+                
+                # Detect the bursts
+                burst_detection(data[electrode], electrode, electrode_amnt, hertz, kde_bandwidth, smallerneighbours, minspikes_burst, max_threshold, default_threshold, outputpath, plot_electrodes)
+                # Communicate with GUI
+                np.save(progressfile, [electrode+1, data.shape[0]])
+                print(f"Calculated electrode: {electrode}")
+            measurements=data.shape[1]
 
-            network_burst_detection(outputpath, [well], electrode_amnt, measurements, hertz, min_channels, threshold_method, plot_electrodes)
+            # Detect network bursts
+            network_burst_detection(outputpath, [well], electrode_amnt, measurements, hertz, min_channels, threshold_method, plot_electrodes=False, save_figures=True)
             print(f"Calculated network bursts well: {well}")
 
+            # Calculate electrode and well features
             features_df=electrode_features(outputpath, electrodes, electrode_amnt, measurements, hertz, activity_threshold, remove_inactive_electrodes)
             well_features_df=well_features(outputpath, well, electrode_amnt, measurements, hertz)
+
+            # If its the first iteration, create the dataframe
             if first_iteration:
                 first_iteration=False
                 output=feature_output(features_df, well_features_df, electrode_amnt)
+            # If its not the first iteration, keep appending to the dataframe
             else:
                 output=pd.concat([output, feature_output(features_df, well_features_df, electrode_amnt)], axis=0, ignore_index=False)
             end=time.time()
             print(f"It took {end-start} seconds to analyse well: {well}")
         
-        # Attempt to free up RAM
+        # Free up RAM
         data=[]
         del data
         gc.collect()
-    name = os.path.basename(outputpath)
-    name = os.path.splitext(name)
+
+    # Save the output
     output.to_csv(f"{outputpath}/Features.csv", index=False)
+    
+    # Close the analysis
     np.save(progressfile, ['done'])
+    print("Done")
     return output
