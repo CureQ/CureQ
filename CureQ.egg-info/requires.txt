@@ -9,3 +9,4 @@ statsmodels>=0.14.0
 scikit-image>=0.22.0
 plotly>=5.14.0
 KDEpy>=1.1.9
+sv-ttk>=2.6.0

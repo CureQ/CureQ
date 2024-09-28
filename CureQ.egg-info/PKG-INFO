@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: CureQ
-Version: 1.0.2
+Version: 1.0.3
 Summary: Library for analyzing MEA files.
 Home-page: https://github.com/CureQ/CureQ.git
 Author: CureQ
@@ -21,18 +21,23 @@ Requires-Dist: statsmodels>=0.14.0
 Requires-Dist: scikit-image>=0.22.0
 Requires-Dist: plotly>=5.14.0
 Requires-Dist: KDEpy>=1.1.9
+Requires-Dist: sv-ttk>=2.6.0
 
 # CureQ
 
 This is the repository of the CureQ consortium.<br>
 This repository contains a library with functions for analyzing MEA files.<br>
 This repository is maintained by the Amsterdam University of Applied Sciences (AUMC).<br>
-More information: https://cureq.nl/
+For more information about the analysis or how to use the library, check out the "CureQ MEA-analysis library User Guide.pdf" file.<br>
+For more information about the CureQ project, visit https://cureq.nl/
 
 ___
 
 ## Install the library
-Open a terminal and navigate to your home folder.
+
+First, make sure you have installed a version of python on your machine, all python releases can be found here: https://www.python.org/downloads/ <br>
+Secondly, make sure you have installed a package manager, like pip or conda.
+Next, open a terminal and navigate to your home folder.
 
 #### Install library with pip
 Install the MEA analyzer with the following command when you are using Pip:
@@ -70,16 +75,13 @@ if __name__=='__main__':
 ## Example visualisations of the MEA analysis pipeline
 
 #### Spike detection
-![Spike detection well 10 electrode 2](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/Spike_detection_well_10_electrode_2.png)
-
-#### Inter-spike interval
-![Inter-spike interval well 15 electrode 3](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/Inter-spike_interval_well_15_electrode_3.png)
+![Spike detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/spike_detection.png)
 
 #### Single burst detection
-![Single burst detection well 15 electrode 3](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/Single_burst_detection_well_15_electrode_3.png)
+![Burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/burst_detection.PNG)
 
 #### Network burst detection
-![Network burst detection well 10](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/Network_burst_detection_well_10.png)
+![Network burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/network_burst_detection.PNG)
 
 <!--
 **CureQ/CureQ** is a âœ¨ _special_ âœ¨ repository because its `README.md` (this file) appears on your GitHub profile.

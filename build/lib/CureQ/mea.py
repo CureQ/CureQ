@@ -1,11 +1,4 @@
-from bandpass import *
-from burst_detection import *
-from features import *
-from network_burst_detection import *
-from open_file import *
-from plotting import *
-from spike_validation import *
-from threshold import *
+# Imports
 import time
 import multiprocessing
 from multiprocessing.managers import SharedMemoryManager
@@ -14,9 +7,20 @@ import json
 from datetime import date
 from datetime import datetime
 import os
+
+# External libraries
 import numpy as np
 import pandas as pd
 
+# Import MEA functions
+from bandpass import *
+from burst_detection import *
+from features import *
+from network_burst_detection import *
+from open_file import *
+from plotting import *
+from spike_validation import *
+from threshold import *
 
 '''Analyse electrode as subprocess
 This is the subproces that gets called when multiprocessing is turned on'''
@@ -53,7 +57,7 @@ def _electrode_subprocess(outputpath, memory_id, shape, _type, electrode, hertz,
     print(f"Calculated electrode: {electrode}")
 
 '''Analyse an entire well'''
-def analyse_well(fileadress,                                # Where is the data file stored
+def analyse_wells(fileadress,                                # Where is the data file stored
                       hertz,                                # What is the sampling frequency of the MEA
                       electrode_amnt,                       # The amount of electrodes per well
                       wells='all',                          # Which wells do you want to analyze

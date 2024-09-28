@@ -6,6 +6,7 @@ CureQ/bandpass.py
 CureQ/burst_detection.py
 CureQ/features.py
 CureQ/mea.py
+CureQ/mea_analysis_tool.py
 CureQ/network_burst_detection.py
 CureQ/open_file.py
 CureQ/plotting.py

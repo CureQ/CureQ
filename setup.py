@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 # Setup metadata for initializing the library
 setuptools.setup(
     name="CureQ",
-    version="1.0.2",
+    version="1.0.3",
     author="CureQ",
     author_email="cureq-ft@hva.nl",
     description="Library for analyzing MEA files.",
@@ -26,7 +26,8 @@ setuptools.setup(
         "statsmodels>=0.14.0",  # For calculating the partial autocorrelation function
         "scikit-image>=0.22.0", # For determining the threshold of the network bursts
         "plotly>=5.14.0",       # For creating an interactive 3D view of a single well
-	    "KDEpy>=1.1.9"		    # For Kernel Density Estimation in Python
+	    "KDEpy>=1.1.9",		    # For Kernel Density Estimation in Python
+        "sv-ttk>=2.6.0"         # Theme for tkinter GUI
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

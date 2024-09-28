@@ -9,7 +9,10 @@ For more information about the CureQ project, visit https://cureq.nl/
 ___
 
 ## Install the library
-Open a terminal and navigate to your home folder.
+
+First, make sure you have installed a version of python on your machine, all python releases can be found here: https://www.python.org/downloads/ <br>
+Secondly, make sure you have installed a package manager, like pip or conda.
+Next, open a terminal and navigate to your home folder.
 
 #### Install library with pip
 Install the MEA analyzer with the following command when you are using Pip:
