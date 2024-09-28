@@ -50,10 +50,10 @@ if __name__=='__main__':
 ![Spike detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/spike_detection.png)
 
 #### Single burst detection
-![Burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/burst_detection.png)
+![Burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/burst_detection.PNG)
 
 #### Network burst detection
-![Network burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/network_burst_detection.png)
+![Network burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/network_burst_detection.PNG)
 
 <!--
 **CureQ/CureQ** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
