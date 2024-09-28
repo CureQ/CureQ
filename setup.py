@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 # Setup metadata for initializing the library
 setuptools.setup(
     name="CureQ",
-    version="1.0.4",
+    version="1.0.6",
     author="CureQ",
     author_email="cureq-ft@hva.nl",
     description="Library for analyzing MEA files.",
@@ -34,4 +34,8 @@ setuptools.setup(
         "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
         "Operating System :: OS Independent",
     ],
+    package_data={
+        "CureQ":['cureq_icon.ico']
+    },
+    include_package_data=True
 )

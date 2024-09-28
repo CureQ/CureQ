@@ -34,7 +34,7 @@ Import the function you need, call this function and watch how the pipeline anal
 
 #### Example for analyzing all MEA wells
 ```python
-from CureQ.mea import analyse_well               # Library function for analyzing wells
+from CureQ.mea import analyse_wells               # Library function for analyzing wells
 
 file_path = 'path/to/your/mea_file.h5'           # Path to your MEA file
 hertz = 20000                                    # Sampling frequency of MEA system
@@ -42,7 +42,7 @@ electrodes = 12                                  # Electrode amount per well
 
 # Analyzes all wells in the MEA file
 if __name__=='__main__':
-   analyse_well(fileadress=file_path, hertz=hertz, electrode_amnt=electrodes)
+   analyse_wells(fileadress=file_path, hertz=hertz, electrode_amnt=electrodes)
 ```
 
 ---

@@ -4,6 +4,7 @@ setup.py
 CureQ/__init__.py
 CureQ/bandpass.py
 CureQ/burst_detection.py
+CureQ/cureq_icon.ico
 CureQ/features.py
 CureQ/mea.py
 CureQ/mea_analysis_tool.py

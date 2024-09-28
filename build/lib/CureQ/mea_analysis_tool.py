@@ -25,7 +25,7 @@ from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  NavigationToo
 import sv_ttk
 
 # Import the MEA library
-from mea import *
+from .mea import *
 
 def MEA_GUI():
     # Setting the warnings to be ignored 
