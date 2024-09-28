@@ -11,7 +11,7 @@ ___
 ## Install the library
 
 First, make sure you have installed a version of python on your machine, all python releases can be found here: https://www.python.org/downloads/ <br>
-Secondly, make sure you have installed a package manager, like pip or conda.
+Secondly, make sure you have installed a package manager, like pip or conda. <br>
 Next, open a terminal and navigate to your home folder.
 
 #### Install library with pip
