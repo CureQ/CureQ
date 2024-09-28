@@ -47,7 +47,22 @@ if __name__=='__main__':
 
 ---
 
-## Example visualisations of the MEA analysis pipeline
+## MEA GUI
+Addionally, the CureQ mea library contains a graphical user interface that can be used to perform the analysis. <br>
+The GUI is also used to inspect the raw MEA data and the analysis results. Example visualisations can be found below. <br>
+The GUI can be opened as follows:
+
+#### Opening the GUI
+```python
+from CureQ.mea_analysis_tool import MEA_GUI
+
+if __name__=="__main__":
+    MEA_GUI()
+```
+
+---
+
+## Example visualisations
 
 #### Spike detection
 ![Spike detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/spike_detection.png)
@@ -57,6 +72,11 @@ if __name__=='__main__':
 
 #### Network burst detection
 ![Network burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/network_burst_detection.PNG)
+
+#### GUI
+![results_window](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/results_window.png)
+
+![main_window](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/main_window.png)
 
 <!--
 **CureQ/CureQ** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
