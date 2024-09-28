@@ -1,10 +1,11 @@
 # CureQ
 
 This is the repository of the CureQ consortium.<br>
+For more information about the CureQ project, visit https://cureq.nl/
 This repository contains a library with functions for analyzing MEA files.<br>
 This repository is maintained by the Amsterdam University of Applied Sciences (AUMC).<br>
+This library can process both Multi Channel Systems and Axion Biosystems MEA data, although the latter will have to be converted to hdf5 format using our MATLAB script, which can be found in the repository.
 For more information about the analysis or how to use the library, check out the "CureQ MEA-analysis library User Guide.pdf" file.<br>
-For more information about the CureQ project, visit https://cureq.nl/
 
 ___
 
