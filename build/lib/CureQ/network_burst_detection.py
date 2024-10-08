@@ -117,8 +117,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
             x=KDE_grid
             # Normalise the kde so it ranges from 0 to 1
             y = (y - np.min(y)) / (np.max(y) - np.min(y))
-            # Plot the KDE
-            ax[2].clear()
+            # # Plot the KDE
             ax[2].plot(x,y)
 
         '''Bottom plot'''
@@ -129,8 +128,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
             x=KDE_grid
             # Normalise the kde so it ranges from 0 to 1
             y = (y - np.min(y)) / (np.max(y) - np.min(y))
-            # Plot the KDE
-            ax[3].clear()
+            # # Plot the KDE
             ax[3].plot(x,y)
 
             # Determine the threshold using either Yen or Otsu automatic thresholding
@@ -203,7 +201,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
                             if burst[0]<outer_start: outer_start=burst[0]
                             if burst[1]>outer_end: outer_end=burst[1]
                             # Add the identifiers (Network_burst ID, electrode, burst ID) to the list
-                            participating_bursts.append([i, j, int(burst[4])])
+                            participating_bursts.append([i, j+1, int(burst[4])])
                 # Add start+end to network burst cores list
                 network_burst_cores[i].append(outer_start)
                 network_burst_cores[i].append(outer_end)

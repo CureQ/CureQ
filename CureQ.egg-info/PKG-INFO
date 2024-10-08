@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: CureQ
-Version: 1.0.6
+Version: 1.0.7
 Summary: Library for analyzing MEA files.
 Home-page: https://github.com/CureQ/CureQ.git
 Author: CureQ
@@ -26,10 +26,11 @@ Requires-Dist: sv-ttk>=2.6.0
 # CureQ
 
 This is the repository of the CureQ consortium.<br>
+For more information about the CureQ project, visit https://cureq.nl/
 This repository contains a library with functions for analyzing MEA files.<br>
 This repository is maintained by the Amsterdam University of Applied Sciences (AUMC).<br>
+This library can process both Multi Channel Systems and Axion Biosystems MEA data, although the latter will have to be converted to hdf5 format using our MATLAB script, which can be found in the repository.
 For more information about the analysis or how to use the library, check out the "CureQ MEA-analysis library User Guide.pdf" file.<br>
-For more information about the CureQ project, visit https://cureq.nl/
 
 ___
 
@@ -72,7 +73,22 @@ if __name__=='__main__':
 
 ---
 
-## Example visualisations of the MEA analysis pipeline
+## MEA GUI
+Addionally, the CureQ mea library contains a graphical user interface that can be used to perform the analysis. <br>
+The GUI is also used to inspect the raw MEA data and the analysis results. Example visualisations can be found below. <br>
+The GUI can be opened as follows:
+
+#### Opening the GUI
+```python
+from CureQ.mea_analysis_tool import MEA_GUI
+
+if __name__=="__main__":
+    MEA_GUI()
+```
+
+---
+
+## Example visualisations
 
 #### Spike detection
 ![Spike detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/spike_detection.png)
@@ -82,6 +98,11 @@ if __name__=='__main__':
 
 #### Network burst detection
 ![Network burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/network_burst_detection.PNG)
+
+#### GUI
+![results_window](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/results_window.png)
+
+![main_window](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/main_window.png)
 
 <!--
 **CureQ/CureQ** is a âœ¨ _special_ âœ¨ repository because its `README.md` (this file) appears on your GitHub profile.

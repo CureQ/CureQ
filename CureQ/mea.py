@@ -13,14 +13,24 @@ import numpy as np
 import pandas as pd
 
 # Import MEA functions
-from .bandpass import *
-from .burst_detection import *
-from .features import *
-from .network_burst_detection import *
-from .open_file import *
-from .plotting import *
-from .spike_validation import *
-from .threshold import *
+try:
+    from .bandpass import *
+    from .burst_detection import *
+    from .features import *
+    from .network_burst_detection import *
+    from .open_file import *
+    from .plotting import *
+    from .spike_validation import *
+    from .threshold import *
+except:
+    from bandpass import *
+    from burst_detection import *
+    from features import *
+    from network_burst_detection import *
+    from open_file import *
+    from plotting import *
+    from spike_validation import *
+    from threshold import *
 
 '''Analyse electrode as subprocess
 This is the subproces that gets called when multiprocessing is turned on'''
@@ -211,7 +221,7 @@ def analyse_wells(fileadress,                                # Where is the data
                 network_burst_detection(outputpath=outputpath, wells=[well], electrode_amnt=electrode_amnt, measurements=measurements, hertz=hertz, min_channels=min_channels, threshold_method=threshold_method, plot_electrodes=plot_electrodes, save_figures=True)
 
                 # Calculate electrode and well features
-                features_df=electrode_features(outputpath, electrodes, electrode_amnt, measurements, hertz, activity_threshold, remove_inactive_electrodes)
+                features_df=electrode_features(outputpath, well, electrode_amnt, measurements, hertz, activity_threshold, remove_inactive_electrodes)
                 well_features_df=well_features(outputpath, well, electrode_amnt, measurements, hertz)
 
                 # If its the first iteration, create the dataframe
@@ -265,7 +275,7 @@ def analyse_wells(fileadress,                                # Where is the data
             print(f"Calculated network bursts well: {well}")
 
             # Calculate electrode and well features
-            features_df=electrode_features(outputpath, electrodes, electrode_amnt, measurements, hertz, activity_threshold, remove_inactive_electrodes)
+            features_df=electrode_features(outputpath, well, electrode_amnt, measurements, hertz, activity_threshold, remove_inactive_electrodes)
             well_features_df=well_features(outputpath, well, electrode_amnt, measurements, hertz)
 
             # If its the first iteration, create the dataframe
