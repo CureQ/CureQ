@@ -39,6 +39,7 @@ def MEA_GUI():
 
     """Visual settings"""
     # Set the theme
+    global theme
     theme='dark'
     sv_ttk.set_theme(theme)
 
@@ -141,14 +142,17 @@ def MEA_GUI():
 
     # Scrollable frame
     class VerticalScrolledFrame(ttk.Frame):
-        def __init__(self, parent, *args, **kw):
+        def __init__(self, parent, width=1600, height=1000, *args, **kw):
+            # You can pass width and height to the constructor to set default size.
             ttk.Frame.__init__(self, parent, *args, **kw)
 
             # Create a canvas object and a vertical scrollbar for scrolling it.
             vscrollbar = ttk.Scrollbar(self, orient=VERTICAL)
             vscrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
-            canvas = tk.Canvas(self, bd=0, highlightthickness=0,
-                            yscrollcommand=vscrollbar.set)
+            
+            # Set the canvas size by passing width and height
+            canvas = tk.Canvas(self, bd=0, highlightthickness=0, 
+                            yscrollcommand=vscrollbar.set, width=width, height=height)
             canvas.pack(side=LEFT, fill=BOTH, expand=TRUE)
             vscrollbar.config(command=canvas.yview)
 
@@ -158,8 +162,7 @@ def MEA_GUI():
 
             # Create a frame inside the canvas which will be scrolled with it.
             self.interior = interior = ttk.Frame(canvas)
-            interior_id = canvas.create_window(0, 0, window=interior,
-                                            anchor=NW)
+            interior_id = canvas.create_window(0, 0, window=interior, anchor=NW)
 
             # Track changes to the canvas and frame width and sync them,
             # also updating the scrollbar.
@@ -218,12 +221,8 @@ def MEA_GUI():
     requiredparameters=ttk.LabelFrame(parameterframe.interior, text='Required Parameters', style="Custom.TLabelframe")
     requiredparameters.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
 
-    # filelabel=ttk.Label(master=requiredparameters, text="File:", font=(font,10))
-    # filelabel.grid(row=0, column=0, padx=10, pady=10, sticky='w')
     btn_selectfile=ttk.Button(master=requiredparameters, text="Choose a file", command=openfiles)
     btn_selectfile.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky='nesw')
-    # selectedfilelabel=ttk.Label(master=requiredparameters, text=filename, borderwidth=3, relief="sunken")
-    # selectedfilelabel.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky='w')
 
     # Setup the sampling frequency
     hertzlabel=ttk.Label(master=requiredparameters, text="Sampling rate:", font=(font,10))
@@ -609,9 +608,9 @@ def MEA_GUI():
 
         # reset the entry labels
         list=[lowcutoffinput, highcutoffinput, orderinput, thresholdportioninput, stdevmultiplierinput, RMSmultiplierinput, refractoryperiodinput, exittimeinput,
-            amplitudedropinput, heightexceptioninput, maxheightinput, electrodeamntinput, minspikesinput, defaultthinput, maxisiinput, isikdebwinput, smallernbinput,
+            amplitudedropinput, heightexceptioninput, maxheightinput, minspikesinput, defaultthinput, maxisiinput, isikdebwinput, smallernbinput,
             minchannelsinput, activitythinput, splitdatapartsinput]
-        defaults=[200, 3500, 2, 0.1, 5, 5, 0.001, 0.00024, 5, 1.5, 2, 12, 5, 100, 1000, 1, 10, 0.5, 0.1, 10]
+        defaults=[200, 3500, 2, 0.1, 5, 5, 0.001, 0.00024, 5, 1.5, 2, 5, 100, 1000, 1, 10, 0.5, 0.1, 10]
         counter=0
         for parameter in list:
             parameter.delete(0, END)
@@ -1221,6 +1220,7 @@ def MEA_GUI():
     load_table_button=ttk.Button(master=output_frame, text='Load table', command=lambda: load_table(feature_filepath))
     load_table_button.grid(row=1, column=0, pady=10, padx=10, sticky='n')
 
+    global selected_well
     selected_well = 1
     selected_electrode = 1
 
@@ -1313,6 +1313,7 @@ def MEA_GUI():
         else:
             bgcolor='#fafafa'
             axiscolour='#221c1c'
+        
         fig.set_facecolor(bgcolor)
         for ax in fig.axes:
             ax.set_facecolor(bgcolor)
@@ -1522,13 +1523,13 @@ def MEA_GUI():
         resultfileframe.pack_forget()
 
     '''Button for going back to the begin frame'''
-    def results_buttonframe_to_main_func():
-        raw_data=[]
-        main_frame.pack(fill='both', expand=True)
-        resultsframe.pack_forget()
+    # def results_buttonframe_to_main_func():
+    #     raw_data=[]
+    #     main_frame.pack(fill='both', expand=True)
+    #     resultsframe.pack_forget()
 
-    resultsframe_to_mainmenu_button=ttk.Button(master=electrode_frame, text="Return to main menu", command=results_buttonframe_to_main_func)
-    resultsframe_to_mainmenu_button.grid(row=1, column=0, pady=10, padx=10, sticky='nsew', columnspan=2)    
+    # resultsframe_to_mainmenu_button=ttk.Button(master=electrode_frame, text="Return to main menu", command=results_buttonframe_to_main_func)
+    # resultsframe_to_mainmenu_button.grid(row=1, column=0, pady=10, padx=10, sticky='nsew', columnspan=2)    
 
 
     def plot_single_electrode(master, parameters, electrode_nr, plot_rectangle):
@@ -1612,6 +1613,7 @@ def MEA_GUI():
 
     def electrode_button_pressed(electrode):
         global selected_electrode
+        global selected_well
         selected_electrode=electrode
 
         # Open a new window

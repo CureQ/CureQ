@@ -1,5 +1,5 @@
 import numpy as np
-import os
+import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.figure import Figure
@@ -17,6 +17,7 @@ def burst_detection(data,                   # Raw data
                     plot_electrodes,        # If true, returns a matplotlib figure of the spike detection/validation process. Used for the GUI
                     savedata=True           # Whether to save the burst information or not
                     ):
+    
     # Colors
     rawdatacolor='#bb86fc'
     burstcolor='#cf6679'
@@ -37,9 +38,7 @@ def burst_detection(data,                   # Raw data
     # Calculate the inter-spike intervals
     ISI=[]
     # There are no intervals when there is only one spike
-    if spikedata.shape[0]<2:
-        pass
-    else:
+    if spikedata.shape[0]>1:
         # Iterate over all the spikes
         for i in range(spikedata.shape[0]-1):
             # Calculate the interval to the next spike and add them to an array
@@ -49,6 +48,7 @@ def burst_detection(data,                   # Raw data
         # Convert ISIs to miliseconds
         ISI=ISI*1000
 
+    '''Determine how to run the burst detection'''
     # Only run the spike detection when there are enough spikes to form a burst
     if spikedata.shape[0]>=minspikes_burst:
         # Reset variables to the base values
@@ -62,7 +62,9 @@ def burst_detection(data,                   # Raw data
         use_pasquale=False
 
         # Plot a smooth histogram using kernel density estimation
-        # This specific task (logarithmic kernel density estimate) works very well in the seaborn library, so we plot a figure there, and extract the line values
+        # This very specific task (logarithmic kernel density estimate) works suprisingly well in the seaborn library, so we plot a figure there, and just extract the line values
+        # Instruct seaborn to use the "Agg" backend. If we do not do this, seaborn will try to create a GUI which will eventually crash the analysis if executed from within th GUI
+        matplotlib.use("Agg")
         output=sns.displot(ISI, alpha=0.2, edgecolor=None, kde=True, color='blue', log_scale=True, kde_kws={'gridsize': 100, 'bw_adjust':kde_bandwidth})
         # Extract the line values
         for ax in output.axes.flat:
@@ -166,7 +168,8 @@ def burst_detection(data,                   # Raw data
                 use_pasquale=True
                 use_ISIth2=True
 
-        # Set some values
+        '''Run the burst detection'''
+        # Initialize values
         burst_cores=[]
         burst_spikes=[]
         burst_counter=0
@@ -289,7 +292,7 @@ def burst_detection(data,                   # Raw data
             KDE.set_xscale("log")
             KDE.title.set_text(f"Well: { well}, Electrode: {electrode}")
             KDE.set_xlabel("Inter-spike interval")
-            KDE.set_ylabel("Amount")
+            # KDE.set_ylabel("Amount")
 
         # Plot the raw data with bursts
         if plot_electrodes:
@@ -334,13 +337,18 @@ def burst_detection(data,                   # Raw data
 
     # If there are not enough spikes for the burst detection, wel fill the figures and output arrays with nothing
     else:
-        fig=Figure(figsize=(1,1))
-        fillerplot=fig.add_subplot(111)
-        fig2=Figure(figsize=(3,1))
-        fillerplot2=fig2.add_subplot(111)
-        fillerplot2.title.set_text(f"No burst detection possible for well {well}, electrode {electrode} - not enough values")
-        fillerplot2.set_xlabel("Time in seconds")
-        fillerplot2.set_ylabel("Micro voltage")
+        if plot_electrodes:
+            fig=Figure(figsize=(1,1))
+            fillerplot=fig.add_subplot(111)
+            fig2=Figure(figsize=(3,1))
+            fillerplot2=fig2.add_subplot(111)
+            fillerplot2.title.set_text(f"No burst detection possible for well {well}, electrode {electrode} - not enough values")
+            fillerplot2.set_xlabel("Time in seconds")
+            fillerplot2.set_ylabel("Micro voltage")
+        else:
+            fig=None
+            fig2=None
+        
         burst_spikes=[]
         burst_cores=[]
 

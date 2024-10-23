@@ -41,7 +41,7 @@ def _electrode_subprocess(outputpath, memory_id, shape, _type, electrode, hertz,
                         minspikes_burst, max_threshold, default_threshold,
                         validation_method, progressfile):
     # Load in the data from the shared memory block in the RAM
-    existing_shm = multiprocessing.shared_memory.SharedMemory(name=memory_id)
+    existing_shm = multiprocessing.shared_memory.SharedMemory(name=memory_id, create=False)
     funcdata=np.ndarray(shape, _type, buffer=existing_shm.buf)
 
     # From all the data, select the electrode
@@ -64,6 +64,8 @@ def _electrode_subprocess(outputpath, memory_id, shape, _type, electrode, hertz,
     # Detect the bursts
     burst_detection(data, electrode, electrode_amnt, hertz, kde_bandwidth, smallerneighbours, minspikes_burst, max_threshold, default_threshold, outputpath, plot_electrodes)
 
+    data=None
+    existing_shm.close()
     print(f"Calculated electrode: {electrode}")
 
 '''Analyse an entire well'''
@@ -96,9 +98,12 @@ def analyse_wells(fileadress,                                # Where is the data
                       parts=10,                             # In how many parts
                       use_multiprocessing=False             # Whether to use multiprocessing
                       ):
+    analysis_time=time.time()
+    plot_electrodes=False
 
     # Advertisement
     print("MEA-analyzer. Developed by Joram van Beem and Jesse Antonissen for the CureQ research consortium")
+    print(f"Analyzing: {fileadress}")
     
     # Create a directory which will contain the output
     outputpath=os.path.splitext(fileadress)[0]#remove the file extension
@@ -147,8 +152,6 @@ def analyse_wells(fileadress,                                # Where is the data
     # Flag for if it is the first iteration
     first_iteration=True
 
-    plot_electrodes=False
-
     # Save the parameters that have been given in a JSON file 
     parameters={
         'file adress' : fileadress,
@@ -189,19 +192,21 @@ def analyse_wells(fileadress,                                # Where is the data
         # Save the data in shared memory
         print("Loading data into shared memory")
         # Create space on the RAM
-        sharedmemory=multiprocessing.shared_memory.SharedMemory(create=True, size=data.nbytes)
+        np_size=data.nbytes
         shape=data.shape
         _type=data.dtype
+        measurements=data.shape[1]
+        data=None
+        sharedmemory=multiprocessing.shared_memory.SharedMemory(create=True, size=np_size)
         # Communicate file size with GUI
         np.save(progressfile, [(0)*electrode_amnt, shape[0]])
         # Put data into shared memory
         data_shared=np.ndarray(shape, dtype=_type, buffer=sharedmemory.buf)
-        data_shared[:]=data[:]
+        data_shared[:]=openHDF5(fileadress)
         # Get the memory ID
         memory_id=sharedmemory.name
-        measurements=data.shape[1]
         # Clear up memory
-        data=[] 
+        data=None
 
         # Start up a process for every single electrode
         print("Initializing processes")
@@ -298,5 +303,6 @@ def analyse_wells(fileadress,                                # Where is the data
     
     # Close the analysis
     np.save(progressfile, ['done'])
+    print(f"It took {time.time()-analysis_time} seconds to analyse {fileadress}")
     print("Done")
     return output
