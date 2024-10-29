@@ -63,7 +63,7 @@ def burst_detection(data,                   # Raw data
 
         # Plot a smooth histogram using kernel density estimation
         # This very specific task (logarithmic kernel density estimate) works suprisingly well in the seaborn library, so we plot a figure there, and just extract the line values
-        # Instruct seaborn to use the "Agg" backend. If we do not do this, seaborn will try to create a GUI which will eventually crash the analysis if executed from within th GUI
+        # Instruct seaborn to use the "Agg" backend. If we do not do this, seaborn will try to create a GUI which will eventually crash the analysis if executed from within the GUI
         matplotlib.use("Agg")
         output=sns.displot(ISI, alpha=0.2, edgecolor=None, kde=True, color='blue', log_scale=True, kde_kws={'gridsize': 100, 'bw_adjust':kde_bandwidth})
         # Extract the line values

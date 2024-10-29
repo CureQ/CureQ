@@ -3,6 +3,8 @@ import numpy as np
 import plotly.graph_objects as go
 from functools import partial
 from KDEpy import FFTKDE
+from matplotlib.figure import Figure
+from matplotlib.gridspec import GridSpec
 
 '''This function will calculate a 3d guassian kernel'''
 def K(x, H):
@@ -107,12 +109,21 @@ def well_electrodes_kde(outputpath,         # Where to find the spike informatio
     data_time=measurements/hertz
 
     # Create matplotlib figure
-    fig, ax = plt.subplots(electrode_amnt, 1, sharex=True, sharey=True)
+    fig = Figure()
+    
+    gs = GridSpec(electrode_amnt, 1, figure=fig)
+    axes=[]
 
+    first_iteration=True
     # Loop through all electrodes
-    for electrode in range(electrode_amnt):
+    for electrode in range(1, electrode_amnt+1):
+        if first_iteration:
+            ax = fig.add_subplot(gs[electrode_amnt-electrode])
+            first_iteration=False
+        else:
+            ax = fig.add_subplot(gs[electrode_amnt-electrode], sharex=axes[0], sharey=axes[0])
         # Load in the spike data and create a KDE using KDEpy for each well
-        spikedata=np.load(f'{spikepath}/well_{well}_electrode_{electrode+1}_spikes.npy')
+        spikedata=np.load(f'{spikepath}/well_{well}_electrode_{electrode}_spikes.npy')
         if len(spikedata[:,0])>0:
             y = FFTKDE(bw=bandwidth, kernel='gaussian').fit(spikedata[:,0]).evaluate(grid_points=np.arange(0, data_time, 0.001))
             y=np.array(y)*len(spikedata[:,0])
@@ -121,11 +132,13 @@ def well_electrodes_kde(outputpath,         # Where to find the spike informatio
             x=np.arange(0, data_time, 0.001)
             y=np.zeros(len(x))
         # Plot the KDE and give the subplot a label
-        ax[electrode].plot(x,y)
-        ax[electrode].set_ylabel(f"E: {electrode+1}")
+        ax.plot(x,y)
+        ax.set_ylabel(f"E: {electrode}")
+        ax.set_xlim([0, measurements/hertz])
+        axes.append(ax)
     # Plot layout
-    ax[-1].set_xlabel("Time in seconds")
-    ax[0].set_xlim([0, measurements/hertz])
-    ax[0].set_title(f"Well: {well} activity")
+    axes[-1].set_xlabel("Time in seconds")
+    axes[0].set_xlim([0, measurements/hertz])
+    axes[0].set_title(f"Well: {well} activity")
     
     return fig

@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
+import copy
 
 '''Spike validation - noisebased'''
 def spike_validation(data,                      # Raw data from particular electrode
@@ -12,7 +13,6 @@ def spike_validation(data,                      # Raw data from particular elect
                      amplitude_drop,            # How much a spike will have to drop/rise
                      plot_electrodes,           # If true, returns a matplotlib figure of the spike detection/validation process. Used for the GUI
                      electrode_amnt,            # How many electrodes per well
-                     heightexception,           # Height above which spikes do not have to be validated anymore
                      max_drop_amount,           # Maximum amount a spike can be required to drop/rise
                      outputpath,                # Path where to save the spike information
                      savedata=True,             # Whether to save the spike information or not
@@ -69,56 +69,62 @@ def spike_validation(data,                      # Raw data from particular elect
         # If a spike has been found, set all values for in the refractory period to false
         spikes[j+1:buffer]=False
 
-    spikes_before_DMP=spikes.copy()
     time_seconds=np.arange(0, data.shape[0]/hertz, 1/hertz)
 
     '''Spike validation - check if the threshold crossing is not just noise'''
     # The exit time in amount of samples, used to establish the window around a spike
     exit_time = round(exit_time_s * hertz)
 
+    surrounding_noise_window=0.010  # 10 ms window around the spike
+    surrounding_noise_window_samples=int(0.010*hertz)
     loopvalues=np.nonzero(spikes)[0]
     boxheights=[]
 
-    # Iterate over all the spikes
-    for j in loopvalues:
-        # Check if there is a window of data to be checked before and after the spike. If the spike happens too close to the start/end of the measurement-
-        # it cannot be confirmed, and will be removed.
-        if j+exit_time+spikeduration_samples>data.shape[0]:
-            spikes[j]=False
-        elif j-exit_time-spikeduration_samples<0:
-            spikes[j]=False
-        # The spike does not happen too close to the beginning or end of the measurement, so we can validate it
-        else:
-            # Determine the amount that the spike has to drop, based on the noise level surrounding the spike
-            # Calculate the noise level around the spike, done by taking a +-refractory period window around the spike 
-            noise_left=data[j-spikeduration_samples-exit_time:j-exit_time]
-            noise_right=data[j+exit_time:j+spikeduration_samples+exit_time]
+    spikes_before_DMP=copy.deepcopy(spikes)
 
-            # Calculate the RMS of the surrounding noise
-            noise_surround=np.append(noise_left, noise_right)
-            drop_amount=amplitude_drop*(np.sqrt(np.mean(noise_surround**2)))
-
-            # The amount a spike has to drop should not exceed max_drop_amount*threshold
-            if drop_amount>max_drop_amount*threshold:
-                drop_amount=max_drop_amount*threshold
-
-            # Array for visualization later
-            boxheights.append(drop_amount)
-
-            # Apply the validation method by checking whether the spike signal has any values below or above the 'box'
-            # Spikes that have an amplitude of heightexception*threshold, do not have to drop amplitude in a short time
-            
-            # For positive spikes
-            if data[j]>0:
-                if not(np.min(data[j-exit_time:j+exit_time+1])<(data[j]-drop_amount)):
-                    if not(data[j]>heightexception*threshold):
-                        spikes[j]=False
+    if amplitude_drop != 0:
+        # Iterate over all the spikes
+        for j in loopvalues:
+            # If the spikes i stoo close to the start or end of the measurement, in cannot be validated and will be removed
+            if j+exit_time+surrounding_noise_window_samples>data.shape[0]:
+                spikes[j]=False
+                boxheights.append(0)
+            elif j-exit_time-surrounding_noise_window_samples<0:
+                spikes[j]=False
+                boxheights.append(0)
+            # The spike does not happen too close to the beginning or end of the measurement, so we can validate it
             else:
-            # For negative spikes
-                if not(np.max(data[j-exit_time:j+exit_time+1])>(data[j]+drop_amount)):
-                    if not(data[j]<heightexception*-1*threshold):
+                # Determine the amount that the spike has to drop, based on the noise level surrounding the spike
+                # Calculate the noise level around the spike, done by taking a +-refractory period window around the spike 
+                noise_left=data[j-surrounding_noise_window_samples-exit_time:j-exit_time]
+                noise_right=data[j+exit_time:j+surrounding_noise_window_samples+exit_time]
+
+                # Only use values between the threshold
+                noise_surround=np.append(noise_left, noise_right)
+                noise_surround = noise_surround[(noise_surround > -threshold) & (noise_surround < threshold)]
+
+                # Calculate the RMS of the surrounding noise
+                drop_amount=amplitude_drop*(np.sqrt(np.mean(noise_surround**2)))
+
+                # The amount a spike has to drop should not exceed max_drop_amount*threshold
+                if drop_amount>max_drop_amount*threshold:
+                    drop_amount=max_drop_amount*threshold
+
+                # Array for visualization later
+                boxheights.append(drop_amount)
+
+                # Apply the validation method by checking whether the spike signal has any values below or above the 'box'
+                # Spikes that have an amplitude of heightexception*threshold, do not have to drop amplitude in a short time
+                
+                # For positive spikes
+                if data[j]>0:
+                    if not(np.min(data[j-exit_time:j+exit_time+1])<(data[j]-drop_amount)):
                         spikes[j]=False
-            
+                else:
+                # For negative spikes
+                    if not(np.max(data[j-exit_time:j+exit_time+1])>(data[j]+drop_amount)):
+                        spikes[j]=False
+                
     # Calculate MEA electrode
     electrode = i % electrode_amnt + 1
     well = round(i / electrode_amnt + 0.505)
@@ -157,16 +163,16 @@ def spike_validation(data,                      # Raw data from particular elect
                     # Plot green boxes at the accepted spikes
                     rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], data[j]), exit_time*(1/hertz)*2, boxheight, edgecolor='green', facecolor='none', linewidth=0.5, zorder=1))
                     # Noise window left
-                    rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], -threshold), -(spikeduration), threshold*2, edgecolor='violet', facecolor='violet', linewidth=0.5, alpha=0.5))
+                    rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], -threshold), -(surrounding_noise_window), threshold*2, edgecolor='violet', facecolor='violet', linewidth=0.5, alpha=0.05))
                     # Noise window right
-                    rawdataplot.add_patch(Rectangle((time_seconds[j+exit_time], -threshold), spikeduration, threshold*2, edgecolor='violet', facecolor='violet', linewidth=0.5, alpha=0.5))
+                    rawdataplot.add_patch(Rectangle((time_seconds[j+exit_time], -threshold), surrounding_noise_window, threshold*2, edgecolor='violet', facecolor='violet', linewidth=0.5, alpha=0.05))
                 else:
                     # Plot red boxes at the rejected spikes
                     rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], data[j]), exit_time*(1/hertz)*2, boxheight, edgecolor='red', facecolor='none', linewidth=0.5, zorder=1))
                     # Noise window left
-                    rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], -threshold), -(spikeduration), threshold*2, edgecolor='violet', facecolor='violet', linewidth=0.5, alpha=0.5))
+                    rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], -threshold), -(surrounding_noise_window), threshold*2, edgecolor='violet', facecolor='violet', linewidth=0.5, alpha=0.05))
                     # Noise window right
-                    rawdataplot.add_patch(Rectangle((time_seconds[j+exit_time], -threshold), spikeduration, threshold*2, edgecolor='violet', facecolor='violet', linewidth=0.5, alpha=0.5))
+                    rawdataplot.add_patch(Rectangle((time_seconds[j+exit_time], -threshold), surrounding_noise_window, threshold*2, edgecolor='violet', facecolor='violet', linewidth=0.5, alpha=0.05))
                 k+=1
 
         # Plot layout

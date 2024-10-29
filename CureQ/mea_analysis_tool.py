@@ -15,6 +15,8 @@ from tkinter import *
 import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog, messagebox
+from importlib.metadata import version
+import traceback
 
 # External libraries
 import pandas as pd
@@ -91,7 +93,7 @@ def MEA_GUI():
         print(error)
 
 
-    root.title("CureQ_MEA-analysis_tool")
+    root.title(f"CureQ MEA analysis tool - Version: {version('CureQ')}")
 
     # Define global variables and default values
     global filename
@@ -324,12 +326,10 @@ def MEA_GUI():
         validation_method = dropdown_var.get()
         if validation_method=='DMP_noisebased':
             exittimeinput.configure(state="enabled")
-            heightexceptioninput.configure(state="enabled")
             maxheightinput.configure(state="enabled")
             amplitudedropinput.configure(state="enabled")
         else:
             exittimeinput.configure(state="disabled")
-            heightexceptioninput.configure(state="disabled")
             maxheightinput.configure(state="disabled")
             amplitudedropinput.configure(state="disabled")
         
@@ -357,26 +357,19 @@ def MEA_GUI():
     amplitudedropinput=ttk.Entry(master=validationparameters)
     amplitudedropinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
 
-    heightexceptionlabel=ttk.Label(master=validationparameters, text="Height exception:", font=(font,10))
-    heightexceptionlabel.grid(row=4, column=0, padx=10, pady=10, sticky='w')
-    heightexceptiontooltip = Tooltip(heightexceptionlabel, 'If a spike reaches an amplitude that is a more than the height exception * the threshold,\nthe spike will always be registered')
-    heightexceptionlabel.bind("<Enter>", heightexceptiontooltip.show_tooltip)
-    heightexceptionlabel.bind("<Leave>", heightexceptiontooltip.hide_tooltip)
-    heightexceptioninput=ttk.Entry(master=validationparameters)
-    heightexceptioninput.grid(row=4, column=1, padx=10, pady=10, sticky='w')
-
     maxheightlabel=ttk.Label(master=validationparameters, text="Max drop amount:", font=(font,10))
-    maxheightlabel.grid(row=5, column=0, padx=10, pady=10, sticky='w')
+    maxheightlabel.grid(row=4, column=0, padx=10, pady=10, sticky='w')
     maxheighttooltip = Tooltip(maxheightlabel, 'Multiplied with the threshold.\nThe maximum height a spike can be required to drop in amplitude in the set timeframe')
     maxheightlabel.bind("<Enter>", maxheighttooltip.show_tooltip)
     maxheightlabel.bind("<Leave>", maxheighttooltip.hide_tooltip)
     maxheightinput=ttk.Entry(master=validationparameters)
-    maxheightinput.grid(row=5, column=1, padx=10, pady=10, sticky='w')
+    maxheightinput.grid(row=4, column=1, padx=10, pady=10, sticky='w')
 
     def parameter_to_main_func():
         # Check if the user has selected a file
         if filename == "":
             tk.messagebox.showerror(title='Error', message='No file has been selected yet, please select a file')
+            return
 
         # save parameters in global values
         global wells
@@ -395,7 +388,6 @@ def MEA_GUI():
         global minspikes_burst
         global max_threshold
         global default_threshold
-        global heightexception
         global max_drop_amount
         global amplitude_drop_sd
         global stdevmultiplier
@@ -407,6 +399,7 @@ def MEA_GUI():
         global remove_inactive_electrodes
         global cut_data_bool
         global parts
+        global global_nbd_kde_bandwidth
         # Save parameters
         try:
             hertz=int(hertzinput.get())
@@ -421,27 +414,34 @@ def MEA_GUI():
             minspikes_burst=int(minspikesinput.get())
             max_threshold=float(maxisiinput.get())
             default_threshold=float(defaultthinput.get())
-            heightexception=float(heightexceptioninput.get())
             max_drop_amount=float(maxheightinput.get())
             amplitude_drop_sd=float(amplitudedropinput.get())
             stdevmultiplier=float(stdevmultiplierinput.get())
             RMSmultiplier=float(RMSmultiplierinput.get())
             min_channels=float(minchannelsinput.get())
             threshold_method=networkth_var.get()
+            global_nbd_kde_bandwidth=float(nbd_kde_bandwidth_input.get())
             remove_inactive_electrodes=bool(removeinactivevar.get())
             activity_threshold=float(activitythinput.get())
             threshold_portion=float(thresholdportioninput.get())
             cut_data_bool=bool(splitdatavar.get())
             parts=int(splitdatapartsinput.get())
+
             main_frame.pack(fill='both', expand=True)
             parameterframe.pack_forget()
         except Exception as error:
-            print(error)
+            traceback.print_exc()
             tk.messagebox.showerror(title='Error', message='Certain parameters could not be converted to the correct datatype (e.g. int or float). Please check if every parameter has the correct values')
 
     parameter_to_main=ttk.Button(master=parameterframe.interior, text="Save parameters and return", command=parameter_to_main_func)
     parameter_to_main.grid(row=3, column=0, padx=10, pady=(10,20), sticky='nsew')
 
+    def parameter_to_main_func_no_save():
+        main_frame.pack(fill='both', expand=True)
+        parameterframe.pack_forget()
+
+    parameter_to_main_no_save=ttk.Button(master=parameterframe.interior, text="Do not save parameters and return to main menu", command=parameter_to_main_func_no_save)
+    parameter_to_main_no_save.grid(row=4, column=0, padx=10, pady=(0, 0), sticky='nsew', columnspan=3)
 
     # Set up all the burst detection parameters
     burstdetectionparameters=ttk.LabelFrame(parameterframe.interior, text='Burst Detection', style="Custom.TLabelframe")
@@ -507,11 +507,20 @@ def MEA_GUI():
 
     # Setup the thresholding method
     networkth_var = tk.StringVar(networkburstdetectionparameters)
-    nwthoptions = ['Yen', 'Otsu']
+    nwthoptions = ['Yen', 'Otsu', 'Li', 'Isodata', 'Mean', 'Minimum', 'Triangle']
     dropdownlabel = ttk.Label(master=networkburstdetectionparameters, text="Thresholding method:", font=(font,10))
     dropdownlabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
     dropdown_menu = ttk.OptionMenu(networkburstdetectionparameters, networkth_var, nwthoptions[0], *nwthoptions)
     dropdown_menu.grid(row=1, column=1, padx=10, pady=10, sticky='nesw')
+
+    # Setup the network burst detection KDE bandwidth
+    nbd_kde_bandwidth_label=ttk.Label(master=networkburstdetectionparameters, text="KDE Bandwidth:", font=(font,10))
+    nbd_kde_bandwidth_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+    nbd_kde_bandwidth_tooltip = Tooltip(nbd_kde_bandwidth_label, 'Define the bandwidth value that should be used when creating\nthe kernel density estimate for the network burst detection')
+    nbd_kde_bandwidth_label.bind("<Enter>", nbd_kde_bandwidth_tooltip.show_tooltip)
+    nbd_kde_bandwidth_label.bind("<Leave>", nbd_kde_bandwidth_tooltip.hide_tooltip)
+    nbd_kde_bandwidth_input=ttk.Entry(master=networkburstdetectionparameters)
+    nbd_kde_bandwidth_input.grid(row=2, column=1, padx=10, pady=10, sticky='w')
 
     # Set up all the output parameters
     outputparameters=ttk.LabelFrame(parameterframe.interior, text='Output/data manipulation', style="Custom.TLabelframe")
@@ -597,26 +606,25 @@ def MEA_GUI():
         validation_method = dropdown_var.get()
         if validation_method=='DMP_noisebased':
             exittimeinput.configure(state="enabled")
-            heightexceptioninput.configure(state="enabled")
             maxheightinput.configure(state="enabled")
             amplitudedropinput.configure(state="enabled")
         else:
             exittimeinput.configure(state="disabled")
-            heightexceptioninput.configure(state="disabled")
             maxheightinput.configure(state="disabled")
             amplitudedropinput.configure(state="disabled")
 
         # reset the entry labels
         list=[lowcutoffinput, highcutoffinput, orderinput, thresholdportioninput, stdevmultiplierinput, RMSmultiplierinput, refractoryperiodinput, exittimeinput,
-            amplitudedropinput, heightexceptioninput, maxheightinput, minspikesinput, defaultthinput, maxisiinput, isikdebwinput, smallernbinput,
-            minchannelsinput, activitythinput, splitdatapartsinput]
-        defaults=[200, 3500, 2, 0.1, 5, 5, 0.001, 0.00024, 5, 1.5, 2, 5, 100, 1000, 1, 10, 0.5, 0.1, 10]
+            amplitudedropinput, maxheightinput, minspikesinput, defaultthinput, maxisiinput, isikdebwinput, smallernbinput,
+            minchannelsinput, activitythinput, splitdatapartsinput, nbd_kde_bandwidth_input]
+        defaults=[200, 3500, 2, 0.1, 5, 5, 0.001, 0.001, 5, 2, 5, 100, 1000, 1, 10, 0.5, 0.1, 10, 0.05]
         counter=0
         for parameter in list:
             parameter.delete(0, END)
             parameter.insert(0, defaults[counter])
             counter+=1
         hertzinput.delete(0, END)
+        electrodeamntinput.delete(0, END)
         if splitdatavar.get():
             splitdatapartsinput.configure(state='enabled')
         else:
@@ -632,7 +640,7 @@ def MEA_GUI():
         parametersfile = filedialog.askopenfilename(filetypes=[("Parameter file", "*.json")])
         parameters=json.load(open(parametersfile))
         # Enable all the entries so we can set the correct values
-        entries=[activitythinput, exittimeinput, heightexceptioninput, maxheightinput, amplitudedropinput, splitdatapartsinput]
+        entries=[activitythinput, exittimeinput, maxheightinput, amplitudedropinput, splitdatapartsinput]
         for entry in entries:
             entry.configure(state="enabled")        
         # Set all the parameters to the values of the imported file
@@ -659,8 +667,6 @@ def MEA_GUI():
         exittimeinput.insert(0, parameters["exit time"])
         amplitudedropinput.delete(0, END)
         amplitudedropinput.insert(0, parameters["drop amplitude"])
-        heightexceptioninput.delete(0, END)
-        heightexceptioninput.insert(0, parameters["height exception"])
         maxheightinput.delete(0, END)
         maxheightinput.insert(0, parameters["max drop amount"])
         minspikesinput.delete(0, END)
@@ -683,6 +689,8 @@ def MEA_GUI():
         splitdatapartsinput.delete(0, END)
         splitdatapartsinput.insert(0, parameters["parts"])
         multiprocessingvar.set(bool(parameters["use multiprocessing"]))
+        nbd_kde_bandwidth_input.delete(0, END)
+        nbd_kde_bandwidth_input.insert(0, parameters["nbd_kde_bandwidth"])
             
         # Update other parameter availability
         if removeinactivevar.get():
@@ -693,12 +701,10 @@ def MEA_GUI():
         validation_method = dropdown_var.get()
         if validation_method=='DMP_noisebased':
             exittimeinput.configure(state="enabled")
-            heightexceptioninput.configure(state="enabled")
             maxheightinput.configure(state="enabled")
             amplitudedropinput.configure(state="enabled")
         else:
             exittimeinput.configure(state="disabled")
-            heightexceptioninput.configure(state="disabled")
             maxheightinput.configure(state="disabled")
             amplitudedropinput.configure(state="disabled")
 
@@ -719,23 +725,23 @@ def MEA_GUI():
         if multiprocessingvar.get():
             try:
                 analyse_wells(fileadress=filename, wells=wells, hertz=hertz, validation_method=validation_method, low_cutoff=low_cutoff, high_cutoff=high_cutoff, order=order, spikeduration=spikeduration,
-                        exit_time_s=exit_time_s, electrode_amnt=electrode_amnt, kde_bandwidth=kde_bandwidth, smallerneighbours=smallerneighbours, minspikes_burst=minspikes_burst,
-                        max_threshold=max_threshold, default_threshold=default_threshold, heightexception=heightexception, max_drop_amount=max_drop_amount, amplitude_drop_sd=amplitude_drop_sd,
-                        stdevmultiplier=stdevmultiplier, RMSmultiplier=RMSmultiplier, min_channels=min_channels, threshold_method=threshold_method, activity_threshold=activity_threshold,
+                        exit_time_s=exit_time_s, electrode_amnt=electrode_amnt, bd_kde_bandwidth=kde_bandwidth, smallerneighbours=smallerneighbours, minspikes_burst=minspikes_burst,
+                        max_threshold=max_threshold, default_threshold=default_threshold, max_drop_amount=max_drop_amount, amplitude_drop_sd=amplitude_drop_sd,
+                        stdevmultiplier=stdevmultiplier, RMSmultiplier=RMSmultiplier, min_channels=min_channels, threshold_method=threshold_method, nbd_kde_bandwidth=global_nbd_kde_bandwidth, activity_threshold=activity_threshold,
                         threshold_portion=threshold_portion, remove_inactive_electrodes=remove_inactive_electrodes, cut_data_bool=cut_data_bool, parts=parts, use_multiprocessing=True)
             except Exception as error:
-                print(error)
+                traceback.print_exc()
                 tk.messagebox.showerror(title='Error', message='Something went wrong with analyzing the data, please check if all the parameters are set correctly\nAlternatively, try analyzing the data with multiprocessing turned off')
                 close_progressbar()
         else:
             try:
                 analyse_wells(fileadress=filename, wells=wells, hertz=hertz, validation_method=validation_method, low_cutoff=low_cutoff, high_cutoff=high_cutoff, order=order, spikeduration=spikeduration,
-                            exit_time_s=exit_time_s, electrode_amnt=electrode_amnt, kde_bandwidth=kde_bandwidth, smallerneighbours=smallerneighbours, minspikes_burst=minspikes_burst,
-                            max_threshold=max_threshold, default_threshold=default_threshold, heightexception=heightexception, max_drop_amount=max_drop_amount, amplitude_drop_sd=amplitude_drop_sd,
-                            stdevmultiplier=stdevmultiplier, RMSmultiplier=RMSmultiplier, min_channels=min_channels, threshold_method=threshold_method, activity_threshold=activity_threshold,
+                            exit_time_s=exit_time_s, electrode_amnt=electrode_amnt, bd_kde_bandwidth=kde_bandwidth, smallerneighbours=smallerneighbours, minspikes_burst=minspikes_burst,
+                            max_threshold=max_threshold, default_threshold=default_threshold, max_drop_amount=max_drop_amount, amplitude_drop_sd=amplitude_drop_sd,
+                            stdevmultiplier=stdevmultiplier, RMSmultiplier=RMSmultiplier, min_channels=min_channels, threshold_method=threshold_method, nbd_kde_bandwidth=global_nbd_kde_bandwidth, activity_threshold=activity_threshold,
                             threshold_portion=threshold_portion, remove_inactive_electrodes=remove_inactive_electrodes, cut_data_bool=cut_data_bool, parts=parts, use_multiprocessing=False)
             except Exception as error:
-                print(error)
+                traceback.print_exc()
                 tk.messagebox.showerror(title='Error', message='Something went wrong with analyzing the data, please check if all the parameters are set correctly')
                 close_progressbar()
 
@@ -1306,7 +1312,7 @@ def MEA_GUI():
 
     def plot_network_bursts(master, parameters, well):
         global resultsfolder
-        fig=network_burst_detection(outputpath=resultsfolder, wells=[well], electrode_amnt=parameters["electrode amount"], measurements=parameters["measurements"], hertz=parameters["sampling rate"], min_channels=parameters["min channels"], threshold_method=parameters["thresholding method"], plot_electrodes=True, savedata=False, save_figures=False)
+        fig=network_burst_detection(outputpath=resultsfolder, wells=[well], electrode_amnt=parameters["electrode amount"], measurements=parameters["measurements"], hertz=parameters["sampling rate"], min_channels=parameters["min channels"], threshold_method=parameters["thresholding method"], bandwidth=parameters["nbd_kde_bandwidth"], plot_electrodes=True, savedata=False, save_figures=False)
         if theme=='dark':
             bgcolor='#1c1c1c'
             axiscolour='#ecf3fa'
@@ -1415,16 +1421,23 @@ def MEA_GUI():
         min_channels_nb_entry.grid(row=0, column=1, sticky='w', padx=10, pady=10)
         
         th_method_nb_var = tk.StringVar(nb_settings_frame)
-        nwthoptions_nb = ['Yen', 'Otsu']
+        nwthoptions_nb = ['Yen', 'Otsu', 'Li', 'Isodata', 'Mean', 'Minimum', 'Triangle']
         th_method_nb = ttk.Label(master=nb_settings_frame, text="Thresholding method:")
-        th_method_nb.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        th_method_nb.grid(row=1, column=0, padx=10, pady=10, sticky='nesw')
         th_method_dropdown_nb = ttk.OptionMenu(nb_settings_frame, th_method_nb_var, nwthoptions_nb[0], *nwthoptions_nb)
         th_method_dropdown_nb.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+
+        nbd_kde_bandwidth_nb_label=ttk.Label(master=nb_settings_frame, text="KDE Bandwidth:").grid(row=2, column=0, sticky='w', padx=10, pady=10)
+        nbd_kde_bandwidth_nb_entry=ttk.Entry(master=nb_settings_frame)
+        nbd_kde_bandwidth_nb_entry.grid(row=2, column=1, sticky='w', padx=10, pady=10)
 
         def nb_default_values():
             th_method_nb_var.set(parameters["thresholding method"])
             min_channels_nb_entry.delete(0,END)
             min_channels_nb_entry.insert(0,parameters["min channels"])
+            nbd_kde_bandwidth_nb_entry.delete(0, END)
+            nbd_kde_bandwidth_nb_entry.insert(0, parameters["nbd_kde_bandwidth"])
+            
 
         nb_default_values()
 
@@ -1432,6 +1445,7 @@ def MEA_GUI():
             temp_parameters=copy.deepcopy(parameters)
             temp_parameters["min channels"]=float(min_channels_nb_entry.get())
             temp_parameters["thresholding method"]=str(th_method_nb_var.get())
+            temp_parameters["nbd_kde_bandwidth"]=float(nbd_kde_bandwidth_nb_entry.get())
 
             plot_network_bursts(master=network_burst_plot_frame, parameters=temp_parameters, well=well)
 
@@ -1440,10 +1454,10 @@ def MEA_GUI():
             nb_update_plot()
 
         nb_update_plot_button=ttk.Button(master=nb_settings_frame, text="Update plot", command=nb_update_plot)
-        nb_update_plot_button.grid(row=2, column=0, sticky='nesw', padx=10, pady=10)
+        nb_update_plot_button.grid(row=3, column=0, sticky='nesw', padx=10, pady=10)
 
         nb_reset_button=ttk.Button(master=nb_settings_frame, text="Reset", command=nb_reset)
-        nb_reset_button.grid(row=2, column=1, sticky='nesw', padx=10, pady=10)
+        nb_reset_button.grid(row=3, column=1, sticky='nesw', padx=10, pady=10)
 
         '''Electrode activity'''
         electrode_activity_plot_frame=ttk.Frame(master=electrode_activity)
@@ -1491,18 +1505,27 @@ def MEA_GUI():
         global raw_data
         # Check if the correct files have been selected
         if os.path.exists(f"{resultsfolder}/burst_values") and os.path.exists(f"{resultsfolder}/spike_values") and os.path.exists(f"{resultsfolder}/network_data"):
+            # Load the parameters
+            try:
+                parameters=open(f"{resultsfolder}/parameters.json")
+                parameters=json.load(parameters)
+            except Exception as error:
+                traceback.print_exc()
+                tk.messagebox.showerror(title='Error', message='Could not load in the results, please make sure you have selected the correct folder')
+                return
+            # Load the raw data
             try:
                 loaddatapopup=tk.Toplevel(resultfileframe)
                 loaddatapopup.title('Progress')
                 try:
                     loaddatapopup.iconbitmap(os.path.join(application_path))
                 except Exception as error:
-                    print(error)
+                    traceback.print_exc()
                 progressinfo=ttk.Label(master=loaddatapopup, text='Loading in the raw data...')
                 progressinfo.grid(row=0, column=0, pady=10, padx=20)
                 raw_data=openHDF5(filename)
             except Exception as error:
-                print(error)
+                traceback.print_exc()
                 tk.messagebox.showerror(title='Error', message='Could not load in the raw data, please make sure you have selected the correct file')
                 loaddatapopup.destroy()
                 return
@@ -1512,9 +1535,6 @@ def MEA_GUI():
         global feature_filepath
         feature_filepath=f"{resultsfolder}/Features.csv"
         choose_featurefile_button.configure(text=feature_filepath)
-        # Load the parameters
-        parameters=open(f"{resultsfolder}/parameters.json")
-        parameters=json.load(parameters)
         electrode_wellbuttons=create_wellbuttons(choose_well, raw_data.shape[0]/parameters["electrode amount"], well_button_pressed)
         whole_wellbuttons=create_wellbuttons(choose_well_nw, raw_data.shape[0]/parameters["electrode amount"], network_visualization)
         electrode_buttons=create_electrodebuttons(choose_electrode, parameters["electrode amount"], electrode_button_pressed)
@@ -1535,7 +1555,7 @@ def MEA_GUI():
     def plot_single_electrode(master, parameters, electrode_nr, plot_rectangle):
         electrode_data=butter_bandpass_filter(raw_data[electrode_nr], lowcut=parameters["low cutoff"], highcut=parameters["high cutoff"], fs=parameters["sampling rate"], order=parameters["order"])
         threshold=fast_threshold(electrode_data, hertz=parameters["sampling rate"], stdevmultiplier=parameters["standard deviation multiplier"], RMSmultiplier=parameters["rms multiplier"], threshold_portion=parameters["threshold portion"])
-        fig=spike_validation(data=electrode_data, electrode=electrode_nr, threshold=threshold, hertz=parameters["sampling rate"], spikeduration=parameters["refractory period"], exit_time_s=parameters["exit time"], amplitude_drop=parameters["drop amplitude"], plot_electrodes=True, electrode_amnt=parameters["electrode amount"], heightexception=parameters["height exception"], max_drop_amount=parameters["max drop amount"], outputpath='', savedata=False, plot_rectangles=plot_rectangle)
+        fig=spike_validation(data=electrode_data, electrode=electrode_nr, threshold=threshold, hertz=parameters["sampling rate"], spikeduration=parameters["refractory period"], exit_time_s=parameters["exit time"], amplitude_drop=parameters["drop amplitude"], plot_electrodes=True, electrode_amnt=parameters["electrode amount"], max_drop_amount=parameters["max drop amount"], outputpath='', savedata=False, plot_rectangles=plot_rectangle)
         # Check which colorscheme we have to use
         if theme=='dark':
             bgcolor='#1c1c1c'
@@ -1659,7 +1679,6 @@ def MEA_GUI():
             else:
                 temp_parameters['exit time']=float(exittime_ew_entry.get())
                 temp_parameters['drop amplitude']=float(dropamplitude_ew_entry.get())
-                temp_parameters['height exception']=float(heightexc_ew_entry.get())
                 temp_parameters['max drop amount']=float(maxdrop_ew_entry.get())
 
             # Plot the electrode with the new parameters
@@ -1710,13 +1729,11 @@ def MEA_GUI():
             validation_method = validation_method_var.get()
             if validation_method=='DMP_noisebased':
                 exittime_ew_entry.configure(state="enabled")
-                heightexc_ew_entry.configure(state="enabled")
                 maxdrop_ew_entry.configure(state="enabled")
                 dropamplitude_ew_entry.configure(state="enabled")
                 plot_rectangle_ew_entry.configure(state="enabled")
             else:
                 exittime_ew_entry.configure(state="disabled")
-                heightexc_ew_entry.configure(state="disabled")
                 maxdrop_ew_entry.configure(state="disabled")
                 dropamplitude_ew_entry.configure(state="disabled")
                 plot_rectangle.set(False)
@@ -1738,23 +1755,20 @@ def MEA_GUI():
         exittime_label=ttk.Label(master=val_options_ew_frame, text='Exit time', font=(font,10)).grid(row=2, column=0, pady=10, padx=10, sticky='w')
         exittime_ew_entry=ttk.Entry(master=val_options_ew_frame)
         exittime_ew_entry.grid(row=2, column=1, pady=10, padx=10, sticky='w')
-        dropamplitude_label=ttk.Label(master=val_options_ew_frame, text='Drop amplitude', font=(font,10)).grid(row=3, column=0, pady=10, padx=10, sticky='w')
+        dropamplitude_label=ttk.Label(master=val_options_ew_frame, text='Drop amplitude', font=(font,10)).grid(row=0, column=2, pady=10, padx=10, sticky='w')
         dropamplitude_ew_entry=ttk.Entry(master=val_options_ew_frame)
-        dropamplitude_ew_entry.grid(row=3, column=1, pady=10, padx=10, sticky='w')
-        heightexc_label=ttk.Label(master=val_options_ew_frame, text='Height exception', font=(font,10)).grid(row=1, column=2, pady=10, padx=10, sticky='w')
-        heightexc_ew_entry=ttk.Entry(master=val_options_ew_frame)
-        heightexc_ew_entry.grid(row=1, column=3, pady=10, padx=10, sticky='w')
-        maxdrop_label=ttk.Label(master=val_options_ew_frame, text='Max drop amount', font=(font,10)).grid(row=2, column=2, pady=10, padx=10, sticky='w')
+        dropamplitude_ew_entry.grid(row=0, column=3, pady=10, padx=10, sticky='w')
+        maxdrop_label=ttk.Label(master=val_options_ew_frame, text='Max drop amount', font=(font,10)).grid(row=1, column=2, pady=10, padx=10, sticky='w')
         maxdrop_ew_entry=ttk.Entry(master=val_options_ew_frame)
-        maxdrop_ew_entry.grid(row=2, column=3, pady=10, padx=10, sticky='w')
+        maxdrop_ew_entry.grid(row=1, column=3, pady=10, padx=10, sticky='w')
         plot_rectangle_label=ttk.Label(master=val_options_ew_frame, text='Plot validation', font=(font,10))
-        plot_rectangle_label.grid(row=3, column=2, pady=10, padx=10, sticky='w')
+        plot_rectangle_label.grid(row=2, column=2, pady=10, padx=10, sticky='w')
         plot_rectangle_tooltip = Tooltip(plot_rectangle_label, 'Display the rectangles that have been used to validate the spikes\nWarning: Plotting these is computationally expensive and might take a while')
         plot_rectangle_label.bind("<Enter>", plot_rectangle_tooltip.show_tooltip)
         plot_rectangle_label.bind("<Leave>", plot_rectangle_tooltip.hide_tooltip)
         plot_rectangle=BooleanVar()
         plot_rectangle_ew_entry=ttk.Checkbutton(master=val_options_ew_frame, variable=plot_rectangle)
-        plot_rectangle_ew_entry.grid(row=3, column=3, pady=10, padx=10, sticky='w')
+        plot_rectangle_ew_entry.grid(row=2, column=3, pady=10, padx=10, sticky='w')
 
         # Insert the default values from the json in the entries
         def default_values():
@@ -1779,8 +1793,6 @@ def MEA_GUI():
             exittime_ew_entry.insert(0,parameters["exit time"])
             dropamplitude_ew_entry.delete(0,END)
             dropamplitude_ew_entry.insert(0,parameters["drop amplitude"])
-            heightexc_ew_entry.delete(0,END)
-            heightexc_ew_entry.insert(0,parameters["height exception"])
             maxdrop_ew_entry.delete(0,END)
             maxdrop_ew_entry.insert(0,parameters["max drop amount"])
             plot_rectangle.set(False)
@@ -1790,7 +1802,6 @@ def MEA_GUI():
         def reset():
             # First, enable all the possibly disabled entries so we can alter the values
             exittime_ew_entry.configure(state="enabled")
-            heightexc_ew_entry.configure(state="enabled")
             maxdrop_ew_entry.configure(state="enabled")
             dropamplitude_ew_entry.configure(state="enabled")
             plot_rectangle_ew_entry.configure(state="enabled")

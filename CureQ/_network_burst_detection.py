@@ -20,6 +20,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
                             hertz,              # Sampling rate
                             min_channels,       # Percentage of channels that should be active for a network burst
                             threshold_method,   # Method to determine the automatic threshold
+                            bandwidth,          # KDE bandwidth
                             plot_electrodes,    # Return plot or not
                             save_figures,       # Save plot in outputfolder or not
                             savedata=True       # Save network burst information or not
@@ -113,7 +114,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
         KDE_grid=np.arange(0, measurements/hertz, (1/hertz)*10)
         if len(spikes_for_kde)>0:
             # Create the KDE using the KDEpy library
-            y = FFTKDE(bw=0.1, kernel='gaussian').fit(spikes_for_kde).evaluate(grid_points=KDE_grid)
+            y = FFTKDE(bw=bandwidth, kernel='gaussian').fit(spikes_for_kde).evaluate(grid_points=KDE_grid)
             x=KDE_grid
             # Normalise the kde so it ranges from 0 to 1
             y = (y - np.min(y)) / (np.max(y) - np.min(y))
@@ -124,7 +125,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
         # Check if there are any single channel bursts, if there are none, there cannot be any network bursts and we can skip the network burst detection
         if len(burst_spikes_for_kde)>0:
             # Create the KDE from only spikes that are part of a burst using the KDEpy library
-            y = FFTKDE(bw=0.1, kernel='gaussian').fit(burst_spikes_for_kde).evaluate(grid_points=KDE_grid)
+            y = FFTKDE(bw=bandwidth, kernel='gaussian').fit(burst_spikes_for_kde).evaluate(grid_points=KDE_grid)
             x=KDE_grid
             # Normalise the kde so it ranges from 0 to 1
             y = (y - np.min(y)) / (np.max(y) - np.min(y))
@@ -132,10 +133,20 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
             ax[3].plot(x,y)
 
             # Determine the threshold using either Yen or Otsu automatic thresholding
-            if threshold_method=='yen' or threshold_method=='Yen':
-                threshold=filters.threshold_yen(y, nbins=1000)
-            elif threshold_method=='otsu' or threshold_method=='Otsu':
+            if threshold_method=='Yen' or threshold_method=='yen':
+                threshold=filters.threshold_minimum(y, nbins=1000)
+            elif threshold_method=='Otsu' or threshold_method=='otsu':
                 threshold=filters.threshold_otsu(y, nbins=1000)
+            elif threshold_method=='Li' or threshold_method=='li':
+                threshold=filters.threshold_li(y)
+            elif threshold_method=='Isodata' or threshold_method=='isodata':
+                threshold=filters.threshold_isodata(y, nbins=1000)
+            elif threshold_method=='Mean' or threshold_method=='mean':
+                threshold=filters.threshold_mean(y)
+            elif threshold_method=='Minimum' or threshold_method=='minimum':
+                threshold=filters.threshold_minimum(y, nbins=1000)
+            elif threshold_method=='Triangle' or threshold_method=='triangle':
+                threshold=filters.threshold_triangle(y, nbins=1000)
             else:
                 raise ValueError(f"\"{threshold_method}\" is not a valid thresholding method")
             
@@ -209,24 +220,21 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
                 # Give each network burst a number (identifier)
                 network_burst_cores[i].append(i)
             
-            # Remove overlapping bursts
+            # Fix overlapping bursts
             overlapping_bursts=[]
             # Loop through all the bursts
             for i in range(len(network_burst_cores)-1):
                 # Check if there is overlap with the next burst
                 if overlap(network_burst_cores[i][2:4], network_burst_cores[i+1][2:4]):
-                    # Mark the shortest burst for removal
-                    if (network_burst_cores[i][1]-network_burst_cores[i][0])<(network_burst_cores[i+1][1]-network_burst_cores[i+1][0]):
-                        overlapping_bursts.append(i)
-                    else:
-                        overlapping_bursts.append(i+1)
+                    overlapping_bursts.append(i)
+                    overlapping_bursts.append(i+1)
+            '''New method - remove outer edges of overlapping bursts'''
             if len(overlapping_bursts)>0:
-                # Remove the overlapping bursts (we do this outside of the loop to not disturb the loop)
-                for j in sorted(overlapping_bursts, reverse=True):
-                    del network_burst_cores[j]
+                for j in overlapping_bursts:
+                    network_burst_cores[j][3] = network_burst_cores[j][1]
+                    network_burst_cores[j][3] = network_burst_cores[j][2]
                 # Remove participating bursts with the removed ID
                 participating_bursts=np.array(participating_bursts)[~np.isin(np.array(participating_bursts)[:,0],overlapping_bursts)]
-
             total_network_burst=(network_burst_cores)
             # Highlight the burst cores in every graph
             for graph in ax[:]:
