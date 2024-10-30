@@ -18,7 +18,7 @@ function raw_to_hdf(filePath)
 
     % Create a dataset with the same naming conventions as MCS machines
     % This should allow other tools that read MCS data to read this file
-    % aswell, given that they don't have other requirements that the file
+    % as well, given that they don't have other requirements that the file
     % must adhere to
     dataset_name='/Data/Recording_0/AnalogStream/Stream_0/ChannelData';
     % Alternatively, one can change the interal file structure by
@@ -36,7 +36,7 @@ function raw_to_hdf(filePath)
     for verticalwells = 1:mea_size(1)
         for horizontalwells = 1:mea_size(2)
             % For some reason, the rows are counted from bottom to top in
-            % Axis software, so i do the same here
+            % Axis software, so we do the same here
             for verticalelectrodes = mea_size(3):-1:1
                 for horizontalelectrodes = 1:mea_size(4)
                     % Axion indexing order: Vertical wells, Horizontal wells,
@@ -44,17 +44,39 @@ function raw_to_hdf(filePath)
                     raw_electrode_data = mea_data{verticalwells, horizontalwells, horizontalelectrodes, verticalelectrodes}.GetVoltageVector;
                     counter=counter+1;
                     h5write(hdf5_path, dataset_name, raw_electrode_data, [1, counter], [measurements(1), 1]);
-                    disp(['Converted electrode ', num2str(counter), ' out of ', num2str(allelectrodes)]);
+                    
+                    % Display progress
+                    msg = sprintf(['Converted electrode ', num2str(counter), ' out of ', num2str(allelectrodes)]);
+                    fprintf(repmat('\b', 1, length(msg))); % Erase previous message
+                    fprintf(msg);
                 end
             end
         end
     end
-    disp('done')
+    fprintf('\n');
+    disp('Done')
 end
 
+% Convert a single file
+
 % Specify the file path here
-path='G:/MEADATA/tsc/TSC_20DIV.raw';
+path='path/to/mea/file';
 raw_to_hdf(path);
+
+% Or convert all files in a folder
+
+% Define the folder where the .raw files are located
+folderPath = 'path/to/mea/data/folder';
+
+% Get a list of all .raw files in the folder
+fileList = dir(fullfile(folderPath, '*.raw'));
+
+% Loop over each file and get the full paths
+for i = 1:length(fileList)
+    % Construct the full file path
+    fullFilePath = fullfile(folderPath, fileList(i).name);
+    raw_to_hdf(fullFilePath);
+end
 
 % This script loops through the axion data from the top left well to the
 % bottom right, and from the top left electrode to the bottom right. This
@@ -65,6 +87,7 @@ raw_to_hdf(path);
 % 
 % This script has been tested and verified using a 24 well 16 electrode axion plate
 % 
-% After the conversion has been completed, these files are not compressed yet, and might take up a lot of storage space.
-% Hdf5 files can be compressed using the following tool: https://support.hdfgroup.org/HDF5/doc/RM/Tools.html#Tools-Repack.
+% After the conversion has been completed, these files are not compressed yet and might take up a lot of storage space.
+% Hdf5 files can be compressed using the following tool: https://support.hdfgroup.org/documentation/hdf5/latest/_h5_t_o_o_l__r_p__u_g.html.
+% h5repack -f GZIP=1 "input_file" "output_file"
 % Depending on the GZIP level, files might shrink up to 6 times in size.
