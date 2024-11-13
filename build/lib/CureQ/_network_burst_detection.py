@@ -134,7 +134,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
 
             # Determine the threshold using either Yen or Otsu automatic thresholding
             if threshold_method=='Yen' or threshold_method=='yen':
-                threshold=filters.threshold_minimum(y, nbins=1000)
+                threshold=filters.threshold_yen(y, nbins=1000)
             elif threshold_method=='Otsu' or threshold_method=='otsu':
                 threshold=filters.threshold_otsu(y, nbins=1000)
             elif threshold_method=='Li' or threshold_method=='li':
@@ -228,7 +228,8 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
                 if overlap(network_burst_cores[i][2:4], network_burst_cores[i+1][2:4]):
                     overlapping_bursts.append(i)
                     overlapping_bursts.append(i+1)
-            '''New method - remove outer edges of overlapping bursts'''
+            
+            #remove outer edges of overlapping bursts
             if len(overlapping_bursts)>0:
                 for j in overlapping_bursts:
                     network_burst_cores[j][3] = network_burst_cores[j][1]
@@ -258,7 +259,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
     if save_figures:
         # Save the figure
         path=f"{outputpath}/figures/well_{well}"
-        fig.savefig(path, dpi=120)  # Full HD resolution (1920x1080)
+        fig.savefig(path, dpi=240)  # 4k resolution
     if plot_electrodes:
         return fig
     else:

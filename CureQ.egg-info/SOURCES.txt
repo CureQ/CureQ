@@ -10,6 +10,7 @@ CureQ/_open_file.py
 CureQ/_plotting.py
 CureQ/_spike_validation.py
 CureQ/_threshold.py
+CureQ/_utilities.py
 CureQ/cureq_icon.ico
 CureQ/mea.py
 CureQ/mea_analysis_tool.py

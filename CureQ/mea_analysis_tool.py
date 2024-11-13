@@ -25,6 +25,7 @@ from scipy import stats
 import numpy as np
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  NavigationToolbar2Tk) 
 import sv_ttk
+import h5py
 
 # Import the MEA library
 try:
@@ -144,7 +145,7 @@ def MEA_GUI():
 
     # Scrollable frame
     class VerticalScrolledFrame(ttk.Frame):
-        def __init__(self, parent, width=1600, height=1000, *args, **kw):
+        def __init__(self, parent, width=1600, height=850, *args, **kw):
             # You can pass width and height to the constructor to set default size.
             ttk.Frame.__init__(self, parent, *args, **kw)
 
@@ -397,8 +398,6 @@ def MEA_GUI():
         global activity_threshold
         global threshold_portion
         global remove_inactive_electrodes
-        global cut_data_bool
-        global parts
         global global_nbd_kde_bandwidth
         # Save parameters
         try:
@@ -424,8 +423,6 @@ def MEA_GUI():
             remove_inactive_electrodes=bool(removeinactivevar.get())
             activity_threshold=float(activitythinput.get())
             threshold_portion=float(thresholdportioninput.get())
-            cut_data_bool=bool(splitdatavar.get())
-            parts=int(splitdatapartsinput.get())
 
             main_frame.pack(fill='both', expand=True)
             parameterframe.pack_forget()
@@ -551,31 +548,6 @@ def MEA_GUI():
     activitythinput=ttk.Entry(master=outputparameters)
     activitythinput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
 
-    def splitdatafunc():
-        if splitdatavar.get():
-            splitdatapartsinput.configure(state='enabled')
-        else:
-            splitdatapartsinput.configure(state='disabled')
-
-    # Split data
-    splitdatalabel=ttk.Label(master=outputparameters, text="Split data:", font=(font,10))
-    splitdatalabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-    splitdatatooltip = Tooltip(splitdatalabel, 'Should the data be split up in shorter parts?\nSplitting data might be useful to turn one long measurement into several smaller measurements')
-    splitdatalabel.bind("<Enter>", splitdatatooltip.show_tooltip)
-    splitdatalabel.bind("<Leave>", splitdatatooltip.hide_tooltip)
-    splitdatavar=IntVar()
-    splitdatainput=ttk.Checkbutton(outputparameters, onvalue=True, offvalue=False, variable=splitdatavar, command=splitdatafunc)
-    splitdatainput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-
-    # Setup the activity threshold
-    splitdatapartslabel=ttk.Label(master=outputparameters, text="Parts:", font=(font,10))
-    splitdatapartslabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
-    splitdatapartstooltip = Tooltip(splitdatapartslabel, 'In how many smaller parts should the data be split?')
-    splitdatapartslabel.bind("<Enter>", splitdatapartstooltip.show_tooltip)
-    splitdatapartslabel.bind("<Leave>", splitdatapartstooltip.hide_tooltip)
-    splitdatapartsinput=ttk.Entry(master=outputparameters)
-    splitdatapartsinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
-
     # Use multiprocessing
     multiprocessingframe=ttk.Labelframe(master=parameterframe.interior, text="Other", style="Custom.TLabelframe")
     multiprocessingframe.grid(row=2, column=1, padx=10, pady=10, sticky='nesw')
@@ -594,9 +566,7 @@ def MEA_GUI():
         networkth_var.set('Yen')
         # reset checkboxes
         removeinactivevar.set(True)
-        splitdatavar.set(False)
         multiprocessingvar.set(False)
-        splitdatapartsinput.configure(state='enabled')
         # Update other parameter availability
         if removeinactivevar.get():
             activitythinput.configure(state='enabled')
@@ -616,8 +586,8 @@ def MEA_GUI():
         # reset the entry labels
         list=[lowcutoffinput, highcutoffinput, orderinput, thresholdportioninput, stdevmultiplierinput, RMSmultiplierinput, refractoryperiodinput, exittimeinput,
             amplitudedropinput, maxheightinput, minspikesinput, defaultthinput, maxisiinput, isikdebwinput, smallernbinput,
-            minchannelsinput, activitythinput, splitdatapartsinput, nbd_kde_bandwidth_input]
-        defaults=[200, 3500, 2, 0.1, 5, 5, 0.001, 0.001, 5, 2, 5, 100, 1000, 1, 10, 0.5, 0.1, 10, 0.05]
+            minchannelsinput, activitythinput, nbd_kde_bandwidth_input]
+        defaults=[200, 3500, 2, 0.1, 5, 5, 0.001, 0.001, 5, 2, 5, 100, 1000, 1, 10, 0.5, 0.1, 0.05]
         counter=0
         for parameter in list:
             parameter.delete(0, END)
@@ -625,10 +595,6 @@ def MEA_GUI():
             counter+=1
         hertzinput.delete(0, END)
         electrodeamntinput.delete(0, END)
-        if splitdatavar.get():
-            splitdatapartsinput.configure(state='enabled')
-        else:
-            splitdatapartsinput.configure(state='disabled')
         
     set_default_parameters()
 
@@ -640,7 +606,7 @@ def MEA_GUI():
         parametersfile = filedialog.askopenfilename(filetypes=[("Parameter file", "*.json")])
         parameters=json.load(open(parametersfile))
         # Enable all the entries so we can set the correct values
-        entries=[activitythinput, exittimeinput, maxheightinput, amplitudedropinput, splitdatapartsinput]
+        entries=[activitythinput, exittimeinput, maxheightinput, amplitudedropinput]
         for entry in entries:
             entry.configure(state="enabled")        
         # Set all the parameters to the values of the imported file
@@ -685,9 +651,6 @@ def MEA_GUI():
         removeinactivevar.set(bool(parameters["remove inactive electrodes"]))
         activitythinput.delete(0, END)
         activitythinput.insert(0, parameters["activity threshold"])
-        splitdatavar.set(bool(parameters["split data"]))
-        splitdatapartsinput.delete(0, END)
-        splitdatapartsinput.insert(0, parameters["parts"])
         multiprocessingvar.set(bool(parameters["use multiprocessing"]))
         nbd_kde_bandwidth_input.delete(0, END)
         nbd_kde_bandwidth_input.insert(0, parameters["nbd_kde_bandwidth"])
@@ -708,11 +671,6 @@ def MEA_GUI():
             maxheightinput.configure(state="disabled")
             amplitudedropinput.configure(state="disabled")
 
-        if splitdatavar.get():
-            splitdatapartsinput.configure(state='enabled')
-        else:
-            splitdatapartsinput.configure(state='disabled')
-
     default_parameters=ttk.Button(master=parameterframe.interior, text="Import parameters", command=import_parameters)
     default_parameters.grid(row=3, column=2, padx=10, pady=(10,20), sticky='nsew')
 
@@ -722,28 +680,19 @@ def MEA_GUI():
             # Communicate to the progressbar that the analysis has crashed
             progressfile=f'{os.path.split(filename)[0]}/progress.npy'
             np.save(progressfile, ['crashed'])
-        if multiprocessingvar.get():
-            try:
-                analyse_wells(fileadress=filename, wells=wells, hertz=hertz, validation_method=validation_method, low_cutoff=low_cutoff, high_cutoff=high_cutoff, order=order, spikeduration=spikeduration,
-                        exit_time_s=exit_time_s, electrode_amnt=electrode_amnt, bd_kde_bandwidth=kde_bandwidth, smallerneighbours=smallerneighbours, minspikes_burst=minspikes_burst,
-                        max_threshold=max_threshold, default_threshold=default_threshold, max_drop_amount=max_drop_amount, amplitude_drop_sd=amplitude_drop_sd,
-                        stdevmultiplier=stdevmultiplier, RMSmultiplier=RMSmultiplier, min_channels=min_channels, threshold_method=threshold_method, nbd_kde_bandwidth=global_nbd_kde_bandwidth, activity_threshold=activity_threshold,
-                        threshold_portion=threshold_portion, remove_inactive_electrodes=remove_inactive_electrodes, cut_data_bool=cut_data_bool, parts=parts, use_multiprocessing=True)
-            except Exception as error:
-                traceback.print_exc()
+        try:
+            analyse_wells(fileadress=filename, wells=wells, hertz=hertz, validation_method=validation_method, low_cutoff=low_cutoff, high_cutoff=high_cutoff, order=order, spikeduration=spikeduration,
+                    exit_time_s=exit_time_s, electrode_amnt=electrode_amnt, bd_kde_bandwidth=kde_bandwidth, smallerneighbours=smallerneighbours, minspikes_burst=minspikes_burst,
+                    max_threshold=max_threshold, default_threshold=default_threshold, max_drop_amount=max_drop_amount, amplitude_drop_sd=amplitude_drop_sd,
+                    stdevmultiplier=stdevmultiplier, RMSmultiplier=RMSmultiplier, min_channels=min_channels, threshold_method=threshold_method, nbd_kde_bandwidth=global_nbd_kde_bandwidth, activity_threshold=activity_threshold,
+                    threshold_portion=threshold_portion, remove_inactive_electrodes=remove_inactive_electrodes, use_multiprocessing=multiprocessingvar.get())
+        except Exception as error:
+            traceback.print_exc()
+            if multiprocessingvar.get():
                 tk.messagebox.showerror(title='Error', message='Something went wrong with analyzing the data, please check if all the parameters are set correctly\nAlternatively, try analyzing the data with multiprocessing turned off')
-                close_progressbar()
-        else:
-            try:
-                analyse_wells(fileadress=filename, wells=wells, hertz=hertz, validation_method=validation_method, low_cutoff=low_cutoff, high_cutoff=high_cutoff, order=order, spikeduration=spikeduration,
-                            exit_time_s=exit_time_s, electrode_amnt=electrode_amnt, bd_kde_bandwidth=kde_bandwidth, smallerneighbours=smallerneighbours, minspikes_burst=minspikes_burst,
-                            max_threshold=max_threshold, default_threshold=default_threshold, max_drop_amount=max_drop_amount, amplitude_drop_sd=amplitude_drop_sd,
-                            stdevmultiplier=stdevmultiplier, RMSmultiplier=RMSmultiplier, min_channels=min_channels, threshold_method=threshold_method, nbd_kde_bandwidth=global_nbd_kde_bandwidth, activity_threshold=activity_threshold,
-                            threshold_portion=threshold_portion, remove_inactive_electrodes=remove_inactive_electrodes, cut_data_bool=cut_data_bool, parts=parts, use_multiprocessing=False)
-            except Exception as error:
-                traceback.print_exc()
+            else:
                 tk.messagebox.showerror(title='Error', message='Something went wrong with analyzing the data, please check if all the parameters are set correctly')
-                close_progressbar()
+            close_progressbar()
 
     def progress():
         # Read out the progressbar from the file
@@ -892,8 +841,6 @@ def MEA_GUI():
     output_frame.grid_rowconfigure(0, weight=1)
 
     output_frame.grid_rowconfigure(1, weight=1)
-
-    global raw_data
 
     class treeview_table(ttk.Frame):
         def __init__(self, master, file_path):
@@ -1500,9 +1447,6 @@ def MEA_GUI():
     '''This function handles all the preparation necessary for properly viewing the analysed data'''
     def view_results_func():
         global resultsfolder
-
-        # Load in the correct files
-        global raw_data
         # Check if the correct files have been selected
         if os.path.exists(f"{resultsfolder}/burst_values") and os.path.exists(f"{resultsfolder}/spike_values") and os.path.exists(f"{resultsfolder}/network_data"):
             # Load the parameters
@@ -1523,7 +1467,9 @@ def MEA_GUI():
                     traceback.print_exc()
                 progressinfo=ttk.Label(master=loaddatapopup, text='Loading in the raw data...')
                 progressinfo.grid(row=0, column=0, pady=10, padx=20)
-                raw_data=openHDF5(filename)
+                # Check if we can open the data
+                with h5py.File(filename, 'r') as hdf_file:
+                    datashape=hdf_file["Data/Recording_0/AnalogStream/Stream_0/ChannelData"].shape
             except Exception as error:
                 traceback.print_exc()
                 tk.messagebox.showerror(title='Error', message='Could not load in the raw data, please make sure you have selected the correct file')
@@ -1535,25 +1481,19 @@ def MEA_GUI():
         global feature_filepath
         feature_filepath=f"{resultsfolder}/Features.csv"
         choose_featurefile_button.configure(text=feature_filepath)
-        electrode_wellbuttons=create_wellbuttons(choose_well, raw_data.shape[0]/parameters["electrode amount"], well_button_pressed)
-        whole_wellbuttons=create_wellbuttons(choose_well_nw, raw_data.shape[0]/parameters["electrode amount"], network_visualization)
+        electrode_wellbuttons=create_wellbuttons(choose_well, datashape[0]/parameters["electrode amount"], well_button_pressed)
+        whole_wellbuttons=create_wellbuttons(choose_well_nw, datashape[0]/parameters["electrode amount"], network_visualization)
         electrode_buttons=create_electrodebuttons(choose_electrode, parameters["electrode amount"], electrode_button_pressed)
         loaddatapopup.destroy()
         resultsframe.pack(fill='both', expand=True)
-        resultfileframe.pack_forget()
-
-    '''Button for going back to the begin frame'''
-    # def results_buttonframe_to_main_func():
-    #     raw_data=[]
-    #     main_frame.pack(fill='both', expand=True)
-    #     resultsframe.pack_forget()
-
-    # resultsframe_to_mainmenu_button=ttk.Button(master=electrode_frame, text="Return to main menu", command=results_buttonframe_to_main_func)
-    # resultsframe_to_mainmenu_button.grid(row=1, column=0, pady=10, padx=10, sticky='nsew', columnspan=2)    
+        resultfileframe.pack_forget() 
 
 
     def plot_single_electrode(master, parameters, electrode_nr, plot_rectangle):
-        electrode_data=butter_bandpass_filter(raw_data[electrode_nr], lowcut=parameters["low cutoff"], highcut=parameters["high cutoff"], fs=parameters["sampling rate"], order=parameters["order"])
+        with h5py.File(filename, 'r') as hdf_file:
+            dataset=hdf_file["Data/Recording_0/AnalogStream/Stream_0/ChannelData"]
+            raw_data=dataset[electrode_nr]
+        electrode_data=butter_bandpass_filter(raw_data, lowcut=parameters["low cutoff"], highcut=parameters["high cutoff"], fs=parameters["sampling rate"], order=parameters["order"])
         threshold=fast_threshold(electrode_data, hertz=parameters["sampling rate"], stdevmultiplier=parameters["standard deviation multiplier"], RMSmultiplier=parameters["rms multiplier"], threshold_portion=parameters["threshold portion"])
         fig=spike_validation(data=electrode_data, electrode=electrode_nr, threshold=threshold, hertz=parameters["sampling rate"], spikeduration=parameters["refractory period"], exit_time_s=parameters["exit time"], amplitude_drop=parameters["drop amplitude"], plot_electrodes=True, electrode_amnt=parameters["electrode amount"], max_drop_amount=parameters["max drop amount"], outputpath='', savedata=False, plot_rectangles=plot_rectangle)
         # Check which colorscheme we have to use
@@ -1587,7 +1527,10 @@ def MEA_GUI():
 
     def plot_burst_detection(master, parameters, electrode_nr):
         global resultsfolder
-        electrode_data=butter_bandpass_filter(raw_data[electrode_nr], lowcut=parameters["low cutoff"], highcut=parameters["high cutoff"], fs=parameters["sampling rate"], order=parameters["order"])
+        with h5py.File(filename, 'r') as hdf_file:
+            dataset=hdf_file["Data/Recording_0/AnalogStream/Stream_0/ChannelData"]
+            raw_data=dataset[electrode_nr]
+        electrode_data=butter_bandpass_filter(raw_data, lowcut=parameters["low cutoff"], highcut=parameters["high cutoff"], fs=parameters["sampling rate"], order=parameters["order"])
         KDE_fig, burst_fig = burst_detection(data=electrode_data, electrode=electrode_nr, electrode_amnt=parameters["electrode amount"], hertz=parameters["sampling rate"], kde_bandwidth=parameters["KDE bandwidth"], smallerneighbours=parameters["smaller neighbours"], minspikes_burst=parameters["minimal amount of spikes"], max_threshold=parameters["max interval threshold"], default_threshold=parameters["default interval threshold"], outputpath=resultsfolder, plot_electrodes=True, savedata=False)
         
         # Change the colours of the graph
@@ -1621,10 +1564,6 @@ def MEA_GUI():
         # Plot the KDE plot
         KDE_canvas = FigureCanvasTkAgg(KDE_fig, master=master)  
         KDE_canvas.get_tk_widget().grid(row=0, column=1, sticky='nsew')
-        # KDEtoolbarframe=ttk.Frame(master=master)
-        # KDEtoolbarframe.grid(row=1, column=1, sticky='s')
-        # KDEtoolbar = NavigationToolbar2Tk(KDE_canvas, KDEtoolbarframe)
-        # KDEtoolbar.update()
 
         master.grid_columnconfigure(0, weight=3)
         master.grid_columnconfigure(1, weight=1)

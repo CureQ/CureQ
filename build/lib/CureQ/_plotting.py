@@ -5,6 +5,9 @@ from functools import partial
 from KDEpy import FFTKDE
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
+import pandas as pd
+import os
+from matplotlib.backends.backend_pdf import PdfPages
 
 '''This function will calculate a 3d guassian kernel'''
 def K(x, H):
