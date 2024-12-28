@@ -1,7 +1,7 @@
 import h5py
 import os
 
-def rechunk_dataset(fileadress, compression_method='lzf', compression_level=1):
+def rechunk_dataset(fileadress, compression_method='lzf', compression_level=1, always_compress_files=False):
     """
     Rechunk an existing hdf5 dataset.
 
@@ -17,6 +17,8 @@ def rechunk_dataset(fileadress, compression_method='lzf', compression_level=1):
         Compression method - options 'lzf' or 'gzip'
     compression_level (int):
         Compression level when using gzip - ranges 1-9
+    always_compress_files:
+        If set to 'True', the algorithm will always perform the rechunking and compression, even when the data is already correctly chunked.
     """
 
     outputfile=f"{fileadress[:-3]}_rechunked.h5"
@@ -32,7 +34,8 @@ def rechunk_dataset(fileadress, compression_method='lzf', compression_level=1):
 
         if original_chunks==new_chunks:
             print("Dataset is already correctly chunked")
-            return
+            if not always_compress_files:
+                return
         
         print(f"Rechunking dataset to shape: {new_chunks}, this will create a new file")
 

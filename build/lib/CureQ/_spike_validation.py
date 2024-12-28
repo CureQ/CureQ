@@ -7,14 +7,8 @@ import copy
 def spike_validation(data,                      # Raw data from particular electrode
                      electrode,                 # Which electrode is getting analysed
                      threshold,                 # Spike detection threshold value
-                     hertz,                     # Sampling frequency
-                     spikeduration,             # Refractory period of the spike
-                     exit_time_s,               # Time a spike gets to drop/rise in amplitude
-                     amplitude_drop,            # How much a spike will have to drop/rise
-                     plot_electrodes,           # If true, returns a matplotlib figure of the spike detection/validation process. Used for the GUI
-                     electrode_amnt,            # How many electrodes per well
-                     max_drop_amount,           # Maximum amount a spike can be required to drop/rise
-                     outputpath,                # Path where to save the spike information
+                     parameters,                # Parameters dictionary
+                     plot_electrodes=False,     # If true, returns a matplotlib figure of the spike detection/validation process. Used for the GUI
                      savedata=True,             # Whether to save the spike information or not
                      plot_rectangles=False      # Whether to plot the spike validation in the matplotlib figure
                      ):
@@ -30,7 +24,7 @@ def spike_validation(data,                      # Raw data from particular elect
     beneath_threshold = data < -threshold
 
     # Using the sampling frequency, calculate how many samples the refractory period lasts
-    spikeduration_samples = int(spikeduration * hertz)
+    spikeduration_samples = int(parameters['refractory period'] * parameters['sampling rate'])
 
     measurements=data.shape[0]
     
@@ -69,20 +63,20 @@ def spike_validation(data,                      # Raw data from particular elect
         # If a spike has been found, set all values for in the refractory period to false
         spikes[j+1:buffer]=False
 
-    time_seconds=np.arange(0, data.shape[0]/hertz, 1/hertz)
+    time_seconds=np.arange(0, data.shape[0]/parameters['sampling rate'], 1/parameters['sampling rate'])
 
     '''Spike validation - check if the threshold crossing is not just noise'''
     # The exit time in amount of samples, used to establish the window around a spike
-    exit_time = round(exit_time_s * hertz)
+    exit_time = round(parameters['exit time'] * parameters['sampling rate'])
 
     surrounding_noise_window=0.010  # 10 ms window around the spike
-    surrounding_noise_window_samples=int(0.010*hertz)
+    surrounding_noise_window_samples=int(0.010*parameters['sampling rate'])
     loopvalues=np.nonzero(spikes)[0]
     boxheights=[]
 
     spikes_before_DMP=copy.deepcopy(spikes)
 
-    if amplitude_drop != 0:
+    if parameters['drop amplitude'] != 0:
         # Iterate over all the spikes
         for j in loopvalues:
             # If the spikes i stoo close to the start or end of the measurement, in cannot be validated and will be removed
@@ -104,17 +98,16 @@ def spike_validation(data,                      # Raw data from particular elect
                 noise_surround = noise_surround[(noise_surround > -threshold) & (noise_surround < threshold)]
 
                 # Calculate the RMS of the surrounding noise
-                drop_amount=amplitude_drop*(np.sqrt(np.mean(noise_surround**2)))
+                drop_amount=parameters['drop amplitude']*(np.sqrt(np.mean(noise_surround**2)))
 
                 # The amount a spike has to drop should not exceed max_drop_amount*threshold
-                if drop_amount>max_drop_amount*threshold:
-                    drop_amount=max_drop_amount*threshold
+                if drop_amount>parameters['max drop']*threshold:
+                    drop_amount=parameters['max drop']*threshold
 
                 # Array for visualization later
                 boxheights.append(drop_amount)
 
                 # Apply the validation method by checking whether the spike signal has any values below or above the 'box'
-                # Spikes that have an amplitude of heightexception*threshold, do not have to drop amplitude in a short time
                 
                 # For positive spikes
                 if data[j]>0:
@@ -126,8 +119,8 @@ def spike_validation(data,                      # Raw data from particular elect
                         spikes[j]=False
                 
     # Calculate MEA electrode
-    electrode = i % electrode_amnt + 1
-    well = round(i / electrode_amnt + 0.505)
+    electrode = i % parameters['electrode amount'] + 1
+    well = round(i / parameters['electrode amount'] + 0.505)
 
     '''Visualization of the spike detection/validation process - used by the GUI'''
     if plot_electrodes:
@@ -161,14 +154,14 @@ def spike_validation(data,                      # Raw data from particular elect
 
                 if spikes[j]:
                     # Plot green boxes at the accepted spikes
-                    rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], data[j]), exit_time*(1/hertz)*2, boxheight, edgecolor='green', facecolor='none', linewidth=0.5, zorder=1))
+                    rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], data[j]), exit_time*(1/parameters['sampling rate'])*2, boxheight, edgecolor='green', facecolor='none', linewidth=0.5, zorder=1))
                     # Noise window left
                     rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], -threshold), -(surrounding_noise_window), threshold*2, edgecolor='violet', facecolor='violet', linewidth=0.5, alpha=0.05))
                     # Noise window right
                     rawdataplot.add_patch(Rectangle((time_seconds[j+exit_time], -threshold), surrounding_noise_window, threshold*2, edgecolor='violet', facecolor='violet', linewidth=0.5, alpha=0.05))
                 else:
                     # Plot red boxes at the rejected spikes
-                    rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], data[j]), exit_time*(1/hertz)*2, boxheight, edgecolor='red', facecolor='none', linewidth=0.5, zorder=1))
+                    rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], data[j]), exit_time*(1/parameters['sampling rate'])*2, boxheight, edgecolor='red', facecolor='none', linewidth=0.5, zorder=1))
                     # Noise window left
                     rawdataplot.add_patch(Rectangle((time_seconds[j-exit_time], -threshold), -(surrounding_noise_window), threshold*2, edgecolor='violet', facecolor='violet', linewidth=0.5, alpha=0.05))
                     # Noise window right
@@ -186,7 +179,7 @@ def spike_validation(data,                      # Raw data from particular elect
     
     # Save the spike data to a .csv file
     if savedata:
-        path = f'{outputpath}/spike_values'
+        path = f"{(parameters['output path'])}/spike_values"
         spike_x_values = time_seconds[spikes]   # Timestamps of spikes
         spike_y_values = data[spikes]           # Amplitudes of spikes
         spike_indexes=np.arange(data.shape[0])  # Indexes of spikes
@@ -194,8 +187,8 @@ def spike_validation(data,                      # Raw data from particular elect
         # Combine in a signle array
         spike_output = np.column_stack((spike_x_values, spike_y_values, spike_indexes))
         # Save in both .csv and .npy format
-        np.savetxt(f'{path}/well_{well}_electrode_{electrode}_spikes.csv', spike_output, delimiter = ",")
-        np.save(f'{path}/well_{well}_electrode_{electrode}_spikes', spike_output)
+        np.savetxt(f"{path}/well_{well}_electrode_{electrode}_spikes.csv", spike_output, delimiter = ",")
+        np.save(f"{path}/well_{well}_electrode_{electrode}_spikes", spike_output)
     
     # Return the figure
     return fig

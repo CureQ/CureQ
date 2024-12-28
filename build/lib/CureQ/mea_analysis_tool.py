@@ -1,7 +1,6 @@
 # Imports
 import os
 import threading
-import time
 from functools import partial
 import json
 import copy
@@ -12,1497 +11,862 @@ from matplotlib.figure import Figure
 import warnings 
 from pathlib import Path
 from tkinter import *
-import tkinter as tk
 from tkinter import ttk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
 from importlib.metadata import version
 import traceback
 
 # External libraries
 import pandas as pd
-import seaborn as sns
-from scipy import stats
 import numpy as np
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  NavigationToolbar2Tk) 
-import sv_ttk
 import h5py
+import customtkinter as ctk
+from CTkToolTip import *
+from CTkMessagebox import CTkMessagebox
 
 # Import the MEA library
 try:
     from .mea import *
 except:
     from mea import *
-    
-def MEA_GUI():
-    # Setting the warnings to be ignored 
-    warnings.filterwarnings('ignore') 
 
-    # Initialize tkinter GUI
-    root = Tk()
+"""Structure:
+This GUI consists of multiple windows, each window will have its own class, where it holds its own variables
+The main application class handles frame selection and 'global' variables
+"""
 
-    """Visual settings"""
-    # Set the theme
-    global theme
-    theme='dark'
-    sv_ttk.set_theme(theme)
+class MainApp(ctk.CTk):
+    def __init__(self):
+        # Initialize GUI
+        super().__init__()
 
-    # Define font and styles
-    font="Arial"
-    def define_styles():
-        # Define different styles
-        labelframestyle = ttk.Style()
-        labelframestyle.configure("Custom.TLabelframe.Label", font=(font, 20))
-
-        subframestyle = ttk.Style()
-        subframestyle.configure("Sublabel.TLabelframe.Label", font=(font, 12))
-
-        bigbuttonstyle=ttk.Style()
-        bigbuttonstyle.configure("bigbutton.TButton", font=(font, 30), anchor="center", justify="center", wraplength=400)
-
-        mediumbuttonstyle=ttk.Style()
-        mediumbuttonstyle.configure("mediumbutton.TButton", font=(font, 15))
-
-        wellbuttonstyle=ttk.Style()
-        wellbuttonstyle.configure("wellbutton.TButton", font=(font, 15))
-
-    define_styles()
-
-    # Add function for changing theme    
-    def toggle_theme():
-        sv_ttk.toggle_theme()
-        global theme
-        theme=sv_ttk.get_theme()
-        # For some reason you have to redefine the styles everytime you switch themes
-        define_styles()
-
-    # Set correct icons
-    def resource_path(relative_path):
-        """ Get absolute path to resource, works for dev and for PyInstaller """
+        # Get icon - works for both normal and frozen
+        relative_path="cureq_icon.ico"
         try:
-            # PyInstaller creates a temp folder and stores path in _MEIPASS
             base_path = sys._MEIPASS
         except Exception:
             source_path = Path(__file__).resolve()
             base_path = source_path.parent
-        return os.path.join(base_path, relative_path)
-    application_path=resource_path("cureq_icon.ico")
-
-    try:
-        root.iconbitmap(application_path)
-    except Exception as error:
-        print("Could not load in icon")
-        print(error)
-
-
-    root.title(f"CureQ MEA analysis tool - Version: {version('CureQ')}")
-
-    # Define global variables and default values
-    global filename
-    global validation_method
-    filename=""
-    validation_method='DMP_noisebased'
-
-    def go_to_parameterframe():
-        parameterframe.pack(fill='both', expand=True)
-        main_frame.pack_forget()
-
-    def openfiles():
-        global filename
-        selectedfile = filedialog.askopenfilename(filetypes=[("MEA data", "*.h5")])
-        if len(selectedfile)!=0:
-            filename=selectedfile
-            selectedfile=os.path.split(filename)[1]
-            btn_selectfile.configure(text=selectedfile)
-            # selectedfilelabel.config(text=selectedfile)
-
-    class Tooltip:
-        def __init__(self, widget, text):
-            self.widget = widget
-            self.text = text
-            self.tooltip = None
-            
-        def show_tooltip(self, event):
-            x, y, _, _ = self.widget.bbox("insert")
-            x += self.widget.winfo_rootx() + 25
-            y += self.widget.winfo_rooty() + 25
-            
-            # Create tooltip if not exists
-            if not self.tooltip:
-                self.tooltip = tk.Toplevel(self.widget)
-                self.tooltip.wm_overrideredirect(True)
-                self.tooltip.wm_geometry(f"+{x}+{y}")
-                label = ttk.Label(self.tooltip, text=self.text, borderwidth=3, relief='sunken')
-                label.pack()
-                
-        def hide_tooltip(self, event):
-            if self.tooltip:
-                self.tooltip.destroy()
-                self.tooltip = None
-
-
-    main_frame=ttk.Frame(root)
-    main_frame.pack(fill='both', expand=True)
-
-    # Scrollable frame
-    class VerticalScrolledFrame(ttk.Frame):
-        def __init__(self, parent, width=1600, height=850, *args, **kw):
-            # You can pass width and height to the constructor to set default size.
-            ttk.Frame.__init__(self, parent, *args, **kw)
-
-            # Create a canvas object and a vertical scrollbar for scrolling it.
-            vscrollbar = ttk.Scrollbar(self, orient=VERTICAL)
-            vscrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
-            
-            # Set the canvas size by passing width and height
-            canvas = tk.Canvas(self, bd=0, highlightthickness=0, 
-                            yscrollcommand=vscrollbar.set, width=width, height=height)
-            canvas.pack(side=LEFT, fill=BOTH, expand=TRUE)
-            vscrollbar.config(command=canvas.yview)
-
-            # Reset the view
-            canvas.xview_moveto(0)
-            canvas.yview_moveto(0)
-
-            # Create a frame inside the canvas which will be scrolled with it.
-            self.interior = interior = ttk.Frame(canvas)
-            interior_id = canvas.create_window(0, 0, window=interior, anchor=NW)
-
-            # Track changes to the canvas and frame width and sync them,
-            # also updating the scrollbar.
-            def _configure_interior(event):
-                # Update the scrollbars to match the size of the inner frame.
-                size = (interior.winfo_reqwidth(), interior.winfo_reqheight())
-                canvas.config(scrollregion="0 0 %s %s" % size)
-                if interior.winfo_reqwidth() != canvas.winfo_width():
-                    # Update the canvas's width to fit the inner frame.
-                    canvas.config(width=interior.winfo_reqwidth())
-            interior.bind('<Configure>', _configure_interior)
-
-            def _configure_canvas(event):
-                if interior.winfo_reqwidth() != canvas.winfo_width():
-                    # Update the inner frame's width to fill the canvas.
-                    canvas.itemconfigure(interior_id, width=canvas.winfo_width())
-            canvas.bind('<Configure>', _configure_canvas)
-
-            def _on_mousewheel(event):
-                canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-
-            canvas.bind_all("<MouseWheel>", _on_mousewheel)
-
-    # Frame for the sidebar buttons
-    sidebarframe=ttk.Frame(master=main_frame)
-    sidebarframe.grid(row=0, column=2, rowspan=10, sticky='nesw')
-
-    # Switch between light and dark mode
-    theme_switch = ttk.Checkbutton(sidebarframe, text="Light theme", style="Switch.TCheckbutton", command=toggle_theme)
-    theme_switch.grid(row=0, column=0, sticky='nesw', pady=10, padx=10)
-
-    def link_to_cureq():
-        webbrowser.open_new("https://cureq.nl/")
-    cureq_button=ttk.Button(master=sidebarframe, text="CureQ", command=link_to_cureq)
-    cureq_button.grid(row=1, column=0, sticky='nesw', pady=10, padx=10)
-
-    def link_to_pypi():
-        webbrowser.open_new("https://pypi.org/project/CureQ/")
-    pypi_button=ttk.Button(master=sidebarframe, text="Library", command=link_to_pypi)
-    pypi_button.grid(row=2, column=0, sticky='nesw', pady=10, padx=10)
-
-    def link_to_github():
-        webbrowser.open_new("https://github.com/CureQ")
-    github_button=ttk.Button(master=sidebarframe, text="Github", command=link_to_github)
-    github_button.grid(row=3, column=0, sticky='nesw', pady=10, padx=10)
-
-    # Set up the frame where te user selects different parameters
-    parameterframe=VerticalScrolledFrame(root)
-    parameterframe.pack(fill='both', expand=True)
-    parameterframe.pack_forget()
-
-    btn_parameter=ttk.Button(master=main_frame, text="Set\nParameters", compound=LEFT, style="bigbutton.TButton", command=go_to_parameterframe)
-    btn_parameter.grid(row=0, column=0, padx=10, pady=10, sticky='nsew', ipadx=25, ipady=25)
-
-    # Set up the required parameters
-    requiredparameters=ttk.LabelFrame(parameterframe.interior, text='Required Parameters', style="Custom.TLabelframe")
-    requiredparameters.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
-
-    btn_selectfile=ttk.Button(master=requiredparameters, text="Choose a file", command=openfiles)
-    btn_selectfile.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky='nesw')
-
-    # Setup the sampling frequency
-    hertzlabel=ttk.Label(master=requiredparameters, text="Sampling rate:", font=(font,10))
-    hertzlabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-    hertzinput=ttk.Entry(master=requiredparameters)
-    hertzinput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-
-    # Setup up the amount of electrodes
-    electrodeamntlabel=ttk.Label(master=requiredparameters, text="Electrode amount:", font=(font,10))
-    electrodeamntlabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
-    electrodeamnttooltip = Tooltip(electrodeamntlabel, 'How many electrodes does each well contain?')
-    electrodeamntlabel.bind("<Enter>", electrodeamnttooltip.show_tooltip)
-    electrodeamntlabel.bind("<Leave>", electrodeamnttooltip.hide_tooltip)
-    electrodeamntinput=ttk.Entry(master=requiredparameters)
-    electrodeamntinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
-
-    # Set up all the filter parameters
-    filterparameters=ttk.LabelFrame(parameterframe.interior, text='Filter', style="Custom.TLabelframe")
-    filterparameters.grid(row=0, column=1, padx=10, pady=10, sticky='nsew')
-
-    # Low cutoff
-    lowcutofflabel=ttk.Label(master=filterparameters, text="Low cutoff:", font=(font,10))
-    lowcutofflabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
-    lowcutofftooltip = Tooltip(lowcutofflabel, 'Define the low cutoff value for the butterworth bandpass filter. Values should be given in hertz')
-    lowcutofflabel.bind("<Enter>", lowcutofftooltip.show_tooltip)
-    lowcutofflabel.bind("<Leave>", lowcutofftooltip.hide_tooltip)
-    lowcutoffinput=ttk.Entry(master=filterparameters)
-    lowcutoffinput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
-
-    # High cutoff
-    highcutofflabel=ttk.Label(master=filterparameters, text="High cutoff:", font=(font,10))
-    highcutofflabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-    highcutofftooltip = Tooltip(highcutofflabel, 'Define the high cutoff value for the butterworth bandpass filter. Values should be given in hertz')
-    highcutofflabel.bind("<Enter>", highcutofftooltip.show_tooltip)
-    highcutofflabel.bind("<Leave>", highcutofftooltip.hide_tooltip)
-    highcutoffinput=ttk.Entry(master=filterparameters)
-    highcutoffinput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-
-    # Filter order
-    orderlabel=ttk.Label(master=filterparameters, text="Filter order:", font=(font,10))
-    orderlabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
-    ordertooltip = Tooltip(orderlabel, 'The filter order for the butterworth filter')
-    orderlabel.bind("<Enter>", ordertooltip.show_tooltip)
-    orderlabel.bind("<Leave>", ordertooltip.hide_tooltip)
-    orderinput=ttk.Entry(master=filterparameters)
-    orderinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
-
-    # Set up all the spike detection parameters
-    spikedetectionparameters=ttk.LabelFrame(parameterframe.interior, text='Spike Detection', style="Custom.TLabelframe")
-    spikedetectionparameters.grid(row=0, column=2, padx=10, pady=10, sticky='nsew', rowspan=2)
-
-    # Threshold parameters
-    thresholdparameters=ttk.LabelFrame(spikedetectionparameters, text='Threshold parameters', style="Sublabel.TLabelframe")
-    thresholdparameters.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
-
-    # Threshold portion
-    thresholdportionlabel=ttk.Label(master=thresholdparameters, text="Threshold portion:", font=(font,10))
-    thresholdportionlabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
-    thresholdportiontooltip = Tooltip(thresholdportionlabel, 'Define the portion of the electrode data that is used for determining the threshold.\nA higher values will give a better estimate of the background noise,\nbut will take longer to compute\nRanges from 0 to 1.')
-    thresholdportionlabel.bind("<Enter>", thresholdportiontooltip.show_tooltip)
-    thresholdportionlabel.bind("<Leave>", thresholdportiontooltip.hide_tooltip)
-    thresholdportioninput=ttk.Entry(master=thresholdparameters)
-    thresholdportioninput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
-
-    # stdevmultiplier
-    stdevmultiplierlabel=ttk.Label(master=thresholdparameters, text="Standard Deviation Multiplier:", font=(font,10))
-    stdevmultiplierlabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-    stdevmultipliertooltip = Tooltip(stdevmultiplierlabel, 'Define when beyond which point values are seen as\noutliers (spikes) when identifying spike-free noise\nA higher value will identify more data as noise')
-    stdevmultiplierlabel.bind("<Enter>", stdevmultipliertooltip.show_tooltip)
-    stdevmultiplierlabel.bind("<Leave>", stdevmultipliertooltip.hide_tooltip)
-    stdevmultiplierinput=ttk.Entry(master=thresholdparameters)
-    stdevmultiplierinput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-
-    # RMSmultiplier
-    RMSmultiplierlabel=ttk.Label(master=thresholdparameters, text="RMS Multiplier:", font=(font,10))
-    RMSmultiplierlabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
-    RMSmultipliertooltip = Tooltip(RMSmultiplierlabel, 'Define the multiplication factor of the root mean square (RMS) of the background noise\nA higher number will lead to a higher threshold')
-    RMSmultiplierlabel.bind("<Enter>", RMSmultipliertooltip.show_tooltip)
-    RMSmultiplierlabel.bind("<Leave>", RMSmultipliertooltip.hide_tooltip)
-    RMSmultiplierinput=ttk.Entry(master=thresholdparameters)
-    RMSmultiplierinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
-
-    # Spike validation parameters
-    validationparameters=ttk.LabelFrame(spikedetectionparameters, text='Spike Validation Parameters', style="Sublabel.TLabelframe")
-    validationparameters.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
-
-    # Refractory period
-    refractoryperiodlabel=ttk.Label(master=validationparameters, text="Refractory Period:", font=(font,10))
-    refractoryperiodlabel.grid(row=0, column=0, padx=10, pady=10, sticky='w')
-    refractoryperiodtooltip = Tooltip(refractoryperiodlabel, 'Define the refractory period in the spike detection\nIn this period after a spike, no other spike can be detected\nValue should be given in seconds, so 2 ms = 0.002 s')
-    refractoryperiodlabel.bind("<Enter>", refractoryperiodtooltip.show_tooltip)
-    refractoryperiodlabel.bind("<Leave>", refractoryperiodtooltip.hide_tooltip)
-    refractoryperiodinput=ttk.Entry(master=validationparameters)
-    refractoryperiodinput.grid(row=0, column=1, padx=10, pady=10, sticky='w')
-
-    # Dropdown menu where the user selects the validation method
-    def option_selected(event):
-        global validation_method
-        validation_method = dropdown_var.get()
-        if validation_method=='DMP_noisebased':
-            exittimeinput.configure(state="enabled")
-            maxheightinput.configure(state="enabled")
-            amplitudedropinput.configure(state="enabled")
-        else:
-            exittimeinput.configure(state="disabled")
-            maxheightinput.configure(state="disabled")
-            amplitudedropinput.configure(state="disabled")
-        
-        
-    dropdown_var = tk.StringVar(validationparameters)
-    options = ['DMP_noisebased', 'none']
-    dropdownlabel = ttk.Label(master=validationparameters, text="Spike validation method:", font=(font,10))
-    dropdownlabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
-    dropdown_menu = ttk.OptionMenu(validationparameters, dropdown_var, options[0], *options, command=option_selected)
-    dropdown_menu.grid(row=1, column=1, padx=10, pady=10, sticky='nesw')
-
-    exittimelabel=ttk.Label(master=validationparameters, text="Exit time:", font=(font,10))
-    exittimelabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-    exittimetooltip = Tooltip(exittimelabel, 'Define the time a spike gets to drop a certain value.\nStarts from the peak of the spike.\nValue should be given in seconds, so 0.24 ms is 0.00024s')
-    exittimelabel.bind("<Enter>", exittimetooltip.show_tooltip)
-    exittimelabel.bind("<Leave>", exittimetooltip.hide_tooltip)
-    exittimeinput=ttk.Entry(master=validationparameters)
-    exittimeinput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-
-    amplitudedroplabel=ttk.Label(master=validationparameters, text="Drop amplitude:", font=(font,10))
-    amplitudedroplabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
-    amplitudedroptooltip = Tooltip(amplitudedroplabel, 'Multiplied with the standard deviation of the surrounding noise.\nThis is the height the spike will have to drop in\na certain amount of time to be registered')
-    amplitudedroplabel.bind("<Enter>", amplitudedroptooltip.show_tooltip)
-    amplitudedroplabel.bind("<Leave>", amplitudedroptooltip.hide_tooltip)
-    amplitudedropinput=ttk.Entry(master=validationparameters)
-    amplitudedropinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
-
-    maxheightlabel=ttk.Label(master=validationparameters, text="Max drop amount:", font=(font,10))
-    maxheightlabel.grid(row=4, column=0, padx=10, pady=10, sticky='w')
-    maxheighttooltip = Tooltip(maxheightlabel, 'Multiplied with the threshold.\nThe maximum height a spike can be required to drop in amplitude in the set timeframe')
-    maxheightlabel.bind("<Enter>", maxheighttooltip.show_tooltip)
-    maxheightlabel.bind("<Leave>", maxheighttooltip.hide_tooltip)
-    maxheightinput=ttk.Entry(master=validationparameters)
-    maxheightinput.grid(row=4, column=1, padx=10, pady=10, sticky='w')
-
-    def parameter_to_main_func():
-        # Check if the user has selected a file
-        if filename == "":
-            tk.messagebox.showerror(title='Error', message='No file has been selected yet, please select a file')
-            return
-
-        # save parameters in global values
-        global wells
-        wells='all'
-        global hertz
-        global low_cutoff
-        global high_cutoff
-        global order
-        global spikeduration
-        global exit_time_s
-        global plot_electrodes
-        plot_electrodes = False
-        global electrode_amnt
-        global kde_bandwidth
-        global smallerneighbours
-        global minspikes_burst
-        global max_threshold
-        global default_threshold
-        global max_drop_amount
-        global amplitude_drop_sd
-        global stdevmultiplier
-        global RMSmultiplier
-        global min_channels
-        global threshold_method
-        global activity_threshold
-        global threshold_portion
-        global remove_inactive_electrodes
-        global global_nbd_kde_bandwidth
-        # Save parameters
+        self.icon_path=os.path.join(base_path, relative_path)
         try:
-            hertz=int(hertzinput.get())
-            low_cutoff=int(lowcutoffinput.get())
-            high_cutoff=int(highcutoffinput.get())
-            order=int(orderinput.get())
-            spikeduration=float(refractoryperiodinput.get())
-            exit_time_s=float(exittimeinput.get())
-            electrode_amnt=int(electrodeamntinput.get())
-            kde_bandwidth=float(isikdebwinput.get())
-            smallerneighbours=int(smallernbinput.get())
-            minspikes_burst=int(minspikesinput.get())
-            max_threshold=float(maxisiinput.get())
-            default_threshold=float(defaultthinput.get())
-            max_drop_amount=float(maxheightinput.get())
-            amplitude_drop_sd=float(amplitudedropinput.get())
-            stdevmultiplier=float(stdevmultiplierinput.get())
-            RMSmultiplier=float(RMSmultiplierinput.get())
-            min_channels=float(minchannelsinput.get())
-            threshold_method=networkth_var.get()
-            global_nbd_kde_bandwidth=float(nbd_kde_bandwidth_input.get())
-            remove_inactive_electrodes=bool(removeinactivevar.get())
-            activity_threshold=float(activitythinput.get())
-            threshold_portion=float(thresholdportioninput.get())
-
-            main_frame.pack(fill='both', expand=True)
-            parameterframe.pack_forget()
+            self.iconbitmap(self.icon_path)
         except Exception as error:
-            traceback.print_exc()
-            tk.messagebox.showerror(title='Error', message='Certain parameters could not be converted to the correct datatype (e.g. int or float). Please check if every parameter has the correct values')
-
-    parameter_to_main=ttk.Button(master=parameterframe.interior, text="Save parameters and return", command=parameter_to_main_func)
-    parameter_to_main.grid(row=3, column=0, padx=10, pady=(10,20), sticky='nsew')
-
-    def parameter_to_main_func_no_save():
-        main_frame.pack(fill='both', expand=True)
-        parameterframe.pack_forget()
-
-    parameter_to_main_no_save=ttk.Button(master=parameterframe.interior, text="Do not save parameters and return to main menu", command=parameter_to_main_func_no_save)
-    parameter_to_main_no_save.grid(row=4, column=0, padx=10, pady=(0, 0), sticky='nsew', columnspan=3)
-
-    # Set up all the burst detection parameters
-    burstdetectionparameters=ttk.LabelFrame(parameterframe.interior, text='Burst Detection', style="Custom.TLabelframe")
-    burstdetectionparameters.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
-
-    # Setup up the minimal amount of spikes for a burst
-    minspikeslabel=ttk.Label(master=burstdetectionparameters, text="Minimal amount of spikes:", font=(font,10))
-    minspikeslabel.grid(row=0, column=0, padx=10, pady=10, sticky='w')
-    minspikestooltip = Tooltip(minspikeslabel, 'Define the minimal amount of spikes a burst should have before being considered as one')
-    minspikeslabel.bind("<Enter>", minspikestooltip.show_tooltip)
-    minspikeslabel.bind("<Leave>", minspikestooltip.hide_tooltip)
-    minspikesinput=ttk.Entry(master=burstdetectionparameters)
-    minspikesinput.grid(row=0, column=1, padx=10, pady=10, sticky='w')
-
-    # Setup up the default threshold
-    defaultthlabel=ttk.Label(master=burstdetectionparameters, text="Default interval threshold:", font=(font,10))
-    defaultthlabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
-    defaultthtooltip = Tooltip(defaultthlabel, 'Define the default inter-spike interval threshold\nthat is used for burst detection\nValue should be given in miliseconds')
-    defaultthlabel.bind("<Enter>", defaultthtooltip.show_tooltip)
-    defaultthlabel.bind("<Leave>", defaultthtooltip.hide_tooltip)
-    defaultthinput=ttk.Entry(master=burstdetectionparameters)
-    defaultthinput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
-
-    # Setup up the max threshold
-    maxisilabel=ttk.Label(master=burstdetectionparameters, text="Max interval threshold:", font=(font,10))
-    maxisilabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-    maxisitooltip = Tooltip(maxisilabel, 'Define the maximum value the inter-spike interval threshold\ncan be when 2 peaks have been detected in the ISI graph\nValue should be given in miliseconds')
-    maxisilabel.bind("<Enter>", maxisitooltip.show_tooltip)
-    maxisilabel.bind("<Leave>", maxisitooltip.hide_tooltip)
-    maxisiinput=ttk.Entry(master=burstdetectionparameters)
-    maxisiinput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-
-    # Setup the KDE bandwidth
-    isikdebwlabel=ttk.Label(master=burstdetectionparameters, text="KDE bandwidth:", font=(font,10))
-    isikdebwlabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
-    isikdebwtooltip = Tooltip(isikdebwlabel, 'Define the bandwidth that is used when calculating the\nkernel density estimate of the inter-spike intervals')
-    isikdebwlabel.bind("<Enter>", isikdebwtooltip.show_tooltip)
-    isikdebwlabel.bind("<Leave>", isikdebwtooltip.hide_tooltip)
-    isikdebwinput=ttk.Entry(master=burstdetectionparameters)
-    isikdebwinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
-
-    # Setup the amount of smaller neighbours
-    smallernblabel=ttk.Label(master=burstdetectionparameters, text="Smaller neighbours:", font=(font,10))
-    smallernblabel.grid(row=4, column=0, padx=10, pady=10, sticky='w')
-    smallernbtooltip = Tooltip(smallernblabel, 'Define the amount of values next to the peak, that should be lower than the peak\nin order for it to be considered a peak in the distribution')
-    smallernblabel.bind("<Enter>", smallernbtooltip.show_tooltip)
-    smallernblabel.bind("<Leave>", smallernbtooltip.hide_tooltip)
-    smallernbinput=ttk.Entry(master=burstdetectionparameters)
-    smallernbinput.grid(row=4, column=1, padx=10, pady=10, sticky='w')
-
-    # Set up all the network burst detection parameters
-    networkburstdetectionparameters=ttk.LabelFrame(parameterframe.interior, text='Network Burst Detection', style="Custom.TLabelframe")
-    networkburstdetectionparameters.grid(row=1, column=1, padx=10, pady=10, sticky='nsew')
-
-    # Setup the minimum amount of channels participating
-    minchannelslabel=ttk.Label(master=networkburstdetectionparameters, text="Min channels:", font=(font,10))
-    minchannelslabel.grid(row=0, column=0, padx=10, pady=10, sticky='w')
-    minchannelstooltip = Tooltip(minchannelslabel, 'Define the minimal percentage of channels that should be active in a network burst, values ranges from 0 to 1')
-    minchannelslabel.bind("<Enter>", minchannelstooltip.show_tooltip)
-    minchannelslabel.bind("<Leave>", minchannelstooltip.hide_tooltip)
-    minchannelsinput=ttk.Entry(master=networkburstdetectionparameters)
-    minchannelsinput.grid(row=0, column=1, padx=10, pady=10, sticky='w')
-
-    # Setup the thresholding method
-    networkth_var = tk.StringVar(networkburstdetectionparameters)
-    nwthoptions = ['Yen', 'Otsu', 'Li', 'Isodata', 'Mean', 'Minimum', 'Triangle']
-    dropdownlabel = ttk.Label(master=networkburstdetectionparameters, text="Thresholding method:", font=(font,10))
-    dropdownlabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
-    dropdown_menu = ttk.OptionMenu(networkburstdetectionparameters, networkth_var, nwthoptions[0], *nwthoptions)
-    dropdown_menu.grid(row=1, column=1, padx=10, pady=10, sticky='nesw')
-
-    # Setup the network burst detection KDE bandwidth
-    nbd_kde_bandwidth_label=ttk.Label(master=networkburstdetectionparameters, text="KDE Bandwidth:", font=(font,10))
-    nbd_kde_bandwidth_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
-    nbd_kde_bandwidth_tooltip = Tooltip(nbd_kde_bandwidth_label, 'Define the bandwidth value that should be used when creating\nthe kernel density estimate for the network burst detection')
-    nbd_kde_bandwidth_label.bind("<Enter>", nbd_kde_bandwidth_tooltip.show_tooltip)
-    nbd_kde_bandwidth_label.bind("<Leave>", nbd_kde_bandwidth_tooltip.hide_tooltip)
-    nbd_kde_bandwidth_input=ttk.Entry(master=networkburstdetectionparameters)
-    nbd_kde_bandwidth_input.grid(row=2, column=1, padx=10, pady=10, sticky='w')
-
-    # Set up all the output parameters
-    outputparameters=ttk.LabelFrame(parameterframe.interior, text='Output/data manipulation', style="Custom.TLabelframe")
-    outputparameters.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
-
-    def removeinactivefunc():
-        if removeinactivevar.get():
-            activitythinput.configure(state='enabled')
-        else:
-            activitythinput.configure(state='disabled')
-
-    # Remove inactive electrodes
-    removeinactivelabel=ttk.Label(master=outputparameters, text="Remove inactive electrodes:", font=(font,10))
-    removeinactivelabel.grid(row=0, column=0, padx=10, pady=10, sticky='w')
-    removeinactivetooltip = Tooltip(removeinactivelabel, 'Should inactive electrodes be used when calculating well features?')
-    removeinactivelabel.bind("<Enter>", removeinactivetooltip.show_tooltip)
-    removeinactivelabel.bind("<Leave>", removeinactivetooltip.hide_tooltip)
-    removeinactivevar=IntVar()
-    removeinactiveinput=ttk.Checkbutton(outputparameters, onvalue=True, offvalue=False, variable=removeinactivevar, command=removeinactivefunc)
-    removeinactiveinput.grid(row=0, column=1, padx=10, pady=10, sticky='w')
-
-    # Setup the activity threshold
-    activitythlabel=ttk.Label(master=outputparameters, text="Activity threshold:", font=(font,10))
-    activitythlabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
-    activitythtooltip = Tooltip(activitythlabel, 'Define the minimal activity a channel has to have, to be used in calculating well features.\nValue should be given in hertz, so a value of 0.1 would mean\nany channel with less that 1 spike per 10 seconds will be removed')
-    activitythlabel.bind("<Enter>", activitythtooltip.show_tooltip)
-    activitythlabel.bind("<Leave>", activitythtooltip.hide_tooltip)
-    activitythinput=ttk.Entry(master=outputparameters)
-    activitythinput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
-
-    # Use multiprocessing
-    multiprocessingframe=ttk.Labelframe(master=parameterframe.interior, text="Other", style="Custom.TLabelframe")
-    multiprocessingframe.grid(row=2, column=1, padx=10, pady=10, sticky='nesw')
-    multiprocessinglabel=ttk.Label(master=multiprocessingframe, text="Use multiprocessing:", font=(font,10))
-    multiprocessinglabel.grid(row=0, column=0, padx=10, pady=10, sticky='e')
-    multiprocessingtooltip = Tooltip(multiprocessinglabel, 'Using multiprocessing means the electrodes will be analyzed in parallel, generally speeding up\nthe analysis. Multiprocessing might not work properly if the device\n you\'re using does not have sufficient RAM/CPU-cores')
-    multiprocessinglabel.bind("<Enter>", multiprocessingtooltip.show_tooltip)
-    multiprocessinglabel.bind("<Leave>", multiprocessingtooltip.hide_tooltip)
-    multiprocessingvar=IntVar()
-    multiprocessinginput=ttk.Checkbutton(multiprocessingframe, onvalue=True, offvalue=False, variable=multiprocessingvar)
-    multiprocessinginput.grid(row=0, column=1, padx=10, pady=10, sticky='w')
-
-    def set_default_parameters():
-        # reset dropdown parameters
-        dropdown_var.set("DMP_noisebased")
-        networkth_var.set('Yen')
-        # reset checkboxes
-        removeinactivevar.set(True)
-        multiprocessingvar.set(False)
-        # Update other parameter availability
-        if removeinactivevar.get():
-            activitythinput.configure(state='enabled')
-        else:
-            activitythinput.configure(state='disabled')
-
-        validation_method = dropdown_var.get()
-        if validation_method=='DMP_noisebased':
-            exittimeinput.configure(state="enabled")
-            maxheightinput.configure(state="enabled")
-            amplitudedropinput.configure(state="enabled")
-        else:
-            exittimeinput.configure(state="disabled")
-            maxheightinput.configure(state="disabled")
-            amplitudedropinput.configure(state="disabled")
-
-        # reset the entry labels
-        list=[lowcutoffinput, highcutoffinput, orderinput, thresholdportioninput, stdevmultiplierinput, RMSmultiplierinput, refractoryperiodinput, exittimeinput,
-            amplitudedropinput, maxheightinput, minspikesinput, defaultthinput, maxisiinput, isikdebwinput, smallernbinput,
-            minchannelsinput, activitythinput, nbd_kde_bandwidth_input]
-        defaults=[200, 3500, 2, 0.1, 5, 5, 0.001, 0.001, 5, 2, 5, 100, 1000, 1, 10, 0.5, 0.1, 0.05]
-        counter=0
-        for parameter in list:
-            parameter.delete(0, END)
-            parameter.insert(0, defaults[counter])
-            counter+=1
-        hertzinput.delete(0, END)
-        electrodeamntinput.delete(0, END)
-        
-    set_default_parameters()
-
-    default_parameters=ttk.Button(master=parameterframe.interior, text="Restore default parameters", command=set_default_parameters)
-    default_parameters.grid(row=3, column=1, padx=10, pady=(10,20), sticky='nsew')
-    parameterframe.interior.rowconfigure(3, minsize=125)
-
-    def import_parameters():
-        parametersfile = filedialog.askopenfilename(filetypes=[("Parameter file", "*.json")])
-        parameters=json.load(open(parametersfile))
-        # Enable all the entries so we can set the correct values
-        entries=[activitythinput, exittimeinput, maxheightinput, amplitudedropinput]
-        for entry in entries:
-            entry.configure(state="enabled")        
-        # Set all the parameters to the values of the imported file
-        hertzinput.delete(0, END)
-        hertzinput.insert(0, parameters["sampling rate"])
-        electrodeamntinput.delete(0, END)
-        electrodeamntinput.insert(0, parameters["electrode amount"])
-        lowcutoffinput.delete(0, END)
-        lowcutoffinput.insert(0, parameters["low cutoff"])
-        highcutoffinput.delete(0, END)
-        highcutoffinput.insert(0, parameters["high cutoff"])
-        orderinput.delete(0, END)
-        orderinput.insert(0, parameters["order"])
-        thresholdportioninput.delete(0, END)
-        thresholdportioninput.insert(0, parameters["threshold portion"])
-        stdevmultiplierinput.delete(0, END)
-        stdevmultiplierinput.insert(0, parameters["standard deviation multiplier"])
-        RMSmultiplierinput.delete(0, END)
-        RMSmultiplierinput.insert(0, parameters["rms multiplier"])
-        refractoryperiodinput.delete(0, END)
-        refractoryperiodinput.insert(0, parameters["refractory period"])
-        dropdown_var.set(parameters["spike validation method"])
-        exittimeinput.delete(0, END)
-        exittimeinput.insert(0, parameters["exit time"])
-        amplitudedropinput.delete(0, END)
-        amplitudedropinput.insert(0, parameters["drop amplitude"])
-        maxheightinput.delete(0, END)
-        maxheightinput.insert(0, parameters["max drop amount"])
-        minspikesinput.delete(0, END)
-        minspikesinput.insert(0, parameters["minimal amount of spikes"])
-        defaultthinput.delete(0, END)
-        defaultthinput.insert(0, parameters["default interval threshold"])
-        maxisiinput.delete(0, END)
-        maxisiinput.insert(0, parameters["max interval threshold"])
-        isikdebwinput.delete(0, END)
-        isikdebwinput.insert(0, parameters["KDE bandwidth"])
-        smallernbinput.delete(0, END)
-        smallernbinput.insert(0, parameters["smaller neighbours"])
-        minchannelsinput.delete(0, END)
-        minchannelsinput.insert(0, parameters["min channels"])
-        networkth_var.set(parameters["thresholding method"])
-        removeinactivevar.set(bool(parameters["remove inactive electrodes"]))
-        activitythinput.delete(0, END)
-        activitythinput.insert(0, parameters["activity threshold"])
-        multiprocessingvar.set(bool(parameters["use multiprocessing"]))
-        nbd_kde_bandwidth_input.delete(0, END)
-        nbd_kde_bandwidth_input.insert(0, parameters["nbd_kde_bandwidth"])
-            
-        # Update other parameter availability
-        if removeinactivevar.get():
-            activitythinput.configure(state='enabled')
-        else:
-            activitythinput.configure(state='disabled')
-
-        validation_method = dropdown_var.get()
-        if validation_method=='DMP_noisebased':
-            exittimeinput.configure(state="enabled")
-            maxheightinput.configure(state="enabled")
-            amplitudedropinput.configure(state="enabled")
-        else:
-            exittimeinput.configure(state="disabled")
-            maxheightinput.configure(state="disabled")
-            amplitudedropinput.configure(state="disabled")
-
-    default_parameters=ttk.Button(master=parameterframe.interior, text="Import parameters", command=import_parameters)
-    default_parameters.grid(row=3, column=2, padx=10, pady=(10,20), sticky='nsew')
-
-
-    def data_analysis():
-        def close_progressbar():
-            # Communicate to the progressbar that the analysis has crashed
-            progressfile=f'{os.path.split(filename)[0]}/progress.npy'
-            np.save(progressfile, ['crashed'])
-        try:
-            analyse_wells(fileadress=filename, wells=wells, hertz=hertz, validation_method=validation_method, low_cutoff=low_cutoff, high_cutoff=high_cutoff, order=order, spikeduration=spikeduration,
-                    exit_time_s=exit_time_s, electrode_amnt=electrode_amnt, bd_kde_bandwidth=kde_bandwidth, smallerneighbours=smallerneighbours, minspikes_burst=minspikes_burst,
-                    max_threshold=max_threshold, default_threshold=default_threshold, max_drop_amount=max_drop_amount, amplitude_drop_sd=amplitude_drop_sd,
-                    stdevmultiplier=stdevmultiplier, RMSmultiplier=RMSmultiplier, min_channels=min_channels, threshold_method=threshold_method, nbd_kde_bandwidth=global_nbd_kde_bandwidth, activity_threshold=activity_threshold,
-                    threshold_portion=threshold_portion, remove_inactive_electrodes=remove_inactive_electrodes, use_multiprocessing=multiprocessingvar.get())
-        except Exception as error:
-            traceback.print_exc()
-            if multiprocessingvar.get():
-                tk.messagebox.showerror(title='Error', message='Something went wrong with analyzing the data, please check if all the parameters are set correctly\nAlternatively, try analyzing the data with multiprocessing turned off')
-            else:
-                tk.messagebox.showerror(title='Error', message='Something went wrong with analyzing the data, please check if all the parameters are set correctly')
-            close_progressbar()
-
-    def progress():
-        # Read out the progressbar from the file
-        start=time.time()
-        path=os.path.split(filename)[0]
-        progressfile=f"{path}/progress.npy"
-        popup=tk.Toplevel(root)
-        popup.title('Progress')
-        try:
-            popup.iconbitmap(os.path.join(application_path))
-        except Exception as error:
+            print("Could not load in icon")
             print(error)
-        progressinfo=ttk.Label(master=popup, text='The MEA data is being analyzed, please wait for the program to finish')
-        progressinfo.grid(row=0, column=0, pady=10, padx=20)
-        progressbarlength=1000
-        progressbar=ttk.Progressbar(master=popup, length=progressbarlength, mode='determinate', maximum=progressbarlength)
-        progressbar.grid(row=1, column=0, pady=10, padx=20)
-        progressbar.step(0)
-        info=ttk.Label(master=popup, text='')
-        info.grid(row=2, column=0, pady=10, padx=20)
-        while True:
-            currenttime=time.time()
-            elapsed=round(currenttime-start,1)
-            try:
-                progress=np.load(progressfile)
-            except:
-                progress=['starting']
-            if progress[0]=='crashed':
-                popup.destroy()
-                os.remove(progressfile)
-                return
-            if progress[0]=='done':
-                break
-            elif progress[0]=='starting':
-                info.configure(text=f'Loading raw data, time elapsed: {elapsed} seconds')
-            else:
-                currentprogress=(progress[0]/progress[1])*progressbarlength
-                progressbar.configure(value=currentprogress)
-                info.configure(text=f"Analyzing data, channel: {progress[0]}/{progress[1]}, time elapsed: {elapsed} seconds")
-            time.sleep(0.01)
-        popup.destroy()
-        os.remove(progressfile)
-        currenttime=time.time()
-        elapsed=round(currenttime-start,2)
-        finishedpopup=tk.Toplevel(root)
-        finishedpopup.title('Finished')
-        try:
-            finishedpopup.iconbitmap(os.path.join(application_path))
-        except Exception as error:
-            print(error)
-        finishedtext=ttk.Label(master=finishedpopup, text=f'The data has been analyzed. It took {elapsed} seconds')
-        finishedtext.grid(column=0, row=0, padx=10, pady=10)
-        
-    # Start the analysis
-    def go_to_analysisframe():
-        # Check if the user has selected a file
-        if filename == "":
-            tk.messagebox.showerror(title='Error', message='No file has been selected yet, please select a file and set parameters')
-            return
-        # Start two seperate threads for analyzing the data and reading out the progress. This makes sure the main gui stays responsive
-        data_thread=threading.Thread(target=data_analysis)
-        data_thread.start()
-        progress_thread=threading.Thread(target=progress)
-        progress_thread.start()
 
-    def go_to_resultfileframe():
-        resultfileframe.pack(fill='both', expand=True)
-        main_frame.pack_forget()
-        
+        # 'Global' variables
+        self.tooltipwraplength=200
 
-    analysisframe=ttk.Frame(root)
-    analysisframe.pack(fill='both', expand=True)
-    analysisframe.pack_forget()
+        # Colors
+        self.primary_1 = '#342d32'
+        self.primary_2 = '#5c565a'
+        self.primary_3 = "#927a8d"
+        self.primary_3_hover = "#84687e"
 
-    btn_parameter=ttk.Button(master=main_frame, text="Start\nAnalysis", style="bigbutton.TButton", command=go_to_analysisframe)
-    btn_parameter.grid(row=0, column=1, padx=10, pady=10, sticky='nesw', ipadx=25, ipady=25)
+        self.gray_1 = '#333333'
+        self.gray_2 = '#2b2b2b'
+        self.gray_3 = "#3f3f3f"
 
-    # Select files to view results
-    resultfileframe=ttk.Frame(root)
-    resultfileframe.pack(fill='both', expand=True)
-    resultfileframe.pack_forget()
+        self.text_color = '#dce4ee'
 
-    results_btn=ttk.Button(master=main_frame, text="View\nResults", style="bigbutton.TButton", command=go_to_resultfileframe)
-    results_btn.grid(row=1, column=0, padx=10, pady=10, sticky='nesw', ipadx=25, ipady=25)
+        # Initialize main frame
+        self.show_frame(main_window)
 
-    def results_file_to_main_func():
-        main_frame.pack(fill='both', expand=True)
-        resultfileframe.pack_forget()
+        # The parent holds all the analysis parameters in a dict, which are here initialized with the default values
+        self.parameters = get_default_parameters()
+        self.default_parameters = get_default_parameters()
 
-    # Results file selection
-    datalocation=ttk.LabelFrame(resultfileframe, text='Data location', style="Custom.TLabelframe")
-    datalocation.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
+    # Handle frame switching
+    def show_frame(self, frame_class, *args, **kwargs):
+        for widget in self.winfo_children():
+            widget.destroy()
+        frame = frame_class(self, *args, **kwargs)
+        frame.pack(expand=True, fill="both") 
 
-    resultsfolder=''    # default value
-    def openfolder():
-        global resultsfolder
-        resultsfolder = filedialog.askdirectory()
-        if resultsfolder != '':
-            btn_selectfolder.configure(text=resultsfolder)
 
-    # Open location of results
-    folderlabel=ttk.Label(master=datalocation, text="Folder:", font=(font,10))
-    folderlabel.grid(row=0, column=0, padx=10, pady=10)
-    btn_selectfolder=ttk.Button(master=datalocation, text="Select a folder", command=openfolder)
-    btn_selectfolder.grid(row=0, column=1, padx=10, pady=10)
-
-    def openrawfile():
-        global filename
-        selectedfile = filedialog.askopenfilename(filetypes=[("MEA data", "*.h5")])
-        if len(selectedfile)!=0:
-            filename=selectedfile
-            btn_selectrawfile.configure(text=os.path.split(filename)[1])
-
-    # Open location of raw data
-    rawfilelabel=ttk.Label(master=datalocation, text="File:", font=(font,10))
-    rawfilelabel.grid(row=1, column=0, padx=10, pady=10)
-    btn_selectrawfile=ttk.Button(master=datalocation, text="Choose a file", command=openrawfile)
-    btn_selectrawfile.grid(row=1, column=1, padx=10, pady=10)
-
-    # View the results
-    resultsframe=ttk.Frame(root)
-    resultsframe.pack(fill='both', expand=True)
-    resultsframe.pack_forget()
-
-    # Results notebook
-    results_nb=ttk.Notebook(master=resultsframe)
-    results_nb.pack(fill='both', expand=True)
-
-    electrode_frame=ttk.Frame(master=results_nb)
-    electrode_frame.pack(fill='both', expand=True)
-
-    well_frame=ttk.Frame(master=results_nb)
-    well_frame.pack(fill='both', expand=True)
-
-    output_frame=ttk.Frame(master=results_nb)
-    output_frame.pack(fill='both', expand=True)
-
-    results_nb.add(electrode_frame, text='Single electrode view')
-    results_nb.add(well_frame, text='Whole well view')
-    results_nb.add(output_frame, text="Results")
-
-    '''Build the output_frame tab'''
-    table_frame=ttk.Frame(master=output_frame)
-    table_frame.grid(row=0, column=0, sticky='nesw', padx=25, pady=25)
-    output_frame.grid_columnconfigure(0, weight=1)
-    output_frame.grid_rowconfigure(0, weight=1)
-
-    output_frame.grid_rowconfigure(1, weight=1)
-
-    class treeview_table(ttk.Frame):
-        def __init__(self, master, file_path):
-            super().__init__(master)  # Initialize the parent class
-            self.tableframe=ttk.Frame(self)
-            self.tableframe.grid(row=0, column=0, sticky='nesw')
-            self.rowconfigure(0, weight=1)
-            self.columnconfigure(0, weight=1)
-            self.tableframe.rowconfigure(0, weight=1)
-            self.tableframe.columnconfigure(0, weight=1)
-
-            self.button_frame=ttk.Frame(self)
-            self.button_frame.grid(row=1, column=0, sticky='ew', pady=5)
-            self.groupmanager=ttk.Frame(self.button_frame)
-            self.groupmanager.grid(row=0, column=1, sticky='ew')
-            self.group_frame=ttk.Frame(self)
-            self.group_frame.grid(row=3, column=0, sticky='ew')
-
-            self.file_path = file_path
-            df = pd.read_csv(file_path)
-            self.columns=list(df.columns)
-
-            vert_scrollbar = ttk.Scrollbar(self.tableframe, orient="vertical")
-            vert_scrollbar.grid(row=0, column=1, sticky='nesw')
-
-            hor_scrollbar = ttk.Scrollbar(self.tableframe, orient="horizontal")
-            hor_scrollbar.grid(row=1, column=0, sticky='nesw')
-
-            self.tree = ttk.Treeview(self.tableframe, yscrollcommand=vert_scrollbar.set, xscrollcommand=hor_scrollbar.set)
-            self.tree.grid(row=0, column=0, sticky='nesw')
-
-            vert_scrollbar.config(command=self.tree.yview)
-            hor_scrollbar.config(command=self.tree.xview)
-            # Define the columns
-            self.tree["columns"] = self.columns
-            width=100
-            # Format the columns
-            self.tree.column("#0", width=0, stretch=tk.NO)
-            self.tree.heading("#0", text="")
-            for feature in self.columns:
-                self.tree.column(feature, anchor=tk.W, width=width)
-                self.tree.heading(feature, text=feature)
-
-            # Add data
-            data = df.values.tolist()
-
-            for item in data:
-                self.tree.insert(parent='', index=tk.END, values=list(np.round(item,2)))
-            self.currenttag=''
-            def item_selected(event):
-                for selected_item in self.tree.selection():
-                    # If the user tries to set the same tag again, deselect the row
-                    if len(self.tree.item(selected_item)['tags'])!=0 and self.tree.item(selected_item)['tags'][0]==self.currenttag:
-                        self.tree.item(selected_item, tags=())
-                    else:
-                        self.tree.item(selected_item, tags=self.currenttag)
-                self.deselect_all()
-            self.tree.bind('<<TreeviewSelect>>', item_selected)
-
-            clearbutton=ttk.Button(self.button_frame, text='Clear all groups', command=self.clear_selection)
-            clearbutton.grid(row=0, column=0, sticky='w')
-
-            self.groups=[]
-            self.buttons=[]
-
-            add_group_button=ttk.Button(self.groupmanager, text='Add group:', command=self.add_group)
-            add_group_button.grid(row=0, column=1, sticky='w')
-
-            self.add_group_entry=ttk.Entry(self.groupmanager)
-            self.add_group_entry.grid(row=0, column=2, sticky='w', padx=(0,10))
-
-            self.colors= [
-                "#FF5733",  # Vivid Red
-                "#3357FF",  # Vivid Blue
-                "#FF33A6",  # Vivid Pink
-                "#33FFF0",  # Vivid Cyan
-                "#FFD700",  # Vivid Yellow
-                "#8A2BE2",  # Blue Violet
-                "#FF4500",  # Orange Red
-                "#32CD32",  # Lime Green
-                "#9400D3",  # Dark Violet
-                "#33FF57",  # Vivid Green
-            ]
-
-            # Create styles
-            self.style = ttk.Style()
-            for i, color in enumerate(self.colors):
-                style_name = f"Custom{i}.TButton"
-                self.style.configure(style_name, foreground=color)
-                self.style.map(style_name, foreground=[('active', color)])
-
-        def get_selection(self):
-            dict={}
-            for group in self.groups:
-                temp=[]
-                for item in self.tree.get_children():
-                    if len(self.tree.item(item)['tags'])!=0:
-                        if str(self.tree.item(item)['tags'][0])==group:
-                            temp.append(self.tree.item(item)['values'])
-                dict[group]=temp
-            return dict, self.columns, self.colors
-
-        def set_tag(self, tag):
-            self.currenttag=str(tag)
-
-        def clear_selection(self):
-            for item in self.tree.get_children():
-                self.tree.item(item, tags=())
-
-        def add_group(self):
-            new_group=str(self.add_group_entry.get())
-            if new_group != '' and new_group not in self.groups and len(self.groups)<10:
-                self.groups.append(new_group)
-            self.update_buttons()
-
-        def update_buttons(self):
-            # Remove buttons
-            for button in self.buttons:
-                button.destroy()
-            for group in range(len(self.groups)):
-                # Create tag
-                self.tree.tag_configure(str(self.groups[group]), background=self.colors[group])
-                # Create buttons
-                button=ttk.Button(self.group_frame, text=self.groups[group], command=partial(self.set_tag, str(self.groups[group])), style=f"Custom{group}.TButton")
-                button.grid(row=0, column=group, sticky='w')
-                self.buttons.append(button)
-        
-        def deselect_all(self):
-            for item in self.tree.selection():
-                self.tree.selection_remove(item)
-
-    class graphs(ttk.Frame):
-        def __init__(self, master, table):
-            super().__init__(master)  # Initialize the parent class
-            self.table=table
-            self.buttonframe=ttk.Frame(self)
-            self.buttonframe.grid(row=0, column=0, sticky='nesw')
-            self.treeframe=ttk.Frame(self)
-            self.treeframe.grid(row=1, column=0, sticky='nesw')
-            
-            self.update_graph_button=ttk.Button(self.buttonframe, text='Update table', command=self.update_table)
-            self.update_graph_button.grid(row=0, column=0, sticky='new', pady=10)
-            self.update_plot_button=ttk.Button(self.buttonframe, text='Create graph', command=self.update_plot)
-            self.update_plot_button.grid(row=0, column=1, sticky='new', pady=10)
-            self.disclaimer_label=ttk.Label(self.buttonframe, text="\nThe calculated p-value is merely to indicate where significant differences might be located\nIt should not be used to draw conclusions as it does not take into account the origin/source or distribution of the data")
-            self.disclaimer_label.grid(row=0, column=2, pady=10, padx=10, sticky='new')
-
-            self.rowconfigure(1, weight=1)
-            self.columnconfigure(0, weight=1)
-            self.plot_values={}
-
-            # Configure the treeview
-            vert_scrollbar = ttk.Scrollbar(self.treeframe, orient="vertical")
-            vert_scrollbar.grid(row=0, column=1, sticky='nesw')
-            self.tree = ttk.Treeview(self.treeframe, yscrollcommand=vert_scrollbar.set)
-            self.tree.grid(row=0, column=0, sticky='nesw')
-            vert_scrollbar.config(command=self.tree.yview)
-            # Define the columns
-            headers=["Feature", "p-value"]
-            self.tree["columns"] = headers
-            width=200
-            # # Format the columns
-            self.tree.column("#0", width=0, stretch=tk.NO)
-            self.tree.heading("#0", text="")
-            for header in headers:
-                self.tree.column(header, anchor=tk.W, width=width)
-                self.tree.heading(header, text=header)
-
-            # colors for the boxplots
-            self.palette=[]       
-            # Create the fig and canvas
-            self.figure = Figure()
-            self.canvas = FigureCanvasTkAgg(self.figure, master=self.treeframe)
-            self.canvas.get_tk_widget().grid(row=0, column=2, sticky='nesw')
-            self.canvas.draw()
-
-            self.treeframe.columnconfigure(2, weight=1) 
-            self.treeframe.rowconfigure(0, weight=1)
-
-            self.groups=[]
-
-            if theme=='dark':
-                self.bgcolor='#1c1c1c'
-                self.axiscolour='#ecf3fa'
-            else:
-                self.bgcolor='#fafafa'
-                self.axiscolour='#221c1c'
-            self.figure.set_facecolor(self.bgcolor)
-
-
-        def update_table(self):
-            data, columns, colors=self.table.get_selection()
-            # Retrieve the colors of the groups that are not empty
-            temp_colors=[]
-            temp_groups=[]
-            keys=list(data.keys())
-            for i in range(len(keys)):
-                if len(data[keys[i]])!=0:
-                    temp_colors.append(colors[i])
-                    temp_groups.append(keys[i])
-            self.palette=temp_colors
-            self.groups=temp_groups
-            # Remove entries where the list is empty
-            data = {key: value for key, value in data.items() if value}
-            if len(data)==0:
-                tk.messagebox.showerror(title='Error', message='No rows selected')
-                return
-            if len(data)==1:
-                tk.messagebox.showerror(title='Error', message='Not enough groups to compare, select at least 2 groups')
-                return
-            p_values=[]
-            keys=list(data.keys())
-            test_title="P_value"
-            # If we have 2 groups, do t-tests for all features to make a ranking
-            if len(data)==2:
-                test_title="P_value (t-test)"
-                group1=np.array(data[keys[0]]).astype(float)
-                group2=np.array(data[keys[1]]).astype(float)
-                # Skip the first column because this is the well number
-                for i in range(1,len(columns)):
-                    t_stat, p_value = stats.ttest_ind(group1[:,i], group2[:,i])
-                    p_values.append(p_value)
-                    self.plot_values[columns[i]]=[group1[:,i], group2[:,i]]
-            # If we have more than 2 groups, perform an anova
-            if len(data)>2:
-                test_title="P_value (ANOVA)"
-                for i in range(1,len(columns)):
-                    anova_data=[]
-                    for key in keys:
-                        anova_data.append(np.array(data[key]).astype(float)[:,i])
-                    t_stat, p_value=stats.f_oneway(*anova_data)
-                    p_values.append(p_value)
-                    self.plot_values[columns[i]]=anova_data
-            self.update_graph_button.configure(text="Update table")
-            
-            headers=["Feature", test_title]
-            self.tree["columns"] = headers
-            for header in headers:
-                self.tree.heading(header, text=header)
-
-            # Clear the treeview
-            for item in self.tree.get_children():
-                self.tree.delete(item)
-            # Insert the new values
-            for i in range(len(p_values)):
-                self.tree.insert(parent='', index=tk.END, values=[columns[i+1], p_values[i]])
-
-            self.tree.tag_configure('selected', background="#bb86fc")
-
-            def item_selected(event):
-                # Either select or deselect the items
-                for selected_item in self.tree.selection():
-                    if len(self.tree.item(selected_item)['tags'])!=0:
-                        self.tree.item(selected_item, tags=())
-                    else:
-                        self.tree.item(selected_item, tags='selected')
-                for item in self.tree.selection():
-                    self.tree.selection_remove(item)
-            self.tree.bind('<<TreeviewSelect>>', item_selected)
-
-        def update_plot(self):
-            labels=[]
-            for item in self.tree.get_children():
-                if len(self.tree.item(item)['tags'])!=0:
-                    labels.append(self.tree.item(item)['values'][0])
-            if len(labels)>0:
-                self.update_plot_button.configure(text='Update graph')
-
-                # First remove all previous axes
-                while self.figure.axes:
-                    self.figure.delaxes(self.figure.axes[0])
-                # Create multiple different plots
-                self.axes = self.figure.subplots(1, len(labels))
-                for i in range(len(labels)):
-                    if len(labels)==1:
-                        ax=self.axes
-                    else:
-                        ax=self.axes.flatten()[i]
-                    data_df=[]
-                    for array in range(len(self.plot_values[labels[i]])):
-                        df = pd.DataFrame({'Group': self.groups[array], 'Value': self.plot_values[labels[i]][array]})
-                        data_df.append(df)
-                    data_df = pd.concat(data_df, ignore_index=True)
-                    sns.boxplot(x='Group', y='Value', data=data_df, palette=self.palette, ax=ax)
-                    sns.stripplot(x='Group', y='Value', data=data_df, jitter=True, palette=[self.axiscolour]*len(self.palette), ax=ax)
-                    #ax.set_xticks(ticks=range(len(self.groups)), labels=self.groups)
-                    ax.set_title(f"{labels[i]}")
-
-                # Set the correct colours
-                for ax in self.figure.axes:
-                    ax.set_facecolor(self.bgcolor)
-                    # Change the other colours
-                    ax.xaxis.label.set_color(self.axiscolour)
-                    ax.yaxis.label.set_color(self.axiscolour)
-                    for side in ['top', 'bottom', 'left', 'right']:
-                        ax.spines[side].set_color(self.axiscolour)
-                    ax.tick_params(axis='x', colors=self.axiscolour)
-                    ax.tick_params(axis='y', colors=self.axiscolour)
-                    ax.set_title(label=ax.get_title(),color=self.axiscolour)
-                self.canvas.draw()
-
-    def load_table(file_path):
-        global feature_filepath
-        results_window=tk.Toplevel(master=output_frame)
-        try:
-            results_window.iconbitmap(os.path.join(application_path))
-        except Exception as error:
-            print(error)
-        results_window.title("Results")
-        results_window.geometry("500x500") # Set dimensions in pixels 
-        table=treeview_table(results_window, feature_filepath)
-        table.grid(row=0,column=0, sticky='nesw')
-        graph=graphs(results_window, table)
-        graph.grid(row=1, column=0, sticky='nesw')
-        results_window.columnconfigure(0, weight=1)
-        results_window.rowconfigure(0, weight=2)
-        results_window.rowconfigure(1, weight=1)
-
-    # Add buttons for selecting which results to load
-    feature_filepath=''
-    def get_feature_filepath():
-        global feature_filepath
-        temp=filedialog.askopenfilename(filetypes=[("Feature file", "*.csv")])
-        if temp != '':
-            feature_filepath=temp
-        choose_featurefile_button.configure(text=feature_filepath)
-
-    choose_featurefile_button=ttk.Button(master=output_frame, text="Choose a Features.csv file to analyse", command=get_feature_filepath)
-    choose_featurefile_button.grid(row=0, column=0, pady=10, padx=10, sticky='n')
-    load_table_button=ttk.Button(master=output_frame, text='Load table', command=lambda: load_table(feature_filepath))
-    load_table_button.grid(row=1, column=0, pady=10, padx=10, sticky='n')
-
-    global selected_well
-    selected_well = 1
-    selected_electrode = 1
-
-    view_results=ttk.Button(master=resultfileframe, text="View results", compound=LEFT, command=lambda: threading.Thread(target=view_results_func).start())
-    view_results.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
-
-    results_file_to_main=ttk.Button(master=resultfileframe, text="Back", command=results_file_to_main_func)
-    results_file_to_main.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
-
-    # Single electrode frame
-    choose_well=ttk.LabelFrame(master=electrode_frame, text='Select a well', style="Custom.TLabelframe")
-    choose_well.grid(column=0, row=0, sticky='nw', padx=10)
-
-    # Choose electrode
-    choose_electrode=ttk.LabelFrame(master=electrode_frame, text='Select an electrode', style="Custom.TLabelframe")
-    choose_electrode.grid(column=1, row=0, sticky='nw', padx=10)
-
-    def well_button_pressed(well):
-        global selected_well
-        selected_well=well
-
-    # Function to calculate the initial grid
-    def calculate_optimal_grid(num_wells):
-        min_difference = num_wells
-        optimal_width = num_wells
+    # Function to calculate the optimal grid
+    def calculate_optimal_grid(self, num_items):
+        min_difference = num_items
+        optimal_width = num_items
         optimal_height = 1
-        
-        for width in range(1, int(math.sqrt(num_wells)) + 1):
-            if num_wells % width == 0:
-                height = num_wells // width
+        for width in range(1, int(math.sqrt(num_items)) + 1):
+            if num_items % width == 0:
+                height = num_items // width
                 difference = abs(width - height)
                 if difference < min_difference:
                     min_difference = difference
                     optimal_width = width
                     optimal_height = height
-        
         return int(optimal_width), int(optimal_height)
 
-    def create_wellbuttons(master, wells, button_command):
-        ywells, xwells=calculate_optimal_grid(wells)
-        wellbuttons=[]
+
+class main_window(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        parent.title(f"CureQ MEA analysis tool - Version: {version('CureQ')}")
+
+        # Weights
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        # Frame for the sidebar buttons
+        sidebarframe=ctk.CTkFrame(self)
+        sidebarframe.grid(row=0, column=1, padx=5, pady=5, sticky='nesw')
+
+        # Switch between light and dark mode
+        theme_switch = ctk.CTkSwitch(sidebarframe, text="Light theme")
+        theme_switch.grid(row=0, column=0, sticky='nesw', pady=10, padx=10)
+
+        cureq_button=ctk.CTkButton(master=sidebarframe, text="CureQ", command=lambda: webbrowser.open_new("https://cureq.nl/"))
+        cureq_button.grid(row=1, column=0, sticky='nesw', pady=10, padx=10)
+
+        pypi_button=ctk.CTkButton(master=sidebarframe, text="Library", command=lambda: webbrowser.open_new("https://pypi.org/project/CureQ/"))
+        pypi_button.grid(row=2, column=0, sticky='nesw', pady=10, padx=10)
+
+        github_button=ctk.CTkButton(master=sidebarframe, text="Github", command=lambda: webbrowser.open_new("https://github.com/CureQ"))
+        github_button.grid(row=3, column=0, sticky='nesw', pady=10, padx=10)
+
+        # Main button frame
+        main_buttons_frame=ctk.CTkFrame(self)
+        main_buttons_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nesw')
+
+        # Go to parameter_frame
+        to_parameters_button=ctk.CTkButton(master=main_buttons_frame, text="Set Parameters", command=lambda: parent.show_frame(parameter_frame), height=90, width=160)
+        to_parameters_button.grid(row=0, column=0, sticky='nesw', pady=10, padx=10)
+
+        # View results
+        view_results_button=ctk.CTkButton(master=main_buttons_frame, text="View Results", command=lambda: parent.show_frame(select_folder_frame), height=90, width=160)
+        view_results_button.grid(row=1, column=0, sticky='nesw', pady=10, padx=10)
+
+        # Batch processing
+        batch_processing_button=ctk.CTkButton(master=main_buttons_frame, text="Batch Processing", command=lambda: parent.show_frame(batch_processing), height=90, width=160)
+        batch_processing_button.grid(row=0, column=1, sticky='nesw', pady=10, padx=10)
+
+        # single file processing
+        process_file_button=ctk.CTkButton(master=main_buttons_frame, text="Process single file", command=lambda: parent.show_frame(process_file_frame), height=90, width=160)
+        process_file_button.grid(row=1, column=1, sticky='nesw', pady=10, padx=10)
+
+        # Utility/plotting buttons
+        util_plot_button_frame=ctk.CTkFrame(master=self)
+        util_plot_button_frame.grid(row=1, column=0, columnspan=2, sticky='nesw', pady=5, padx=5)
+
+        compression_button=ctk.CTkButton(master=util_plot_button_frame, text="Compress Files", command=lambda: parent.show_frame(compress_files))
+        compression_button.grid(row=0, column=0, sticky='nesw', padx=10, pady=10)
+        
+        features_over_time_button=ctk.CTkButton(master=util_plot_button_frame, text="Plotting", command=lambda: parent.show_frame(plotting_window))
+        features_over_time_button.grid(row=0, column=1, sticky='nesw', padx=10, pady=10)
+
+        for i in range(3):
+            util_plot_button_frame.grid_rowconfigure(i, weight=1)
+
+class parameter_frame(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.parent=parent
+        self.tooltipwraplength=parent.tooltipwraplength
+
+        # Weights
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure(2, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
+        """Filter parameters"""
+        # Filter parameters frame
+        filterparameters=ctk.CTkFrame(self)
+        filterparameters.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
+        filterparameters_label=ctk.CTkLabel(filterparameters, text="Filter Parameters", font=ctk.CTkFont(size=25))
+        filterparameters_label.grid(row=0, column=0, padx=10, pady=10, sticky='w', columnspan=2)
+
+        # Low cutoff
+        lowcutofflabel=ctk.CTkLabel(master=filterparameters, text="Low cutoff:")
+        lowcutofflabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        lowcutofftooltip = CTkToolTip(lowcutofflabel, message='Define the low cutoff value for the butterworth bandpass filter. Values should be given in hertz')
+        lowcutoffinput=ctk.CTkEntry(master=filterparameters)
+        lowcutoffinput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+
+        # High cutoff
+        highcutofflabel=ctk.CTkLabel(master=filterparameters, text="High cutoff:")
+        highcutofflabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+        highcutofftooltip = CTkToolTip(highcutofflabel, message='Define the high cutoff value for the butterworth bandpass filter. Values should be given in hertz')
+        highcutoffinput=ctk.CTkEntry(master=filterparameters)
+        highcutoffinput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+
+        # Filter order
+        orderlabel=ctk.CTkLabel(master=filterparameters, text="Filter order:")
+        orderlabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+        ordertooltip = CTkToolTip(orderlabel, message='The filter order for the butterworth filter')
+        orderinput=ctk.CTkEntry(master=filterparameters)
+        orderinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+
+        """Spike detection parameters"""
+        # Set up all the spike detection parameters
+        spikedetectionparameters=ctk.CTkFrame(self)
+        spikedetectionparameters.grid(row=0, column=1, padx=10, pady=10, sticky='nsew', rowspan=2)
+
+        spikedetectionparameters.grid_columnconfigure(0, weight=1)
+        spikedetectionparameters.grid_rowconfigure(1, weight=1)
+        spikedetectionparameters.grid_rowconfigure(2, weight=1)
+
+        filterparameters_label=ctk.CTkLabel(spikedetectionparameters, text="Spike Detection Parameters", font=ctk.CTkFont(size=25))
+        filterparameters_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+
+        # Threshold parameters
+        thresholdparameters=ctk.CTkFrame(spikedetectionparameters)
+        thresholdparameters.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
+        thresholdparameters_label=ctk.CTkLabel(thresholdparameters, text="Threshold Parameters", font=ctk.CTkFont(size=15))
+        thresholdparameters_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+
+        # Threshold portion
+        thresholdportionlabel=ctk.CTkLabel(master=thresholdparameters, text="Threshold portion:")
+        thresholdportionlabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        thresholdportiontooltip = CTkToolTip(thresholdportionlabel, message='Define the portion of the electrode data that is used for determining the threshold. A higher values will give a better estimate of the background noise, but will take longer to compute Ranges from 0 to 1.', wraplength=self.tooltipwraplength)
+        thresholdportioninput=ctk.CTkEntry(master=thresholdparameters)
+        thresholdportioninput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+
+        # stdevmultiplier
+        stdevmultiplierlabel=ctk.CTkLabel(master=thresholdparameters, text="Standard Deviation Multiplier:")
+        stdevmultiplierlabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+        stdevmultipliertooltip = CTkToolTip(stdevmultiplierlabel, message='Define when beyond which point values are seen as outliers (spikes) when identifying spike-free noise\nA higher value will identify more data as noise', wraplength=self.tooltipwraplength)
+        stdevmultiplierinput=ctk.CTkEntry(master=thresholdparameters)
+        stdevmultiplierinput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+
+        # RMSmultiplier
+        RMSmultiplierlabel=ctk.CTkLabel(master=thresholdparameters, text="RMS Multiplier:")
+        RMSmultiplierlabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+        RMSmultipliertooltip = CTkToolTip(RMSmultiplierlabel, 'Define the multiplication factor of the root mean square (RMS) of the background noise\nA higher number will lead to a higher threshold', wraplength=self.tooltipwraplength)
+        RMSmultiplierinput=ctk.CTkEntry(master=thresholdparameters)
+        RMSmultiplierinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+
+        # Spike validation parameters
+        validationparameters=ctk.CTkFrame(spikedetectionparameters)
+        validationparameters.grid(row=2, column=0, padx=10, pady=10, sticky='nsew')
+        validationparameters_label=ctk.CTkLabel(thresholdparameters, text="Threshold Parameters", font=ctk.CTkFont(size=15))
+        validationparameters_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+
+        # Refractory period
+        refractoryperiodlabel=ctk.CTkLabel(master=validationparameters, text="Refractory Period:")
+        refractoryperiodlabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        refractoryperiodtooltip = CTkToolTip(refractoryperiodlabel, message='Define the refractory period in the spike detection In this period after a spike, no other spike can be detected Value should be given in seconds, so 2 ms = 0.002 s', wraplength=self.tooltipwraplength)
+        refractoryperiodinput=ctk.CTkEntry(master=validationparameters)
+        refractoryperiodinput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+
+        # Dropdown menu where the user selects the validation method
+        def option_selected(choice):
+            validation_method = choice
+            if validation_method=='DMP_noisebased':
+                exittimeinput.configure(state="normal")
+                maxheightinput.configure(state="normal")
+                amplitudedropinput.configure(state="normal")
+            else:
+                exittimeinput.configure(state="disabled")
+                maxheightinput.configure(state="disabled")
+                amplitudedropinput.configure(state="disabled")
+            
+        
+        options = ['DMP_noisebased', 'none']    
+        dropdown_var = ctk.StringVar(value=options[0])
+        dropdownlabel = ctk.CTkLabel(master=validationparameters, text="Spike validation method:")
+        dropdownlabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+        dropdown_menu = ctk.CTkComboBox(validationparameters, variable=dropdown_var, values=options, command=option_selected)
+        dropdown_menu.grid(row=2, column=1, padx=10, pady=10, sticky='nesw')
+
+        exittimelabel=ctk.CTkLabel(master=validationparameters, text="Exit time:")
+        exittimelabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+        exittimetooltip = CTkToolTip(exittimelabel, 'Define the time a spike gets to drop a certain value.\nStarts from the peak of the spike. Value should be given in seconds, so 0.24 ms is 0.00024s', wraplength=self.tooltipwraplength)
+        exittimeinput=ctk.CTkEntry(master=validationparameters)
+        exittimeinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+
+        amplitudedroplabel=ctk.CTkLabel(master=validationparameters, text="Drop amplitude:")
+        amplitudedroplabel.grid(row=4, column=0, padx=10, pady=10, sticky='w')
+        amplitudedroptooltip = CTkToolTip(amplitudedroplabel, 'Multiplied with the standard deviation of the surrounding noise. This is the height the spike will have to drop in\na certain amount of time to be registered', wraplength=self.tooltipwraplength)
+        amplitudedropinput=ctk.CTkEntry(master=validationparameters)
+        amplitudedropinput.grid(row=4, column=1, padx=10, pady=10, sticky='w')
+
+        maxheightlabel=ctk.CTkLabel(master=validationparameters, text="Max drop amount:")
+        maxheightlabel.grid(row=5, column=0, padx=10, pady=10, sticky='w')
+        maxheighttooltip = CTkToolTip(maxheightlabel, 'Multiplied with the threshold. The maximum height a spike can be required to drop in amplitude in the set timeframe', wraplength=self.tooltipwraplength)
+        maxheightinput=ctk.CTkEntry(master=validationparameters)
+        maxheightinput.grid(row=5, column=1, padx=10, pady=10, sticky='w')
+
+        """Burst detection parameters"""
+        # Set up all the burst detection parameters
+        burstdetectionparameters=ctk.CTkFrame(self)
+        burstdetectionparameters.grid(row=0, column=2, padx=10, pady=10, sticky='nesw')
+
+        burstdetectionparameters_label=ctk.CTkLabel(burstdetectionparameters, text="Burst Detection Parameters", font=ctk.CTkFont(size=25))
+        burstdetectionparameters_label.grid(row=0, column=0, padx=10, pady=10, sticky='w', columnspan=4)
+        burstdetectionparameters.grid_columnconfigure(0, weight=1)
+
+        # Setup up the minimal amount of spikes for a burst
+        minspikeslabel=ctk.CTkLabel(master=burstdetectionparameters, text="Minimal amount of spikes:")
+        minspikeslabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        minspikestooltip = CTkToolTip(minspikeslabel, message='Define the minimal amount of spikes a burst should have before being considered as one', wraplength=self.tooltipwraplength)
+        minspikesinput=ctk.CTkEntry(master=burstdetectionparameters)
+        minspikesinput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+
+        # Setup up the default threshold
+        defaultthlabel=ctk.CTkLabel(master=burstdetectionparameters, text="Default interval threshold:")
+        defaultthlabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+        defaultthtooltip = CTkToolTip(defaultthlabel, 'Define the default inter-spike interval threshold\nthat is used for burst detection\nValue should be given in miliseconds', wraplength=self.tooltipwraplength)
+        defaultthinput=ctk.CTkEntry(master=burstdetectionparameters)
+        defaultthinput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+
+        # Setup up the max threshold
+        maxisilabel=ctk.CTkLabel(master=burstdetectionparameters, text="Max interval threshold:")
+        maxisilabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+        maxisitooltip = CTkToolTip(maxisilabel, message='Define the maximum value the inter-spike interval threshold can be when 2 peaks have been detected in the ISI graph\nValue should be given in miliseconds', wraplength=self.tooltipwraplength)
+        maxisiinput=ctk.CTkEntry(master=burstdetectionparameters)
+        maxisiinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+
+        # Setup the KDE bandwidth
+        isikdebwlabel=ctk.CTkLabel(master=burstdetectionparameters, text="KDE bandwidth:")
+        isikdebwlabel.grid(row=4, column=0, padx=10, pady=10, sticky='w')
+        isikdebwtooltip = CTkToolTip(isikdebwlabel, message='Define the bandwidth that is used when calculating the\nkernel density estimate of the inter-spike intervals', wraplength=self.tooltipwraplength)
+        isikdebwinput=ctk.CTkEntry(master=burstdetectionparameters)
+        isikdebwinput.grid(row=4, column=1, padx=10, pady=10, sticky='w')
+
+        """Network burst detection parameters"""
+        networkburstdetectionparameters=ctk.CTkFrame(self)
+        networkburstdetectionparameters.grid(row=1, column=2, padx=10, pady=10, sticky='nesw')
+        networkburstdetectionparameters_label=ctk.CTkLabel(networkburstdetectionparameters, text="Network Burst Detection Parameters", font=ctk.CTkFont(size=25))
+        networkburstdetectionparameters_label.grid(row=0, column=0, padx=10, pady=10, sticky='w', columnspan=2)
+        networkburstdetectionparameters.grid_columnconfigure(0, weight=1)
+
+        # Setup the minimum amount of channels participating
+        minchannelslabel=ctk.CTkLabel(master=networkburstdetectionparameters, text="Min channels:")
+        minchannelslabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        minchannelstooltip = CTkToolTip(minchannelslabel, 'Define the minimal percentage of channels that should be active in a network burst, values ranges from 0 to 1', wraplength=self.tooltipwraplength)
+        minchannelsinput=ctk.CTkEntry(master=networkburstdetectionparameters)
+        minchannelsinput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+
+        # Setup the thresholding method
+        nwthoptions = ['Yen', 'Otsu', 'Li', 'Isodata', 'Mean', 'Minimum', 'Triangle']
+        networkth_var = ctk.StringVar(value=nwthoptions[0])
+        dropdownlabel = ctk.CTkLabel(master=networkburstdetectionparameters, text="Thresholding method:")
+        dropdownlabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+        dropdown_menu = ctk.CTkComboBox(networkburstdetectionparameters, variable=networkth_var, values=nwthoptions)
+        dropdown_menu.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+
+        # Setup the network burst detection KDE bandwidth
+        nbd_kde_bandwidth_label=ctk.CTkLabel(master=networkburstdetectionparameters, text="KDE Bandwidth:")
+        nbd_kde_bandwidth_label.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+        nbd_kde_bandwidth_tooltip = CTkToolTip(nbd_kde_bandwidth_label, 'Define the bandwidth value that should be used when creating the kernel density estimate for the network burst detection', wraplength=self.tooltipwraplength)
+        nbd_kde_bandwidth_input=ctk.CTkEntry(master=networkburstdetectionparameters)
+        nbd_kde_bandwidth_input.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+
+        """Other parameters"""
+        otherparameters=ctk.CTkFrame(self)
+        otherparameters.grid(row=1, column=0, padx=10, pady=10, sticky='nsew')
+        otherparameters_label=ctk.CTkLabel(otherparameters, text="Other Parameters", font=ctk.CTkFont(size=25))
+        otherparameters_label.grid(row=0, column=0, padx=10, pady=10, sticky='w', columnspan=2)
+
+        def removeinactivefunc():
+            if removeinactivevar.get():
+                activitythinput.configure(state='normal')
+            else:
+                activitythinput.configure(state='disabled')
+
+        # Use multiprocessing
+        multiprocessinglabel=ctk.CTkLabel(otherparameters, text="Use multiprocessing:")
+        multiprocessinglabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        multiprocessingtooltip = CTkToolTip(multiprocessinglabel, message='Using multiprocessing means the electrodes will be analyzed in parallel, generally speeding up the analysis. Multiprocessing might not work properly if the device you\'re using does not have sufficient RAM/CPU-cores', wraplength=self.tooltipwraplength)
+        multiprocessingvar=ctk.BooleanVar()
+        multiprocessinginput=ctk.CTkCheckBox(otherparameters, onvalue=True, offvalue=False, variable=multiprocessingvar, text='')
+        multiprocessinginput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+
+        # Remove inactive electrodes
+        removeinactivelabel=ctk.CTkLabel(otherparameters, text="Remove inactive electrodes:")
+        removeinactivelabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+        removeinactivetooltip = CTkToolTip(removeinactivelabel, message='Should inactive electrodes be used when calculating well features?', wraplength=self.tooltipwraplength)
+        removeinactivevar=ctk.IntVar()
+        removeinactiveinput=ctk.CTkCheckBox(otherparameters, onvalue=True, offvalue=False, variable=removeinactivevar, command=removeinactivefunc, text='')
+        removeinactiveinput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+
+        # Setup the activity threshold
+        activitythlabel=ctk.CTkLabel(master=otherparameters, text="Activity threshold:")
+        activitythlabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+        activitythtooltip = CTkToolTip(activitythlabel, message='Define the minimal activity a channel has to have, to be used in calculating well features. Value should be given in hertz, so a value of 0.1 would mean any channel with less that 1 spike per 10 seconds will be removed', wraplength=self.tooltipwraplength)
+        activitythinput=ctk.CTkEntry(otherparameters)
+        activitythinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+
+        """Buttons and functions for saving, resetting and importing parameters"""
+        def set_parameters(parameters):
+
+            # Make sure every entry is set to 'normal'
+            dropdown_var.set("DMP_noisebased")
+            removeinactivevar.set(True)
+            removeinactivefunc()
+            option_selected(dropdown_var.get())
+
+            lowcutoffinput.delete(0, END)
+            lowcutoffinput.insert(0, parameters["low cutoff"])
+            highcutoffinput.delete(0, END)
+            highcutoffinput.insert(0, parameters["high cutoff"])
+            orderinput.delete(0, END)
+            orderinput.insert(0, parameters["order"])
+            thresholdportioninput.delete(0, END)
+            thresholdportioninput.insert(0, parameters["threshold portion"])
+            stdevmultiplierinput.delete(0, END)
+            stdevmultiplierinput.insert(0, parameters["standard deviation multiplier"])
+            RMSmultiplierinput.delete(0, END)
+            RMSmultiplierinput.insert(0, parameters["rms multiplier"])
+            refractoryperiodinput.delete(0, END)
+            refractoryperiodinput.insert(0, parameters["refractory period"])
+            dropdown_var.set(parameters["spike validation method"])
+            exittimeinput.delete(0, END)
+            exittimeinput.insert(0, parameters["exit time"])
+            amplitudedropinput.delete(0, END)
+            amplitudedropinput.insert(0, parameters["drop amplitude"])
+            maxheightinput.delete(0, END)
+            maxheightinput.insert(0, parameters["max drop"])
+            minspikesinput.delete(0, END)
+            minspikesinput.insert(0, parameters["minimal amount of spikes"])
+            defaultthinput.delete(0, END)
+            defaultthinput.insert(0, parameters["default interval threshold"])
+            maxisiinput.delete(0, END)
+            maxisiinput.insert(0, parameters["max interval threshold"])
+            isikdebwinput.delete(0, END)
+            isikdebwinput.insert(0, parameters["burst detection kde bandwidth"])
+            minchannelsinput.delete(0, END)
+            minchannelsinput.insert(0, parameters["min channels"])
+            networkth_var.set(parameters["thresholding method"])
+            removeinactivevar.set(bool(parameters["remove inactive electrodes"]))
+            activitythinput.delete(0, END)
+            activitythinput.insert(0, parameters["activity threshold"])
+            multiprocessingvar.set(bool(parameters["use multiprocessing"]))
+            nbd_kde_bandwidth_input.delete(0, END)
+            nbd_kde_bandwidth_input.insert(0, parameters["nbd kde bandwidth"])
+
+            # Update other parameter availability
+            removeinactivefunc()
+            option_selected(dropdown_var.get())
+
+        def import_parameters():
+            parametersfile = filedialog.askopenfilename(filetypes=[("Parameter file", "*.json")])
+            if parametersfile == '':
+                return
+            parameters=json.load(open(parametersfile))
+            
+            set_parameters(parameters)
+
+        def save_parameters():
+            try:
+                self.parent.parameters['low cutoff']=int(lowcutoffinput.get())
+                self.parent.parameters['high cutoff']=int(highcutoffinput.get())
+                self.parent.parameters['order']=int(orderinput.get())
+                self.parent.parameters['refractory period']=float(refractoryperiodinput.get())
+                self.parent.parameters['exit time']=float(exittimeinput.get())
+                self.parent.parameters['burst detection kde bandwidth']=float(isikdebwinput.get())
+                self.parent.parameters['minimal amount of spikes']=int(minspikesinput.get())
+                self.parent.parameters['max interval threshold']=float(maxisiinput.get())
+                self.parent.parameters['default interval threshold']=float(defaultthinput.get())
+                self.parent.parameters['max drop']=float(maxheightinput.get())
+                self.parent.parameters['drop amplitude']=float(amplitudedropinput.get())
+                self.parent.parameters['standard deviation multiplier']=float(stdevmultiplierinput.get())
+                self.parent.parameters['rms multiplier']=float(RMSmultiplierinput.get())
+                self.parent.parameters['min channels']=float(minchannelsinput.get())
+                self.parent.parameters['thresholding method']=networkth_var.get()
+                self.parent.parameters['nbd kde bandwidth']=float(nbd_kde_bandwidth_input.get())
+                self.parent.parameters['remove inactive electrodes']=bool(removeinactivevar.get())
+                self.parent.parameters['activity threshold']=float(activitythinput.get())
+                self.parent.parameters['threshold portion']=float(thresholdportioninput.get())
+                self.parent.parameters['spike validation method']=str(dropdown_var.get())
+                self.parent.parameters['use multiprocessing']=bool(multiprocessingvar.get())
+                self.parent.show_frame(main_window)
+
+            except Exception as error:
+                traceback.print_exc()
+                CTkMessagebox(title="Error",
+                              message='Certain parameters could not be converted to the correct datatype (e.g. int or float). Please check if every parameter has the correct values',
+                              icon="cancel",
+                              wraplength=400)
+        
+        set_parameters(self.parent.parameters)
+
+        def set_default_parameters():
+            set_parameters(self.parent.default_parameters)
+
+        default_parameters=ctk.CTkButton(master=self, text="Restore default parameters", command=set_default_parameters)
+        default_parameters.grid(row=3, column=1, padx=10, pady=10, sticky='nsew')
+
+        import_parameters_button=ctk.CTkButton(master=self, text="Import parameters", command=import_parameters)
+        import_parameters_button.grid(row=3, column=2, padx=10, pady=10, sticky='nsew')
+
+        save_parameters_button=ctk.CTkButton(master=self, text="Save parameters and return", command=save_parameters)
+        save_parameters_button.grid(row=3, column=0, padx=10, pady=10, sticky='nsew')
+
+"""Select folder for results"""
+class select_folder_frame(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        self.folder_path=''
+        self.data_path=''
+
+        datalocation=ctk.CTkFrame(self)
+        datalocation.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
+
+        folderlabel=ctk.CTkLabel(master=datalocation, text="Folder:")
+        folderlabel.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+        self.btn_selectfolder=ctk.CTkButton(master=datalocation, text="Select a folder", command=self.openfolder)
+        self.btn_selectfolder.grid(row=0, column=1, padx=10, pady=10)
+
+        rawfilelabel=ctk.CTkLabel(master=datalocation, text="File:")
+        rawfilelabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        self.btn_selectrawfile=ctk.CTkButton(master=datalocation, text="Choose a file", command=self.openrawfile)
+        self.btn_selectrawfile.grid(row=1, column=1, padx=10, pady=10)
+
+        view_results_button=ctk.CTkButton(self, text="View results", command= lambda: self.go_to_results(parent))
+        view_results_button.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky='nesw')
+
+        return_button=ctk.CTkButton(self, text="Return", command= lambda: parent.show_frame(main_window))
+        return_button.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky='nesw')
+
+    def openfolder(self):
+            resultsfolder = filedialog.askdirectory()
+            if resultsfolder != '':
+                self.btn_selectfolder.configure(text=resultsfolder)
+                self.folder_path=resultsfolder
+    
+    def openrawfile(self):
+            selectedfile = filedialog.askopenfilename(filetypes=[("MEA data", "*.h5")])
+            if len(selectedfile)!=0:
+                self.btn_selectrawfile.configure(text=os.path.split(selectedfile)[1])
+                self.data_path=selectedfile
+
+    # Check if the correct folder/file has been selected
+    def go_to_results(self, parent):
+        if self.folder_path == '' or self.data_path == '':
+            CTkMessagebox(title="Error", message='Please select an output folder and raw datafile', icon="cancel", wraplength=400)
+            return
+        # Check for subfolders
+        if not(os.path.exists(f"{self.folder_path}/burst_values") and os.path.exists(f"{self.folder_path}/spike_values") and os.path.exists(f"{self.folder_path}/network_data")):
+            CTkMessagebox(title="Error", message='Could not load in the results, please make sure you have selected the correct folder', icon="cancel", wraplength=400)
+            return
+        
+        # Check for parameters json
+        try:
+            parameters=open(f"{self.folder_path}/parameters.json")
+            parameters=json.load(parameters)
+        except Exception as error:
+            traceback.print_exc()
+            CTkMessagebox(title='Error', message='Could not load in the results, please make sure you have selected the correct folder', icon='cancel', wraplength=400)
+            return
+        
+        # Check the raw datafile
+        try:
+            with h5py.File(self.data_path, 'r') as hdf_file:
+                datashape=hdf_file["Data/Recording_0/AnalogStream/Stream_0/ChannelData"].shape
+        except Exception as error:
+            traceback.print_exc()
+            CTkMessagebox(title='Error', message='Could not load in the raw data, please make sure you have selected the correct file', icon='cancel', wraplength=400)
+            return
+
+        # If everything is good, go to the next frame
+        parent.show_frame(view_results, folder=self.folder_path, rawfile=self.data_path)
+
+"""Select folder for results"""
+class view_results(ctk.CTkFrame):
+    def __init__(self, parent, folder, rawfile):
+        super().__init__(parent)
+
+        self.folder=folder
+        self.rawfile=rawfile
+        self.parent=parent
+
+        self.parent.title(f"CureQ MEA analysis tool - Version: {version('CureQ')} - {self.folder}")
+
+        self.tab_frame=ctk.CTkTabview(self, anchor='nw')
+        self.tab_frame.grid(column=0, row=0, sticky='nesw', pady=10, padx=10)
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        self.tab_frame.add("Single Electrode View")
+        self.tab_frame.tab("Single Electrode View").grid_columnconfigure(0, weight=1)
+        self.tab_frame.tab("Single Electrode View").grid_rowconfigure(0, weight=1)
+
+        self.tab_frame.add("Whole Well View")
+        self.tab_frame.tab("Whole Well View").grid_columnconfigure(0, weight=1)
+        self.tab_frame.tab("Whole Well View").grid_rowconfigure(0, weight=1)
+
+        # sev = single electrode view
+        # wwv = whole well view
+
+        # Load files
+        parameters=open(f"{folder}/parameters.json")
+        parameters=json.load(parameters)
+        with h5py.File(rawfile, 'r') as hdf_file:
+            datashape=hdf_file["Data/Recording_0/AnalogStream/Stream_0/ChannelData"].shape
+        well_amnt = datashape[0]/parameters["electrode amount"]
+
+        """Single electrode view"""
+        self.selected_well=1
+        sev_well_button_frame=ctk.CTkFrame(self.tab_frame.tab("Single Electrode View"))
+        sev_well_button_frame.grid(row=0, column=0, pady=10, padx=10, sticky='nesw')
+
+        sev_electrode_button_frame=ctk.CTkFrame(self.tab_frame.tab("Single Electrode View"))
+        sev_electrode_button_frame.grid(row=0, column=1, pady=10, padx=10, sticky='nesw')
+        
+        # Wellbuttons
+        ywells, xwells=parent.calculate_optimal_grid(well_amnt)
+        sev_wellbuttons=[]
         i=1
 
         for y in range(ywells):
             for x in range(xwells):
-                well_btn=ttk.Button(master=master, text=i, command=partial(button_command, i), style="wellbutton.TButton")
-                well_btn.grid(row=y, column=x, sticky='nesw', ipadx=25, ipady=25)
-                wellbuttons.append(well_btn)
+                well_btn=ctk.CTkButton(master=sev_well_button_frame, text=i, command=partial(self.set_selected_well, i), height=100, width=100, font=ctk.CTkFont(size=25))
+                well_btn.grid(row=y, column=x, sticky='nesw')
+                sev_wellbuttons.append(well_btn)
                 i+=1
-        return wellbuttons
 
-    '''This function takes the amount of electrodes the MEA has, and creates a correctly
-    sized grid with buttons for it'''
-    def create_electrodebuttons(master, electrode_amnt, button_command):
-        # Two presets for a 12 and 16 electrode MEA
+        # Electrode buttons
+        electrode_amnt = parameters["electrode amount"]
         if electrode_amnt==12:
+            # Preset for 12 electrode MEA
             electrode_layout=np.array([ [False, True, True, False],
                                         [True, True, True, True],
                                         [True, True, True, True],
                                         [False, True, True, False]])
-        elif electrode_amnt==16:    
-            electrode_layout=np.array([ [True, True, True, True],
-                                        [True, True, True, True],
-                                        [True, True, True, True],
-                                        [True, True, True, True]])
-        # If the MEA has a different amount of electrodes than 12 or 16, we calculate the grid with the following function
         else:
-            height, width = calculate_optimal_grid(electrode_amnt)
+            height, width = parent.calculate_optimal_grid(electrode_amnt)
             electrode_layout = np.ones((height, width), dtype=bool)
         i = 1
         electrodebuttons=[]
-
-        # Loop over the grid
         for x in range(electrode_layout.shape[0]):
             for y in range(electrode_layout.shape[1]):
                 if electrode_layout[x,y]:
-                    # And create a button for each of the electrodes
-                    electrode_btn=ttk.Button(master=master, text=i, command=partial(button_command, i), style="mediumbutton.TButton")
-                    electrode_btn.grid(row=x, column=y, sticky='nesw', ipadx=25, ipady=25)
+                    electrode_btn=ctk.CTkButton(master=sev_electrode_button_frame, text=i, command=partial(self.open_sev_tab, i), height=100, width=100, font=ctk.CTkFont(size=25))
+                    electrode_btn.grid(row=x, column=y, sticky='nesw')
                     electrodebuttons.append(electrode_btn)
                     i+=1
-        return electrodebuttons
 
-    def plot_network_bursts(master, parameters, well):
-        global resultsfolder
-        fig=network_burst_detection(outputpath=resultsfolder, wells=[well], electrode_amnt=parameters["electrode amount"], measurements=parameters["measurements"], hertz=parameters["sampling rate"], min_channels=parameters["min channels"], threshold_method=parameters["thresholding method"], bandwidth=parameters["nbd_kde_bandwidth"], plot_electrodes=True, savedata=False, save_figures=False)
-        if theme=='dark':
-            bgcolor='#1c1c1c'
-            axiscolour='#ecf3fa'
-        else:
-            bgcolor='#fafafa'
-            axiscolour='#221c1c'
-        
-        fig.set_facecolor(bgcolor)
-        for ax in fig.axes:
-            ax.set_facecolor(bgcolor)
-            # Change the other colours
-            ax.xaxis.label.set_color(axiscolour)
-            ax.yaxis.label.set_color(axiscolour)
-            for side in ['top', 'bottom', 'left', 'right']:
-                ax.spines[side].set_color(axiscolour)
-            ax.tick_params(axis='x', colors=axiscolour)
-            ax.tick_params(axis='y', colors=axiscolour)
-            ax.set_title(label=ax.get_title(),color=axiscolour)
+        """Whole well view"""
+        wwv_well_button_frame=ctk.CTkFrame(self.tab_frame.tab("Whole Well View"))
+        wwv_well_button_frame.grid(row=0, column=0, pady=10, padx=10, sticky='nesw')
 
-        plot_canvas = FigureCanvasTkAgg(fig, master=master)  
-        plot_canvas.get_tk_widget().grid(row=0, column=0, sticky='nsew')
-        toolbarframe=ttk.Frame(master=master)
-        toolbarframe.grid(row=1, column=0, sticky='s')
-        toolbar = NavigationToolbar2Tk(plot_canvas, toolbarframe)
-        toolbar.update()
-        plot_canvas.draw()
+        wwv_wellbuttons=[]
+        i=1
 
-    def plot_electrode_activity(master, parameters, well, bandwidth):
-        global resultsfolder
-        fig=well_electrodes_kde(outputpath=resultsfolder, well=well, electrode_amnt=parameters["electrode amount"], measurements=parameters["measurements"], hertz=parameters["sampling rate"], bandwidth=bandwidth)
-        if theme=='dark':
-            bgcolor='#1c1c1c'
-            axiscolour='#ecf3fa'
-        else:
-            bgcolor='#fafafa'
-            axiscolour='#221c1c'
-        fig.set_facecolor(bgcolor)
-        for ax in fig.axes:
-            ax.set_facecolor(bgcolor)
-            # Change the other colours
-            ax.xaxis.label.set_color(axiscolour)
-            ax.yaxis.label.set_color(axiscolour)
-            for side in ['top', 'bottom', 'left', 'right']:
-                ax.spines[side].set_color(axiscolour)
-            ax.tick_params(axis='x', colors=axiscolour)
-            ax.tick_params(axis='y', colors=axiscolour)
-            ax.set_title(label=ax.get_title(),color=axiscolour)
+        for y in range(ywells):
+            for x in range(xwells):
+                well_btn=ctk.CTkButton(master=wwv_well_button_frame, text=i, command=partial(self.open_wwv_tab, i), height=100, width=100, font=ctk.CTkFont(size=25))
+                well_btn.grid(row=y, column=x)
+                wwv_wellbuttons.append(well_btn)
+                i+=1
 
-        plot_canvas = FigureCanvasTkAgg(fig, master=master)  
-        plot_canvas.get_tk_widget().grid(row=0, column=0, sticky='nsew')
-        toolbarframe=ttk.Frame(master=master)
-        toolbarframe.grid(row=1, column=0)
-        toolbar = NavigationToolbar2Tk(plot_canvas, toolbarframe)
-        toolbar.update()
-        plot_canvas.draw()
+        # Button to return to main menu
+        return_to_main = ctk.CTkButton(master=self, text="Return to main menu", command=lambda: self.parent.show_frame(main_window), fg_color=parent.gray_1)
+        return_to_main.grid(row=1, column=0, pady=10, padx=10)
+    
+    def set_selected_well(self, i):
+        self.selected_well=i
 
-    def network_visualization(well):
-        global resultsfolder
-        # Open a new window and setup the notebook
-        main_well_window=tk.Toplevel(master=well_frame)
-        main_well_window.title(f'Well: {well}')
+    def open_sev_tab(self, electrode):
+        single_electrode_view(self.parent, self.folder, self.rawfile, self.selected_well, electrode)
+
+    def open_wwv_tab(self, well):
+        whole_well_view(self.parent, self.folder, well)
+
+"""Single electrode view toplevel"""
+class single_electrode_view(ctk.CTkToplevel):
+    def __init__(self, parent, folder, rawfile, well, electrode):
+        super().__init__(parent)
+        self.title(f"Well: {well}, Electrode: {electrode}")
+
+        self.tab_frame=ctk.CTkTabview(self, anchor='nw')
+        self.tab_frame.pack(fill='both', expand=True, pady=10, padx=10)
+
+        self.grid_rowconfigure(0, weight=1)
+
+        self.tab_frame.add("Spike Detection")
+        self.tab_frame.tab("Spike Detection").grid_columnconfigure(0, weight=1)
+        self.tab_frame.tab("Spike Detection").grid_rowconfigure(0, weight=1)
+
+        self.tab_frame.add("Burst Detection")
+        self.tab_frame.tab("Burst Detection").grid_columnconfigure(0, weight=1)
+        self.tab_frame.tab("Burst Detection").grid_rowconfigure(0, weight=1)
+
+        # Set the icon with a little delay, otherwise it does not work
         try:
-            main_well_window.iconbitmap(os.path.join(application_path))
+            self.after(250, lambda: self.iconbitmap(os.path.join(parent.icon_path)))
         except Exception as error:
             print(error)
 
-        well_nb=ttk.Notebook(master=main_well_window)
-        well_nb.pack(fill='both', expand=True)
+        self.parameters=open(f"{folder}/parameters.json")
+        self.parameters=json.load(self.parameters)
+        self.electrode_nr=(well-1)*self.parameters["electrode amount"]+electrode-1
+
+        self.rawfile=rawfile
+        self.folder=folder
         
-        network_burst_detection=ttk.Frame(master=well_nb)
-        network_burst_detection.pack(expand=True, fill='both')
+        """Spike detection"""
+        # Create a frame for the plots
+        self.electrode_plot_frame=ctk.CTkFrame(master=self.tab_frame.tab("Spike Detection"))
+        self.electrode_plot_frame.grid(row=0, column=0, sticky='nesw')
+        self.electrode_plot_frame.grid_columnconfigure(0, weight=1)
+        self.electrode_plot_frame.grid_rowconfigure(0, weight=1)
 
-        electrode_activity=ttk.Frame(master=well_nb)
-        electrode_activity.pack(expand=True, fill='both')
+        # Create a frame for the settings
+        electrode_settings_frame=ctk.CTkFrame(master=self.tab_frame.tab("Spike Detection"))
+        electrode_settings_frame.grid(row=1, column=0)
+        electrode_settings_frame.grid_columnconfigure(0, weight=1)
+        electrode_settings_frame.grid_columnconfigure(1, weight=1)
+        electrode_settings_frame.grid_columnconfigure(2, weight=1)
 
-        well_nb.add(network_burst_detection, text='Network burst detection')
-        well_nb.add(electrode_activity, text='Electrode activity')
+        self.tab_frame.tab("Spike Detection").grid_columnconfigure(0, weight=1)
+        self.tab_frame.tab("Spike Detection").grid_rowconfigure(0, weight=1)
 
-        '''Network burst detection'''
-        network_burst_plot_frame=ttk.Frame(master=network_burst_detection)
-        network_burst_plot_frame.grid(row=0, column=0, sticky='nesw')
-        network_burst_plot_frame.grid_columnconfigure(0, weight=1)
-        network_burst_plot_frame.grid_rowconfigure(0, weight=1)
+        # Bandpass options
+        bp_options_ew_frame = ctk.CTkFrame(master=electrode_settings_frame, fg_color=parent.primary_1)
+        bp_options_ew_frame.grid(row=0, column=0, pady=10, padx=10)
+        bandpass_options_label=ctk.CTkLabel(master=bp_options_ew_frame, text='Bandpass Parameters', font=ctk.CTkFont(size=25)).grid(row=0, column=0, pady=10, padx=10, sticky='w', columnspan=2)
 
-        # Load the parameters
-        parameters=open(f"{resultsfolder}/parameters.json")
-        parameters=json.load(parameters)
+        lowcut_label=ctk.CTkLabel(master=bp_options_ew_frame, text='Low cutoff').grid(row=1, column=0, pady=10, padx=10, sticky='w')
+        self.lowcut_ew_entry=ctk.CTkEntry(master=bp_options_ew_frame)
+        self.lowcut_ew_entry.grid(row=1, column=1, pady=10, padx=10, sticky='w')
 
-        # Initial plot
-        plot_network_bursts(master=network_burst_plot_frame, parameters=parameters, well=well)
+        highcut_label=ctk.CTkLabel(master=bp_options_ew_frame, text='High cutoff').grid(row=2, column=0, sticky='w', pady=10, padx=10)
+        self.highcut_ew_entry=ctk.CTkEntry(master=bp_options_ew_frame)
+        self.highcut_ew_entry.grid(row=2, column=1, pady=10, padx=10, sticky='w')
 
-        network_burst_detection.grid_columnconfigure(0, weight=1)
-        network_burst_detection.grid_rowconfigure(0, weight=3)
+        order_label=ctk.CTkLabel(master=bp_options_ew_frame, text='Order').grid(row=3, column=0, sticky='w', pady=10, padx=10)
+        self.order_ew_entry=ctk.CTkEntry(master=bp_options_ew_frame)
+        self.order_ew_entry.grid(row=3, column=1, pady=10, padx=10, sticky='w')
 
-        # Frame for the NB settings
-        nb_settings_frame=ttk.Labelframe(master=network_burst_detection, text="Network burst detection settings", style="Custom.TLabelframe")
-        nb_settings_frame.grid(row=1, column=0, padx=10, pady=10)
-
-        # NB settings disclaimer
-        nbd_disclaimer_label=ttk.Label(master=nb_settings_frame, text="Warning: altering these settings will have no effect on the output of the application\nor further analysis steps such as feature calculation.\nThese settings are here purely to visualize how these parameters could alter the analysis pipeline")
-        nbd_disclaimer_label.grid(row=0, column=2, rowspan=2, pady=10, padx=10, sticky='w')
-
-        # NB settings
-        min_channels_nb_label=ttk.Label(master=nb_settings_frame, text="Min channels (%)").grid(row=0, column=0, sticky='w', padx=10, pady=10)
-        min_channels_nb_entry=ttk.Entry(master=nb_settings_frame)
-        min_channels_nb_entry.grid(row=0, column=1, sticky='w', padx=10, pady=10)
+        # Threshold options
+        th_options_ew_frame = ctk.CTkFrame(master=electrode_settings_frame, fg_color=parent.primary_1)
+        th_options_ew_frame.grid(row=0, column=1, pady=10, padx=10)
+        threshold_options_label=ctk.CTkLabel(master=th_options_ew_frame, text='Threshold Parameters', font=ctk.CTkFont(size=25)).grid(row=0, column=0, pady=10, padx=10, sticky='w', columnspan=2)
         
-        th_method_nb_var = tk.StringVar(nb_settings_frame)
-        nwthoptions_nb = ['Yen', 'Otsu', 'Li', 'Isodata', 'Mean', 'Minimum', 'Triangle']
-        th_method_nb = ttk.Label(master=nb_settings_frame, text="Thresholding method:")
-        th_method_nb.grid(row=1, column=0, padx=10, pady=10, sticky='nesw')
-        th_method_dropdown_nb = ttk.OptionMenu(nb_settings_frame, th_method_nb_var, nwthoptions_nb[0], *nwthoptions_nb)
-        th_method_dropdown_nb.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+        stdevmultiplier_label=ctk.CTkLabel(master=th_options_ew_frame, text='Standard deviation multiplier').grid(row=1, column=0, pady=10, padx=10, sticky='w')
+        self.stdevmultiplier_ew_entry=ctk.CTkEntry(master=th_options_ew_frame)
+        self.stdevmultiplier_ew_entry.grid(row=1, column=1, pady=10, padx=10, sticky='w')
 
-        nbd_kde_bandwidth_nb_label=ttk.Label(master=nb_settings_frame, text="KDE Bandwidth:").grid(row=2, column=0, sticky='w', padx=10, pady=10)
-        nbd_kde_bandwidth_nb_entry=ttk.Entry(master=nb_settings_frame)
-        nbd_kde_bandwidth_nb_entry.grid(row=2, column=1, sticky='w', padx=10, pady=10)
+        RMSmultiplier_label=ctk.CTkLabel(master=th_options_ew_frame, text='RMS multiplier').grid(row=2, column=0, sticky='w', pady=10, padx=10)
+        self.RMSmultiplier_ew_entry=ctk.CTkEntry(master=th_options_ew_frame)
+        self.RMSmultiplier_ew_entry.grid(row=2, column=1, pady=10, padx=10, sticky='w')
 
-        def nb_default_values():
-            th_method_nb_var.set(parameters["thresholding method"])
-            min_channels_nb_entry.delete(0,END)
-            min_channels_nb_entry.insert(0,parameters["min channels"])
-            nbd_kde_bandwidth_nb_entry.delete(0, END)
-            nbd_kde_bandwidth_nb_entry.insert(0, parameters["nbd_kde_bandwidth"])
-            
+        thpn_label=ctk.CTkLabel(master=th_options_ew_frame, text='Threshold portion').grid(row=3, column=0, sticky='w', pady=10, padx=10)
+        self.thpn_ew_entry=ctk.CTkEntry(master=th_options_ew_frame)
+        self.thpn_ew_entry.grid(row=3, column=1, pady=10, padx=10, sticky='w')
 
-        nb_default_values()
+        # Spike validation options
+        val_options_ew_frame = ctk.CTkFrame(master=electrode_settings_frame, fg_color=parent.primary_1)
+        val_options_ew_frame.grid(row=0, column=2, pady=10, padx=10)
+        spike_val_options_label=ctk.CTkLabel(master=val_options_ew_frame, text='Spike Detection Parameters', font=ctk.CTkFont(size=25)).grid(row=0, column=0, pady=10, padx=10, sticky='w', columnspan=4)
 
-        def nb_update_plot():
-            temp_parameters=copy.deepcopy(parameters)
-            temp_parameters["min channels"]=float(min_channels_nb_entry.get())
-            temp_parameters["thresholding method"]=str(th_method_nb_var.get())
-            temp_parameters["nbd_kde_bandwidth"]=float(nbd_kde_bandwidth_nb_entry.get())
+        def ew_option_selected(event):
+            self.set_states()
+                
+        validation_options = ['DMP_noisebased', 'none']
+        self.validation_method_var = ctk.StringVar(value=validation_options[0])
+        validation_method_label = ctk.CTkLabel(master=val_options_ew_frame, text="Spike validation method:")
+        validation_method_label.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        self.validation_method_entry = ctk.CTkOptionMenu(val_options_ew_frame, variable=self.validation_method_var, values=validation_options, command=ew_option_selected)
+        self.validation_method_entry.grid(row=1, column=1, padx=10, pady=10, sticky='nesw')
 
-            plot_network_bursts(master=network_burst_plot_frame, parameters=temp_parameters, well=well)
+        rfpd_label=ctk.CTkLabel(master=val_options_ew_frame, text='Refractory period').grid(row=2, column=0, pady=10, padx=10, sticky='w')
+        self.rfpd_ew_entry=ctk.CTkEntry(master=val_options_ew_frame)
+        self.rfpd_ew_entry.grid(row=2, column=1, pady=10, padx=10, sticky='w')
 
-        def nb_reset():
-            nb_default_values()
-            nb_update_plot()
+        exittime_label=ctk.CTkLabel(master=val_options_ew_frame, text='Exit time').grid(row=3, column=0, pady=10, padx=10, sticky='w')
+        self.exittime_ew_entry=ctk.CTkEntry(master=val_options_ew_frame)
+        self.exittime_ew_entry.grid(row=3, column=1, pady=10, padx=10, sticky='w')
 
-        nb_update_plot_button=ttk.Button(master=nb_settings_frame, text="Update plot", command=nb_update_plot)
-        nb_update_plot_button.grid(row=3, column=0, sticky='nesw', padx=10, pady=10)
+        dropamplitude_label=ctk.CTkLabel(master=val_options_ew_frame, text='Drop amplitude').grid(row=1, column=2, pady=10, padx=10, sticky='w')
+        self.dropamplitude_ew_entry=ctk.CTkEntry(master=val_options_ew_frame)
+        self.dropamplitude_ew_entry.grid(row=1, column=3, pady=10, padx=10, sticky='w')
 
-        nb_reset_button=ttk.Button(master=nb_settings_frame, text="Reset", command=nb_reset)
-        nb_reset_button.grid(row=3, column=1, sticky='nesw', padx=10, pady=10)
+        maxdrop_label=ctk.CTkLabel(master=val_options_ew_frame, text='Max drop amount').grid(row=2, column=2, pady=10, padx=10, sticky='w')
+        self.maxdrop_ew_entry=ctk.CTkEntry(master=val_options_ew_frame)
+        self.maxdrop_ew_entry.grid(row=2, column=3, pady=10, padx=10, sticky='w')
 
-        '''Electrode activity'''
-        electrode_activity_plot_frame=ttk.Frame(master=electrode_activity)
-        electrode_activity_plot_frame.grid(row=0, column=0, sticky='nsew')
-        electrode_activity_plot_frame.grid_columnconfigure(0, weight=1)
-        electrode_activity_plot_frame.grid_rowconfigure(0, weight=1)
-        electrode_activity.grid_columnconfigure(0, weight=1)
-        electrode_activity.grid_rowconfigure(0, weight=1)
+        plot_rectangle_label=ctk.CTkLabel(master=val_options_ew_frame, text='Plot validation')
+        plot_rectangle_label.grid(row=3, column=2, pady=10, padx=10, sticky='w')
+        plot_rectangle_tooltip = CTkToolTip(plot_rectangle_label, message='Display the rectangles that have been used to validate the spikes. Warning: Plotting these is computationally expensive and might take a while', wraplength=parent.tooltipwraplength)
+        self.plot_rectangle=ctk.BooleanVar(value=False)
+        self.plot_rectangle.set(False)
+        self.plot_rectangle_ew_entry=ctk.CTkCheckBox(master=val_options_ew_frame, variable=self.plot_rectangle, text='')
+        self.plot_rectangle_ew_entry.grid(row=3, column=3, pady=10, padx=10, sticky='w')
 
-        def_bw_value=0.1
-        plot_electrode_activity(master=electrode_activity_plot_frame, parameters=parameters, well=well, bandwidth=def_bw_value)
+        # Set values and create initial plot
+        self.reset(parent)
 
-        electrode_activity_settings=ttk.Frame(master=electrode_activity)
-        electrode_activity_settings.grid(row=1, column=0)
+        # Buttons
+        update_plot_button=ctk.CTkButton(master=electrode_settings_frame, text='Update plot', command=partial(self.update_plot, parent))
+        update_plot_button.grid(row=1, column=0, pady=10, padx=10, sticky='nesw')
 
-        el_act_bw_label=ttk.Label(master=electrode_activity_settings, text="KDE bandwidth")
-        el_act_bw_label.grid(row=0, column=0, sticky='nesw', padx=10, pady=10)
-        el_act_bw_entry=ttk.Entry(master=electrode_activity_settings)
-        el_act_bw_entry.grid(row=0, column=1, sticky='nesw', pady=10, padx=10)
-        el_act_bw_entry.insert(0, def_bw_value)
+        reset_button = ctk.CTkButton(master=electrode_settings_frame, text='Reset', command=partial(self.reset, parent))
+        reset_button.grid(row=1, column=1, pady=10, padx=10, sticky='nesw')
 
-        def update_electrode_activity():
-            plot_electrode_activity(master=electrode_activity_plot_frame, parameters=parameters, well=well, bandwidth=float(el_act_bw_entry.get()))
         
-        el_act_update_plot=ttk.Button(master=electrode_activity_settings, text='Update plot', command=update_electrode_activity)
-        el_act_update_plot.grid(row=1, column=0, sticky='nesw', padx=10, pady=10)
+        """Burst Detection"""
+        # Create the initial burst plot
+        self.burstplotsframe=ctk.CTkFrame(master=self.tab_frame.tab("Burst Detection"))
+        self.burstplotsframe.grid(row=0, column=0, sticky='nesw')
 
-        def reset_electrode_activity():
-            el_act_bw_entry.delete(0, END)
-            el_act_bw_entry.insert(0, def_bw_value)
-            update_electrode_activity()
+        burstsettingsframe=ctk.CTkFrame(master=self.tab_frame.tab("Burst Detection"), fg_color=parent.primary_1)
+        burstsettingsframe.grid(row=1, column=0, pady=10, padx=10)
 
-        el_act_reset=ttk.Button(master=electrode_activity_settings, text='Reset', command=reset_electrode_activity)
-        el_act_reset.grid(row=1, column=1, sticky='nesw', padx=10, pady=10)
+        # Burst detection settings
+        burst_options_label=ctk.CTkLabel(master=burstsettingsframe, text='Burst Detection Parameters', font=ctk.CTkFont(size=25)).grid(row=0, column=0, pady=10, padx=10, sticky='w', columnspan=4)
+        minspikes_bw_label=ctk.CTkLabel(master=burstsettingsframe, text='Minimal amount of spikes').grid(row=1, column=0, pady=10, padx=10, sticky='w')
+        self.minspikes_bw_entry=ctk.CTkEntry(master=burstsettingsframe)
+        self.minspikes_bw_entry.grid(row=1, column=1, pady=10, padx=10, sticky='w')
+        def_iv_bw_label=ctk.CTkLabel(master=burstsettingsframe, text='Default interval threshold').grid(row=2, column=0, pady=10, padx=10, sticky='w')
+        self.def_iv_bw_entry=ctk.CTkEntry(master=burstsettingsframe)
+        self.def_iv_bw_entry.grid(row=2, column=1, pady=10, padx=10, sticky='w')
+        max_iv_bw_label=ctk.CTkLabel(master=burstsettingsframe, text='Max interval threshold').grid(row=1, column=2, pady=10, padx=10, sticky='w')
+        self.max_iv_bw_entry=ctk.CTkEntry(master=burstsettingsframe)
+        self.max_iv_bw_entry.grid(row=1, column=3, pady=10, padx=10, sticky='w')
+        kde_bw_bw_label=ctk.CTkLabel(master=burstsettingsframe, text='KDE bandwidth').grid(row=2, column=2, pady=10, padx=10, sticky='w')
+        self.kde_bw_bw_entry=ctk.CTkEntry(master=burstsettingsframe)
+        self.kde_bw_bw_entry.grid(row=2, column=3, pady=10, padx=10, sticky='w')
 
+        # Burst buttons
+        update_burst_plot_button=ctk.CTkButton(master=burstsettingsframe, text='Update plot', command=partial(self.update_burst_plot, parent))
+        update_burst_plot_button.grid(row=3, column=0, pady=10, padx=10, sticky='nesw', columnspan=2)
 
-    choose_well_nw=ttk.LabelFrame(master=well_frame, text='Select a well', style="Custom.TLabelframe")
-    choose_well_nw.grid(column=0, row=0, sticky='nesw', padx=10)
+        reset_burst_button = ctk.CTkButton(master=burstsettingsframe, text='Reset', command=partial(self.burst_reset, parent))
+        reset_burst_button.grid(row=3, column=2, pady=10, padx=10, sticky='nesw', columnspan=2)
 
-    '''This function handles all the preparation necessary for properly viewing the analysed data'''
-    def view_results_func():
-        global resultsfolder
-        # Check if the correct files have been selected
-        if os.path.exists(f"{resultsfolder}/burst_values") and os.path.exists(f"{resultsfolder}/spike_values") and os.path.exists(f"{resultsfolder}/network_data"):
-            # Load the parameters
-            try:
-                parameters=open(f"{resultsfolder}/parameters.json")
-                parameters=json.load(parameters)
-            except Exception as error:
-                traceback.print_exc()
-                tk.messagebox.showerror(title='Error', message='Could not load in the results, please make sure you have selected the correct folder')
-                return
-            # Load the raw data
-            try:
-                loaddatapopup=tk.Toplevel(resultfileframe)
-                loaddatapopup.title('Progress')
-                try:
-                    loaddatapopup.iconbitmap(os.path.join(application_path))
-                except Exception as error:
-                    traceback.print_exc()
-                progressinfo=ttk.Label(master=loaddatapopup, text='Loading in the raw data...')
-                progressinfo.grid(row=0, column=0, pady=10, padx=20)
-                # Check if we can open the data
-                with h5py.File(filename, 'r') as hdf_file:
-                    datashape=hdf_file["Data/Recording_0/AnalogStream/Stream_0/ChannelData"].shape
-            except Exception as error:
-                traceback.print_exc()
-                tk.messagebox.showerror(title='Error', message='Could not load in the raw data, please make sure you have selected the correct file')
-                loaddatapopup.destroy()
-                return
+        # Create first plot
+        self.burst_reset(parent)
+
+    def set_states(self):
+        validation_method = self.validation_method_var.get()
+        if validation_method=='DMP_noisebased':
+            self.exittime_ew_entry.configure(state="normal")
+            self.maxdrop_ew_entry.configure(state="normal")
+            self.dropamplitude_ew_entry.configure(state="normal")
+            self.plot_rectangle_ew_entry.configure(state="normal")
         else:
-            tk.messagebox.showerror(title='Error', message='Could not load in the results, please make sure you have selected the correct folder')
-            return
-        global feature_filepath
-        feature_filepath=f"{resultsfolder}/Features.csv"
-        choose_featurefile_button.configure(text=feature_filepath)
-        electrode_wellbuttons=create_wellbuttons(choose_well, datashape[0]/parameters["electrode amount"], well_button_pressed)
-        whole_wellbuttons=create_wellbuttons(choose_well_nw, datashape[0]/parameters["electrode amount"], network_visualization)
-        electrode_buttons=create_electrodebuttons(choose_electrode, parameters["electrode amount"], electrode_button_pressed)
-        loaddatapopup.destroy()
-        resultsframe.pack(fill='both', expand=True)
-        resultfileframe.pack_forget() 
+            self.exittime_ew_entry.configure(state="disabled")
+            self.maxdrop_ew_entry.configure(state="disabled")
+            self.dropamplitude_ew_entry.configure(state="disabled")
+            self.plot_rectangle.set(False)
+            self.plot_rectangle_ew_entry.configure(state="disabled")
 
-
-    def plot_single_electrode(master, parameters, electrode_nr, plot_rectangle):
-        with h5py.File(filename, 'r') as hdf_file:
+    def plot_single_electrode(self, parent, parameters):
+        with h5py.File(self.rawfile, 'r') as hdf_file:
             dataset=hdf_file["Data/Recording_0/AnalogStream/Stream_0/ChannelData"]
-            raw_data=dataset[electrode_nr]
-        electrode_data=butter_bandpass_filter(raw_data, lowcut=parameters["low cutoff"], highcut=parameters["high cutoff"], fs=parameters["sampling rate"], order=parameters["order"])
-        threshold=fast_threshold(electrode_data, hertz=parameters["sampling rate"], stdevmultiplier=parameters["standard deviation multiplier"], RMSmultiplier=parameters["rms multiplier"], threshold_portion=parameters["threshold portion"])
-        fig=spike_validation(data=electrode_data, electrode=electrode_nr, threshold=threshold, hertz=parameters["sampling rate"], spikeduration=parameters["refractory period"], exit_time_s=parameters["exit time"], amplitude_drop=parameters["drop amplitude"], plot_electrodes=True, electrode_amnt=parameters["electrode amount"], max_drop_amount=parameters["max drop amount"], outputpath='', savedata=False, plot_rectangles=plot_rectangle)
+            raw_data=dataset[self.electrode_nr]
+        electrode_data=butter_bandpass_filter(raw_data, parameters)
+        threshold=fast_threshold(electrode_data, parameters)
+        fig=spike_validation(data=electrode_data, electrode=self.electrode_nr, threshold=threshold, parameters=parameters, plot_electrodes=True, savedata=False, plot_rectangles=self.plot_rectangle.get())
+        
         # Check which colorscheme we have to use
-        if theme=='dark':
-            bgcolor='#1c1c1c'
-            axiscolour='#ecf3fa'
-        else:
-            bgcolor='#fafafa'
-            axiscolour='#221c1c'
+        axiscolour=parent.text_color
+        bgcolor=parent.gray_2
+
         # Set the plot background
         fig.set_facecolor(bgcolor)
         ax=fig.axes[0]
@@ -1517,29 +881,94 @@ def MEA_GUI():
         ax.tick_params(axis='y', colors=axiscolour)
         ax.set_title(label=ax.get_title(),color=axiscolour)
 
-        plot_canvas = FigureCanvasTkAgg(fig, master=master)  
+        plot_canvas = FigureCanvasTkAgg(fig, master=self.electrode_plot_frame)  
         plot_canvas.get_tk_widget().grid(row=0, column=0, sticky='nsew')
-        toolbarframe=ttk.Frame(master=master)
+        toolbarframe=ctk.CTkFrame(master=self.electrode_plot_frame, fg_color=parent.primary_1)
         toolbarframe.grid(row=1, column=0, sticky='s')
         toolbar = NavigationToolbar2Tk(plot_canvas, toolbarframe)
+        toolbar.config(background=parent.primary_1)
+        toolbar._message_label.config(background=parent.primary_1)
+        for button in toolbar.winfo_children():
+            button.config(background=parent.primary_1)
         toolbar.update()
         plot_canvas.draw()
 
-    def plot_burst_detection(master, parameters, electrode_nr):
-        global resultsfolder
-        with h5py.File(filename, 'r') as hdf_file:
-            dataset=hdf_file["Data/Recording_0/AnalogStream/Stream_0/ChannelData"]
-            raw_data=dataset[electrode_nr]
-        electrode_data=butter_bandpass_filter(raw_data, lowcut=parameters["low cutoff"], highcut=parameters["high cutoff"], fs=parameters["sampling rate"], order=parameters["order"])
-        KDE_fig, burst_fig = burst_detection(data=electrode_data, electrode=electrode_nr, electrode_amnt=parameters["electrode amount"], hertz=parameters["sampling rate"], kde_bandwidth=parameters["KDE bandwidth"], smallerneighbours=parameters["smaller neighbours"], minspikes_burst=parameters["minimal amount of spikes"], max_threshold=parameters["max interval threshold"], default_threshold=parameters["default interval threshold"], outputpath=resultsfolder, plot_electrodes=True, savedata=False)
-        
-        # Change the colours of the graph
-        if theme=='dark':
-            bgcolor='#1c1c1c'
-            axiscolour='#ecf3fa'
+    def update_plot(self, parent):
+        # Get the new parameters from the entry widgets
+        # Create a temporary dict we will give to the plot electrode function
+        temp_parameters=copy.deepcopy(self.parameters)
+        temp_parameters['low cutoff']=int(self.lowcut_ew_entry.get())
+        temp_parameters['high cutoff']=int(self.highcut_ew_entry.get())
+        temp_parameters['order']=int(self.order_ew_entry.get())
+        temp_parameters['standard deviation multiplier']=float(self.stdevmultiplier_ew_entry.get())
+        temp_parameters['rms multiplier']=float(self.RMSmultiplier_ew_entry.get())
+        temp_parameters['threshold portion']=float(self.thpn_ew_entry.get())
+        temp_parameters['refractory period']=float(self.rfpd_ew_entry.get())
+        if str(self.validation_method_var.get())=='none':
+            temp_parameters['drop amplitude']=0
         else:
-            bgcolor='#fafafa'
-            axiscolour='#221c1c'
+            temp_parameters['exit time']=float(self.exittime_ew_entry.get())
+            temp_parameters['drop amplitude']=float(self.dropamplitude_ew_entry.get())
+            temp_parameters['max drop']=float(self.maxdrop_ew_entry.get())
+        
+        # Update the output folder path, as this might have changed since the original analysis
+        temp_parameters['output path']=self.folder
+
+        # Plot the electrode with the new parameters
+        self.plot_single_electrode(parent, temp_parameters)
+
+    def default_values(self):
+        # Bandpass
+        self.lowcut_ew_entry.delete(0,END)
+        self.lowcut_ew_entry.insert(0,self.parameters["low cutoff"])
+        self.highcut_ew_entry.delete(0,END)
+        self.highcut_ew_entry.insert(0,self.parameters["high cutoff"])
+        self.order_ew_entry.delete(0,END)
+        self.order_ew_entry.insert(0,self.parameters["order"])
+        # Threshold
+        self.stdevmultiplier_ew_entry.delete(0,END)
+        self.stdevmultiplier_ew_entry.insert(0,self.parameters["standard deviation multiplier"])
+        self.RMSmultiplier_ew_entry.delete(0,END)
+        self.RMSmultiplier_ew_entry.insert(0,self.parameters["rms multiplier"])
+        self.thpn_ew_entry.delete(0,END)
+        self.thpn_ew_entry.insert(0,self.parameters["threshold portion"])
+        # Spike validation
+        self.rfpd_ew_entry.delete(0,END)
+        self.rfpd_ew_entry.insert(0,self.parameters["refractory period"])
+        self.exittime_ew_entry.delete(0,END)
+        self.exittime_ew_entry.insert(0,self.parameters["exit time"])
+        self.dropamplitude_ew_entry.delete(0,END)
+        self.dropamplitude_ew_entry.insert(0,self.parameters["drop amplitude"])
+        self.maxdrop_ew_entry.delete(0,END)
+        self.maxdrop_ew_entry.insert(0,self.parameters["max drop"])
+        self.plot_rectangle.set(False)
+        self.validation_method_var.set(self.parameters['spike validation method'])
+        self.set_states()
+    
+    def reset(self, parent):
+        # First, enable all the possibly disabled entries so we can alter the values
+        self.exittime_ew_entry.configure(state="normal")
+        self.maxdrop_ew_entry.configure(state="normal")
+        self.dropamplitude_ew_entry.configure(state="normal")
+        self.plot_rectangle_ew_entry.configure(state="normal")
+        # Insert the new values
+        self.default_values()
+        # Update the availability of certain entries
+        self.set_states()
+        # Update the plot
+        self.update_plot(parent)
+
+    def plot_burst_detection(self, parent, parameters):
+        with h5py.File(self.rawfile, 'r') as hdf_file:
+            dataset=hdf_file["Data/Recording_0/AnalogStream/Stream_0/ChannelData"]
+            raw_data=dataset[self.electrode_nr]
+        electrode_data=butter_bandpass_filter(raw_data, parameters)
+        KDE_fig, burst_fig = burst_detection(data=electrode_data, electrode=self.electrode_nr, parameters=parameters, plot_electrodes=True, savedata=False)
+        
+        # Check which colorscheme we have to use
+        axiscolour=parent.text_color
+        bgcolor=parent.gray_2
+
         for fig in [KDE_fig, burst_fig]:
             fig.set_facecolor(bgcolor)
             ax=fig.axes[0]
@@ -1552,287 +981,1161 @@ def MEA_GUI():
             ax.tick_params(axis='x', colors=axiscolour)
             ax.tick_params(axis='y', colors=axiscolour)
             ax.set_title(label=ax.get_title(),color=axiscolour)
+        
         # Plot the raw burst plot
-        burst_canvas = FigureCanvasTkAgg(burst_fig, master=master)  
+        burst_canvas = FigureCanvasTkAgg(burst_fig, master=self.burstplotsframe)  
         burst_canvas.get_tk_widget().grid(row=0, column=0, sticky='nsew')
-        bursttoolbarframe=ttk.Frame(master=master)
-        bursttoolbarframe.grid(row=1, column=0, sticky='s', columnspan=2)
-        bursttoolbar = NavigationToolbar2Tk(burst_canvas, bursttoolbarframe)
-        bursttoolbar.update()
+        toolbarframe=ctk.CTkFrame(master=self.burstplotsframe)
+        toolbarframe.grid(row=1, column=0, sticky='s', columnspan=2)
+        toolbar = NavigationToolbar2Tk(burst_canvas, toolbarframe)
+        toolbar.config(background=parent.primary_1)
+        toolbar._message_label.config(background=parent.primary_1)
+        for button in toolbar.winfo_children():
+            button.config(background=parent.primary_1)
+        toolbar.update()
         burst_canvas.draw()
 
         # Plot the KDE plot
-        KDE_canvas = FigureCanvasTkAgg(KDE_fig, master=master)  
+        KDE_canvas = FigureCanvasTkAgg(KDE_fig, master=self.burstplotsframe)  
         KDE_canvas.get_tk_widget().grid(row=0, column=1, sticky='nsew')
 
-        master.grid_columnconfigure(0, weight=3)
-        master.grid_columnconfigure(1, weight=1)
-        master.grid_rowconfigure(0, weight=1)
+        self.burstplotsframe.grid_columnconfigure(0, weight=3)
+        self.burstplotsframe.grid_columnconfigure(1, weight=1)
+        self.burstplotsframe.grid_rowconfigure(0, weight=1)
         KDE_canvas.draw()
 
-    def electrode_button_pressed(electrode):
-        global selected_electrode
-        global selected_well
-        selected_electrode=electrode
+    def update_burst_plot(self, parent):
+        # Get the new parameters from the entry widgets
+        temp_parameters=copy.deepcopy(self.parameters)
+        temp_parameters["minimal amount of spikes"]=int(self.minspikes_bw_entry.get())
+        temp_parameters["default interval threshold"]=float(self.def_iv_bw_entry.get())
+        temp_parameters["max interval threshold"]=float(self.max_iv_bw_entry.get())
+        temp_parameters["burst detection kde bandwidth"]=float(self.kde_bw_bw_entry.get())
 
-        # Open a new window
-        main_electrode_window=tk.Toplevel(master=electrode_frame)
-        main_electrode_window.title(f'Well: {selected_well}, electrode: {selected_electrode}')
+        # Update the output folder path, as this might have changed since the original analysis
+        temp_parameters['output path']=self.folder
+
+        self.plot_burst_detection(parent, temp_parameters)
+
+    def default_values_burst(self):
+        # Reset the values to the ones in the JSON file
+        self.minspikes_bw_entry.delete(0,END)
+        self.minspikes_bw_entry.insert(0,self.parameters["minimal amount of spikes"])
+        self.def_iv_bw_entry.delete(0,END)
+        self.def_iv_bw_entry.insert(0,self.parameters["default interval threshold"])
+        self.max_iv_bw_entry.delete(0,END)
+        self.max_iv_bw_entry.insert(0,self.parameters["max interval threshold"])
+        self.kde_bw_bw_entry.delete(0,END)
+        self.kde_bw_bw_entry.insert(0,self.parameters["burst detection kde bandwidth"])
+
+    def burst_reset(self, parent):
+        self.default_values_burst()
+        self.update_burst_plot(parent)
+
+"""Whole well view toplevel"""
+class whole_well_view(ctk.CTkToplevel):
+    def __init__(self, parent, folder, well):
+        super().__init__(parent)
+        self.title(f"Well: {well}")
+
+        self.tab_frame=ctk.CTkTabview(self, anchor='nw')
+        self.tab_frame.pack(fill='both', expand=True, pady=10, padx=10)
+
+        self.grid_rowconfigure(0, weight=1)
+
+        self.tab_frame.add("Network Burst Detection")
+        self.tab_frame.tab("Network Burst Detection").grid_columnconfigure(0, weight=1)
+        self.tab_frame.tab("Network Burst Detection").grid_rowconfigure(0, weight=1)
+
+        self.tab_frame.add("Well Activity")
+        self.tab_frame.tab("Well Activity").grid_columnconfigure(0, weight=1)
+        self.tab_frame.tab("Well Activity").grid_rowconfigure(0, weight=1)
+
+        # Set the icon with a little delay, otherwise it does not work
         try:
-            main_electrode_window.iconbitmap(os.path.join(application_path))
+            self.after(250, lambda: self.iconbitmap(os.path.join(parent.icon_path)))
         except Exception as error:
             print(error)
 
-        electrode_nb=ttk.Notebook(master=main_electrode_window)
-        electrode_nb.pack(fill='both', expand=True)
-        
-        electrode_window=ttk.Frame(master=electrode_nb)
-        electrode_window.pack(expand=True, fill='both')
+        self.parameters=open(f"{folder}/parameters.json")
+        self.parameters=json.load(self.parameters)
 
-        burst_frame=ttk.Frame(master=electrode_nb)
-        burst_frame.pack(fill='both', expand=True)
+        self.folder=folder
+        self.well=well
+        self.parent=parent
 
-        electrode_nb.add(electrode_window, text='Spike detection')
-        electrode_nb.add(burst_frame, text='Burst detection')
-
-        # Load the parameters
-        global resultsfolder
-        parameters=open(f"{resultsfolder}/parameters.json")
-        parameters=json.load(parameters)
-        electrode_nr=(selected_well-1)*parameters["electrode amount"]+selected_electrode-1
-
-        # Button to create/update the plot
-        def update_plot():
-            # Get the new parameters from the entry widgets
-            # Create a temporary dict we will give to the plot electrode function
-            temp_parameters=copy.deepcopy(parameters)
-            temp_parameters['low cutoff']=int(lowcut_ew_entry.get())
-            temp_parameters['high cutoff']=int(highcut_ew_entry.get())
-            temp_parameters['order']=int(order_ew_entry.get())
-            temp_parameters['standard deviation multiplier']=float(stdevmultiplier_ew_entry.get())
-            temp_parameters['rms multiplier']=float(RMSmultiplier_ew_entry.get())
-            temp_parameters['threshold portion']=float(thpn_ew_entry.get())
-            temp_parameters['refractory period']=float(rfpd_ew_entry.get())
-            if str(validation_method_var.get())=='none':
-                temp_parameters['drop amplitude']=0
-            else:
-                temp_parameters['exit time']=float(exittime_ew_entry.get())
-                temp_parameters['drop amplitude']=float(dropamplitude_ew_entry.get())
-                temp_parameters['max drop amount']=float(maxdrop_ew_entry.get())
-
-            # Plot the electrode with the new parameters
-            plot_single_electrode(electrode_window, temp_parameters, electrode_nr, plot_rectangle.get())
-
-        # Set the weights
-        electrode_window.grid_columnconfigure(0, weight=1)
-        electrode_window.grid_rowconfigure(0, weight=3)
-        electrode_window.grid_rowconfigure(2, weight=1)
+        """Network burst detection plot"""
+        # Create a frame for the plots
+        self.nbd_plot_frame=ctk.CTkFrame(master=self.tab_frame.tab("Network Burst Detection"))
+        self.nbd_plot_frame.grid(row=0, column=0, sticky='nesw')
+        self.nbd_plot_frame.grid_columnconfigure(0, weight=1)
+        self.nbd_plot_frame.grid_rowconfigure(0, weight=1)
 
         # Create a frame for the settings
-        electrode_settings_frame=ttk.Frame(master=electrode_window)
-        electrode_settings_frame.grid(row=2, column=0)
+        nbd_settings_frame=ctk.CTkFrame(master=self.tab_frame.tab("Network Burst Detection"))
+        nbd_settings_frame.grid(row=1, column=0)
 
-        # Bandpass options
-        bp_options_ew_frame = ttk.LabelFrame(master=electrode_settings_frame, text='Bandpass Filter', style="Custom.TLabelframe")
-        bp_options_ew_frame.grid(row=0, column=0, pady=10, padx=10, sticky='nsew')
-
-        lowcut_label=ttk.Label(master=bp_options_ew_frame, text='Low cutoff', font=(font,10)).grid(row=0, column=0, pady=10, padx=10, sticky='w')
-        lowcut_ew_entry=ttk.Entry(master=bp_options_ew_frame)
-        lowcut_ew_entry.grid(row=0, column=1, pady=10, padx=10, sticky='w')
-        highcut_label=ttk.Label(master=bp_options_ew_frame, text='High cutoff', font=(font,10)).grid(row=1, column=0, sticky='w', pady=10, padx=10)
-        highcut_ew_entry=ttk.Entry(master=bp_options_ew_frame)
-        highcut_ew_entry.grid(row=1, column=1, pady=10, padx=10, sticky='w')
-        order_label=ttk.Label(master=bp_options_ew_frame, text='Order', font=(font,10)).grid(row=2, column=0, sticky='w', pady=10, padx=10)
-        order_ew_entry=ttk.Entry(master=bp_options_ew_frame)
-        order_ew_entry.grid(row=2, column=1, pady=10, padx=10, sticky='w')
-
-        # Threshold options
-        th_options_ew_frame = ttk.LabelFrame(master=electrode_settings_frame, text='Threshold', style="Custom.TLabelframe")
-        th_options_ew_frame.grid(row=0, column=1, pady=10, padx=10, sticky='nesw')
+        # Network burst detection settings
+        # NB settings
+        burst_options_label=ctk.CTkLabel(master=nbd_settings_frame, text='Network Burst Detection Parameters', font=ctk.CTkFont(size=25)).grid(row=0, column=0, pady=10, padx=10, sticky='w', columnspan=2)
+        min_channels_nb_label=ctk.CTkLabel(master=nbd_settings_frame, text="Min channels (%)").grid(row=1, column=0, sticky='w', padx=10, pady=10)
+        self.min_channels_nb_entry=ctk.CTkEntry(master=nbd_settings_frame)
+        self.min_channels_nb_entry.grid(row=1, column=1, sticky='w', padx=10, pady=10)
         
-        stdevmultiplier_label=ttk.Label(master=th_options_ew_frame, text='Standard deviation multiplier', font=(font,10)).grid(row=0, column=0, pady=10, padx=10, sticky='w')
-        stdevmultiplier_ew_entry=ttk.Entry(master=th_options_ew_frame)
-        stdevmultiplier_ew_entry.grid(row=0, column=1, pady=10, padx=10, sticky='w')
-        RMSmultiplier_label=ttk.Label(master=th_options_ew_frame, text='RMS multiplier', font=(font,10)).grid(row=1, column=0, sticky='w', pady=10, padx=10)
-        RMSmultiplier_ew_entry=ttk.Entry(master=th_options_ew_frame)
-        RMSmultiplier_ew_entry.grid(row=1, column=1, pady=10, padx=10, sticky='w')
-        thpn_label=ttk.Label(master=th_options_ew_frame, text='Threshold portion', font=(font,10)).grid(row=2, column=0, sticky='w', pady=10, padx=10)
-        thpn_ew_entry=ttk.Entry(master=th_options_ew_frame)
-        thpn_ew_entry.grid(row=2, column=1, pady=10, padx=10, sticky='w')
+        self.th_method_nb_var = ctk.StringVar(value=nbd_settings_frame)
+        self.nwthoptions_nb = ['Yen', 'Otsu', 'Li', 'Isodata', 'Mean', 'Minimum', 'Triangle']
+        th_method_nb = ctk.CTkLabel(master=nbd_settings_frame, text="Thresholding method:")
+        th_method_nb.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+        self.th_method_dropdown_nb = ctk.CTkOptionMenu(nbd_settings_frame, variable=self.th_method_nb_var, values=self.nwthoptions_nb)
+        self.th_method_dropdown_nb.grid(row=2, column=1, padx=10, pady=10, sticky='w')
 
-        # Spike validation options
-        val_options_ew_frame = ttk.LabelFrame(master=electrode_settings_frame, text='Spike validation', style="Custom.TLabelframe")
-        val_options_ew_frame.grid(row=0, column=2, pady=10, padx=10)
+        nbd_kde_bandwidth_nb_label=ctk.CTkLabel(master=nbd_settings_frame, text="KDE Bandwidth:").grid(row=3, column=0, sticky='w', padx=10, pady=10)
+        self.nbd_kde_bandwidth_nb_entry=ctk.CTkEntry(master=nbd_settings_frame)
+        self.nbd_kde_bandwidth_nb_entry.grid(row=3, column=1, sticky='w', padx=10, pady=10)
 
-        def set_states():
-            validation_method = validation_method_var.get()
-            if validation_method=='DMP_noisebased':
-                exittime_ew_entry.configure(state="enabled")
-                maxdrop_ew_entry.configure(state="enabled")
-                dropamplitude_ew_entry.configure(state="enabled")
-                plot_rectangle_ew_entry.configure(state="enabled")
+        # Buttons
+        nb_update_plot_button=ctk.CTkButton(master=nbd_settings_frame, text="Update plot", command=self.update_plot)
+        nb_update_plot_button.grid(row=4, column=0, sticky='nesw', padx=10, pady=10)
+
+        nb_reset_button=ctk.CTkButton(master=nbd_settings_frame, text="Reset", command=self.reset)
+        nb_reset_button.grid(row=4, column=1, sticky='nesw', padx=10, pady=10)
+
+        # Create initial plot
+        self.reset()
+
+        '''Electrode activity'''
+        self.electrode_activity_plot_frame=ctk.CTkFrame(master=self.tab_frame.tab("Well Activity"))
+        self.electrode_activity_plot_frame.grid(row=0, column=0, sticky='nsew')
+        self.electrode_activity_plot_frame.grid_columnconfigure(0, weight=1)
+        self.electrode_activity_plot_frame.grid_rowconfigure(0, weight=1)
+        electrode_activity_settings=ctk.CTkFrame(master=self.tab_frame.tab("Well Activity"))
+        electrode_activity_settings.grid(row=1, column=0)
+
+        self.def_bw_value=0.1
+
+        el_act_bw_label=ctk.CTkLabel(master=electrode_activity_settings, text="KDE bandwidth")
+        el_act_bw_label.grid(row=0, column=0, sticky='w', padx=10, pady=10)
+        self.el_act_bw_entry=ctk.CTkEntry(master=electrode_activity_settings)
+        self.el_act_bw_entry.grid(row=0, column=1, sticky='nesw', pady=10, padx=10)
+        self.el_act_bw_entry.insert(0, self.def_bw_value)
+
+        # Buttons
+        el_act_update_plot=ctk.CTkButton(master=electrode_activity_settings, text='Update plot', command=self.well_activity_update_plot)
+        el_act_update_plot.grid(row=1, column=0, sticky='nesw', padx=10, pady=10)
+
+        el_act_reset=ctk.CTkButton(master=electrode_activity_settings, text='Reset', command=self.reset_electrode_activity)
+        el_act_reset.grid(row=1, column=1, sticky='nesw', padx=10, pady=10)
+
+        # Create initial plot
+        self.reset_electrode_activity()
+
+    def plot_network_bursts(self, parameters):
+        fig=network_burst_detection(wells=[self.well], parameters=parameters, plot_electrodes=True, savedata=False, save_figures=False)
+        
+        # Check which colorscheme we have to use
+        axiscolour=self.parent.text_color
+        bgcolor=self.parent.gray_2
+
+        fig.set_facecolor(bgcolor)
+        for ax in fig.axes:
+            ax.set_facecolor(bgcolor)
+            # Change the other colours
+            ax.xaxis.label.set_color(axiscolour)
+            ax.yaxis.label.set_color(axiscolour)
+            for side in ['top', 'bottom', 'left', 'right']:
+                ax.spines[side].set_color(axiscolour)
+            ax.tick_params(axis='x', colors=axiscolour)
+            ax.tick_params(axis='y', colors=axiscolour)
+            ax.set_title(label=ax.get_title(),color=axiscolour)
+
+        plot_canvas = FigureCanvasTkAgg(fig, master=self.nbd_plot_frame)  
+        plot_canvas.get_tk_widget().grid(row=0, column=0, sticky='nsew')
+        toolbarframe=ttk.Frame(master=self.nbd_plot_frame)
+        toolbarframe.grid(row=1, column=0, sticky='s')
+        toolbar = NavigationToolbar2Tk(plot_canvas, toolbarframe)
+        toolbar.config(background=self.parent.primary_1)
+        toolbar._message_label.config(background=self.parent.primary_1)
+        for button in toolbar.winfo_children():
+            button.config(background=self.parent.primary_1)
+        toolbar.update()
+        plot_canvas.draw()
+
+    def default_values(self):
+        self.th_method_nb_var.set(self.parameters["thresholding method"])
+        self.min_channels_nb_entry.delete(0,END)
+        self.min_channels_nb_entry.insert(0,self.parameters["min channels"])
+        self.nbd_kde_bandwidth_nb_entry.delete(0, END)
+        self.nbd_kde_bandwidth_nb_entry.insert(0, self.parameters["nbd kde bandwidth"])
+
+    def update_plot(self):
+        temp_parameters=copy.deepcopy(self.parameters)
+        temp_parameters["min channels"]=float(self.min_channels_nb_entry.get())
+        temp_parameters["thresholding method"]=str(self.th_method_nb_var.get())
+        temp_parameters["nbd kde bandwidth"]=float(self.nbd_kde_bandwidth_nb_entry.get())
+        
+        # Update the output folder path, as this might have changed since the original analysis
+        temp_parameters['output path']=self.folder
+
+        self.plot_network_bursts(parameters=temp_parameters)
+
+    def reset(self):
+        self.default_values()
+        self.update_plot()
+
+    def plot_well_activity(self):
+        fig=well_electrodes_kde(outputpath=self.folder, well=self.well, electrode_amnt=self.parameters["electrode amount"], measurements=self.parameters["measurements"], hertz=self.parameters["sampling rate"], bandwidth=float(self.el_act_bw_entry.get()))
+        
+        # Check which colorscheme we have to use
+        axiscolour="#586d97"
+        bgcolor=self.parent.gray_2
+        
+        fig.set_facecolor(bgcolor)
+        for ax in fig.axes:
+            ax.set_facecolor(bgcolor)
+            # Change the other colours
+            ax.xaxis.label.set_color(axiscolour)
+            ax.yaxis.label.set_color(axiscolour)
+            for side in ['top', 'bottom', 'left', 'right']:
+                ax.spines[side].set_color(axiscolour)
+            ax.tick_params(axis='x', colors=axiscolour)
+            ax.tick_params(axis='y', colors=axiscolour)
+            ax.set_title(label=ax.get_title(),color=axiscolour)
+
+        plot_canvas = FigureCanvasTkAgg(fig, master=self.electrode_activity_plot_frame)  
+        plot_canvas.get_tk_widget().grid(row=0, column=0, sticky='nsew')
+        toolbarframe=ttk.Frame(master=self.electrode_activity_plot_frame)
+        toolbarframe.grid(row=1, column=0)
+        toolbar = NavigationToolbar2Tk(plot_canvas, toolbarframe)
+        toolbar.config(background=self.parent.primary_1)
+        toolbar._message_label.config(background=self.parent.primary_1)
+        for button in toolbar.winfo_children():
+            button.config(background=self.parent.primary_1)
+        toolbar.update()
+        plot_canvas.draw()
+
+    def well_activity_update_plot(self):
+        self.plot_well_activity()
+
+    def reset_electrode_activity(self):
+        self.el_act_bw_entry.delete(0, END)
+        self.el_act_bw_entry.insert(0, self.def_bw_value)
+        self.well_activity_update_plot()
+
+
+"""Process single file"""
+class process_file_frame(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)  # Initialize the parent class
+
+        self.parent=parent
+
+        self.crashed=False
+        self.progressfile=''
+
+        self.grid_columnconfigure(0, weight=1)
+
+        # Values
+        self.selected_file=''
+
+        self.select_file_button = ctk.CTkButton(master=self, text="Select a file", command=self.select_file)
+        self.select_file_button.grid(row=0, column=0, pady=5, padx=5, sticky='nesw')
+
+        parametersframe = ctk.CTkFrame(master=self)
+        parametersframe.grid(row=1, column=0, padx=5, pady=5, sticky='nesw')
+
+        parametersframe.grid_columnconfigure(0, weight=1)
+        parametersframe.grid_columnconfigure(1, weight=1)
+
+        sampling_rate_label = ctk.CTkLabel(master=parametersframe, text="Sampling Rate:")
+        sampling_rate_label.grid(row=0, column=0, pady=10, padx=10, sticky='w')
+
+        self.sampling_rate_entry = ctk.CTkEntry(master=parametersframe)
+        self.sampling_rate_entry.grid(row=0, column=1, sticky='nesw', pady=10, padx=10)
+
+        electrode_amnt_label = ctk.CTkLabel(master=parametersframe, text="Electrode amount:")
+        electrode_amnt_label.grid(row=1, column=0, pady=10, padx=10, sticky='w')
+
+        self.electrode_amnt_entry = ctk.CTkEntry(master=parametersframe)
+        self.electrode_amnt_entry.grid(row=1, column=1, sticky='nesw', pady=10, padx=10)
+
+        self.start_button = ctk.CTkButton(master=self, text="Start Analysis", command=lambda: threading.Thread(target=self.start_analysis).start())
+        self.start_button.grid(row=2, column=0, pady=5, padx=5, sticky='nesw')
+
+        self.return_button = ctk.CTkButton(master=self, text="Return to Main Menu", command=lambda: parent.show_frame(main_window), fg_color=parent.gray_1)
+        self.return_button.grid(row=3, column=0, padx=5, pady=5, sticky='nesw')
+
+    def select_file(self):
+        selectedfile = filedialog.askopenfilename(filetypes=[("MEA data", "*.h5")])
+        if len(selectedfile)!=0:
+            self.selected_file=selectedfile
+            self.select_file_button.configure(text=selectedfile)
+
+    def call_library(self):
+        try:
+            electrode_amnt=int(self.electrode_amnt_entry.get())
+            sampling_rate=int(self.sampling_rate_entry.get())
+            analyse_wells(self.selected_file, electrode_amnt=electrode_amnt, sampling_rate=sampling_rate, parameters=self.parent.parameters)
+        except Exception as error:
+            CTkMessagebox(title="Error", message=f'Something went wrong during the analysis:\n{error}', icon="cancel", wraplength=400)
+            traceback.print_exc()
+            self.crashed=True
+            self.start_button.configure(state='normal')
+            self.return_button.configure(state='normal')
+
+    def abort_analysis(self):
+        np.save(self.progressfile, ["abort"])
+        print("Aborting analysis, please wait...")
+
+    def start_analysis(self):
+        # Check things
+        if self.selected_file=='':
+            CTkMessagebox(title="Error", message='Please select a file', icon="cancel", wraplength=400)
+            return
+        try:
+            sampling_rate=int(self.sampling_rate_entry.get())
+            electrode_amnt=int(self.electrode_amnt_entry.get())
+        except:
+            CTkMessagebox(title="Error", message='Please fill in the sampling rate and electrode amount.', icon="cancel", wraplength=400)
+            return
+
+        self.start_button.configure(state='disabled')
+        self.return_button.configure(state='disabled')
+
+        # Create a popup for the progress
+        popup=ctk.CTkToplevel(self)
+        popup.title('Progress')
+
+        try:
+            popup.after(250, lambda: popup.iconbitmap(os.path.join(self.parent.icon_path)))
+        except Exception as error:
+            print(error)
+
+        popup.grid_columnconfigure(0, weight=1)
+
+        popup.protocol("WM_DELETE_WINDOW", lambda: self.abort_analysis())
+
+        progress_label = ctk.CTkLabel(master=popup, text="The MEA data is being processed, please wait for the application to finish.")
+        progress_label.grid(row=0, column=0, pady=10, padx=10, sticky='nesw')
+
+        progressbar=ctk.CTkProgressBar(master=popup, orientation='horizontal', mode='determinate', progress_color="#239b56", width=400)
+        progressbar.grid(row=1, column=0, pady=10, padx=10, sticky='nesw')
+        progressbar.set(0)
+
+        progress_info = ctk.CTkLabel(master=popup, text='')
+        progress_info.grid(row=2, column=0, pady=10, padx=10, sticky='nesw')
+
+        # Start the analysis in a new thread
+        process=threading.Thread(target=self.call_library)
+        process.start()
+
+        # And keep track of the progress
+        start=time.time()
+        path=os.path.split(self.selected_file)[0]
+        self.progressfile=f"{path}/progress.npy"
+        # Remove potential pre-existing progressfile
+        try: 
+            os.remove(self.progressfile)
+        except:
+            pass
+        while True:
+            currenttime=time.time()
+            elapsed=round(currenttime-start,1)
+            try:
+                progress=np.load(self.progressfile)
+            except:
+                progress=['starting']
+            if self.crashed:
+                popup.destroy()
+                os.remove(self.progressfile)
+                self.start_button.configure(state='normal')
+                self.return_button.configure(state='normal')
+                return
+            if progress[0]=='done':
+                break
+            elif progress[0]=='starting':
+                progress_info.configure(text=f'Loading raw data, time elapsed: {elapsed} seconds')
+            elif progress[0]=='rechunking':
+                progress_info.configure(text=f'Rechunking data to new chunk shape, time elapsed: {elapsed} seconds')
+            elif progress[0]=='abort':
+                progress_info.configure(text=f'Aborting analysis, please wait...')
+            elif progress[0]=='stopped':
+                popup.destroy()
+                os.remove(self.progressfile)
+                self.start_button.configure(state='normal')
+                self.return_button.configure(state='normal')
+                return
             else:
-                exittime_ew_entry.configure(state="disabled")
-                maxdrop_ew_entry.configure(state="disabled")
-                dropamplitude_ew_entry.configure(state="disabled")
-                plot_rectangle.set(False)
-                plot_rectangle_ew_entry.configure(state="disabled")
-        def ew_option_selected(event):
-            set_states()
+                progressbar.set(progress[0]/progress[1])
+                progress_info.configure(text=f"Analyzing data, channel: {progress[0]}/{progress[1]}, time elapsed: {elapsed} seconds")
+            time.sleep(0.01)
+        currenttime=time.time()
+        elapsed=round(currenttime-start,2)
+        os.remove(self.progressfile)
+        progress_label.configure(text='')
+        progress_info.configure(text=f"Analysis finished in {elapsed} seconds.")
+        popup.protocol("WM_DELETE_WINDOW", popup.destroy)
+        self.start_button.configure(state='normal')
+        self.return_button.configure(state='normal')
+
+"""Batch processing"""
+class batch_processing(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)  # Initialize the parent class
+
+        self.parent=parent
+
+        # Configure grid layout
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        # Different main frames
+        self.file_selection_frame=ctk.CTkFrame(self)
+        self.file_selection_frame.grid(row=0, column=0, sticky='nsew')
+        self.file_selection_frame.grid_columnconfigure(0, weight=1)
+        self.file_selection_frame.grid_rowconfigure(0, weight=0)
+        self.file_selection_frame.grid_rowconfigure(1, weight=1)
+        self.file_selection_frame.grid_rowconfigure(2, weight=0)
+
+        # List to store selected file paths
+        self.selected_files = []
+
+        # Configure appearance
+        ctk.set_appearance_mode("System")
+        ctk.set_default_color_theme("blue")
+
+        """ Folder selection frame """
+        self.folder_frame = ctk.CTkFrame(self.file_selection_frame, fg_color=parent.gray_3)
+        self.folder_frame.grid(row=0, column=0, padx=20, pady=10, sticky="ew")
         
+        # Select folder button
+        self.select_folder_btn = ctk.CTkButton(
+            self.folder_frame, 
+            text="Select Folder", 
+            command=self.select_folder,
+            fg_color=parent.primary_3,
+            hover_color=parent.primary_3_hover
+        )
+        self.select_folder_btn.pack(pady=10, padx=10, fill="x")
+
+        # Treeview frame
+        self.tree_frame = ctk.CTkFrame(self.file_selection_frame)
+        self.tree_frame.grid(row=1, column=0, padx=20, pady=10, sticky="nsew")
+        self.tree_frame.grid_columnconfigure(0, weight=1)
+        self.tree_frame.grid_rowconfigure(0, weight=1)
+
+        # Vertical Scrollbar
+        self._vertical_scrollbar = ctk.CTkScrollbar(
+            self.tree_frame, 
+            orientation="vertical",
+            button_color=parent.primary_3,
+            button_hover_color=parent.primary_3_hover
+        )
+        self._vertical_scrollbar.grid(row=0, column=1, padx=(0, 5), pady=5, sticky='ns')
         
-        validation_method_var = tk.StringVar(validationparameters)
-        validation_options = ['DMP_noisebased', 'none']
-        validation_method_label = ttk.Label(master=val_options_ew_frame, text="Spike validation method:", font=(font,10))
-        validation_method_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
-        validation_method_entry = ttk.OptionMenu(val_options_ew_frame, validation_method_var, validation_options[0], *options, command=ew_option_selected)
-        validation_method_entry.grid(row=0, column=1, padx=10, pady=10, sticky='nesw')
+        # Horizontal Scrollbar
+        self._horizontal_scrollbar = ctk.CTkScrollbar(
+            self.tree_frame, 
+            orientation="horizontal",
+            button_color=parent.primary_3,
+            button_hover_color=parent.primary_3_hover
+        )
+        self._horizontal_scrollbar.grid(row=1, column=0, padx=5, pady=(0, 5), sticky='ew')
 
-        rfpd_label=ttk.Label(master=val_options_ew_frame, text='Refractory period', font=(font,10)).grid(row=1, column=0, pady=10, padx=10, sticky='w')
-        rfpd_ew_entry=ttk.Entry(master=val_options_ew_frame)
-        rfpd_ew_entry.grid(row=1, column=1, pady=10, padx=10, sticky='w')
-        exittime_label=ttk.Label(master=val_options_ew_frame, text='Exit time', font=(font,10)).grid(row=2, column=0, pady=10, padx=10, sticky='w')
-        exittime_ew_entry=ttk.Entry(master=val_options_ew_frame)
-        exittime_ew_entry.grid(row=2, column=1, pady=10, padx=10, sticky='w')
-        dropamplitude_label=ttk.Label(master=val_options_ew_frame, text='Drop amplitude', font=(font,10)).grid(row=0, column=2, pady=10, padx=10, sticky='w')
-        dropamplitude_ew_entry=ttk.Entry(master=val_options_ew_frame)
-        dropamplitude_ew_entry.grid(row=0, column=3, pady=10, padx=10, sticky='w')
-        maxdrop_label=ttk.Label(master=val_options_ew_frame, text='Max drop amount', font=(font,10)).grid(row=1, column=2, pady=10, padx=10, sticky='w')
-        maxdrop_ew_entry=ttk.Entry(master=val_options_ew_frame)
-        maxdrop_ew_entry.grid(row=1, column=3, pady=10, padx=10, sticky='w')
-        plot_rectangle_label=ttk.Label(master=val_options_ew_frame, text='Plot validation', font=(font,10))
-        plot_rectangle_label.grid(row=2, column=2, pady=10, padx=10, sticky='w')
-        plot_rectangle_tooltip = Tooltip(plot_rectangle_label, 'Display the rectangles that have been used to validate the spikes\nWarning: Plotting these is computationally expensive and might take a while')
-        plot_rectangle_label.bind("<Enter>", plot_rectangle_tooltip.show_tooltip)
-        plot_rectangle_label.bind("<Leave>", plot_rectangle_tooltip.hide_tooltip)
-        plot_rectangle=BooleanVar()
-        plot_rectangle_ew_entry=ttk.Checkbutton(master=val_options_ew_frame, variable=plot_rectangle)
-        plot_rectangle_ew_entry.grid(row=2, column=3, pady=10, padx=10, sticky='w')
+        # Treeview Customisation
+        bg_color = self.tree_frame.cget("fg_color")[1]
+        text_color = parent._apply_appearance_mode(ctk.ThemeManager.theme["CTkLabel"]["text_color"])
+        selected_color = parent._apply_appearance_mode(ctk.ThemeManager.theme["CTkButton"]["fg_color"])
+        treestyle = ttk.Style()
+        treestyle.theme_use('default')
+        treestyle.configure("Treeview", background=bg_color, foreground=text_color, fieldbackground=bg_color, borderwidth=0)
+        treestyle.map('Treeview', background=[('selected', bg_color)], foreground=[('selected', selected_color)])
+        parent.bind("<<TreeviewSelect>>", lambda event: parent.focus_set())
 
-        # Insert the default values from the json in the entries
-        def default_values():
-            # Bandpass
-            lowcut_ew_entry.delete(0,END)
-            lowcut_ew_entry.insert(0,parameters["low cutoff"])
-            highcut_ew_entry.delete(0,END)
-            highcut_ew_entry.insert(0,parameters["high cutoff"])
-            order_ew_entry.delete(0,END)
-            order_ew_entry.insert(0,parameters["order"])
-            # Threshold
-            stdevmultiplier_ew_entry.delete(0,END)
-            stdevmultiplier_ew_entry.insert(0,parameters["standard deviation multiplier"])
-            RMSmultiplier_ew_entry.delete(0,END)
-            RMSmultiplier_ew_entry.insert(0,parameters["rms multiplier"])
-            thpn_ew_entry.delete(0,END)
-            thpn_ew_entry.insert(0,parameters["threshold portion"])
-            # Spike validation
-            rfpd_ew_entry.delete(0,END)
-            rfpd_ew_entry.insert(0,parameters["refractory period"])
-            exittime_ew_entry.delete(0,END)
-            exittime_ew_entry.insert(0,parameters["exit time"])
-            dropamplitude_ew_entry.delete(0,END)
-            dropamplitude_ew_entry.insert(0,parameters["drop amplitude"])
-            maxdrop_ew_entry.delete(0,END)
-            maxdrop_ew_entry.insert(0,parameters["max drop amount"])
-            plot_rectangle.set(False)
-            validation_method_var.set(parameters['spike validation method'])
-            set_states()
+        # Treeview with scrollbars
+        self.tree = ttk.Treeview(
+            self.tree_frame, 
+            columns=("fullpath", "type"), 
+            selectmode="extended",
+            yscrollcommand=self._vertical_scrollbar.set,
+            xscrollcommand=self._horizontal_scrollbar.set,
+            show='tree'
+        )
+        self.tree.grid(row=0, column=0, sticky="nsew", pady=(5,0), padx=(5,0))
 
-        def reset():
-            # First, enable all the possibly disabled entries so we can alter the values
-            exittime_ew_entry.configure(state="enabled")
-            maxdrop_ew_entry.configure(state="enabled")
-            dropamplitude_ew_entry.configure(state="enabled")
-            plot_rectangle_ew_entry.configure(state="enabled")
-            # Insert the new values
-            default_values()
-            # Update the availability of certain entries
-            set_states()
-            # Update the plot
-            update_plot()
+        # Link scrollbars to Treeview
+        self._vertical_scrollbar.configure(command=self.tree.yview)
+        self._horizontal_scrollbar.configure(command=self.tree.xview)
 
-        # Set default values and create initial plot
-        reset()
+        # Configure treeview columns
+        self.tree.heading("#0", text="Directory Structure")
+        self.tree.column("#0", width=600, stretch=True)
+
+        # Selected tag
+        self.tree.tag_configure('selected', background='#627747')
+
+        # Print selected files button
+        self.print_files_btn = ctk.CTkButton(
+            self.file_selection_frame, 
+            text="Confirm Selection", 
+            command=partial(self.confirm_selection, parent),
+            fg_color=parent.primary_3,
+            hover_color=parent.primary_3_hover
+        )
+        self.print_files_btn.grid(row=2, column=0, padx=10, pady=10, sticky='nesw')
+
+        to_main_menu=ctk.CTkButton(self.file_selection_frame, 
+            text="Return to Main Menu", 
+            command=lambda: parent.show_frame(main_window),
+            fg_color=parent.primary_3,
+            hover_color=parent.primary_3_hover)
+        to_main_menu.grid(row=3, column=0, padx=10, pady=10, sticky='news')
+
+        # Bind events
+        self.tree.bind("<<TreeviewOpen>>", self.open_folder)
+        self.tree.bind("<<TreeviewSelect>>", self.item_selected)
+
+        """ Process files frame """
+        self.selected_files_labels = []
+        self.progressbars = []
+        self.analysis_crashed=False     # Flag to communicate if analysis has crashed with a file
+
+        # Frames
+        self.process_files_frame=ctk.CTkFrame(self)
+        self.selected_files_frame = ctk.CTkFrame(self.process_files_frame, fg_color=parent.gray_3)
+        self.selected_files_frame.grid(row=0, column=0, pady=5, padx=5, sticky='nesw')
+        self.selected_files_frame.grid_columnconfigure(0, weight=1)
+        self.selected_files_frame.grid_rowconfigure(0, weight=1)
+
+        self.process_files_frame.grid_columnconfigure(0, weight=2)
+        self.process_files_frame.grid_rowconfigure(0, weight=1)
+        self.process_files_frame.grid_columnconfigure(1, weight=1)
+
+        self.settings_and_progress_frame=ctk.CTkFrame(self.process_files_frame, fg_color="transparent")
+        self.settings_and_progress_frame.grid(row=0, column=1, sticky='nesw')
+        self.settings_and_progress_frame.grid_rowconfigure(1, weight=1)
+        self.settings_and_progress_frame.grid_columnconfigure(0, weight=1)
+
+        self.analysis_settings_frame=ctk.CTkFrame(self.settings_and_progress_frame, fg_color=parent.gray_3)
+        self.analysis_settings_frame.grid(row=0, column=0, sticky='nesw', pady=5, padx=5)
+
+        self.analysis_progress_frame=ctk.CTkFrame(self.settings_and_progress_frame, fg_color=parent.gray_3)
+        self.analysis_progress_frame.grid(row=1, column=0, sticky='nesw', pady=5, padx=5)
+        self.analysis_progress_frame.grid_columnconfigure(0, weight=1)
         
-        update_plot_button=ttk.Button(master=electrode_settings_frame, text='Update plot', command=update_plot)
-        update_plot_button.grid(row=1, column=0, pady=10, padx=10, sticky='nsew')
+        # Analysis settings
+        self.sampling_rate_label = ctk.CTkLabel(self.analysis_settings_frame, text="Sampling rate:")
+        self.sampling_rate_label.grid(row=0, column=0, pady=5, padx=5, sticky='w')
+        self.sampling_rate_input = ctk.CTkEntry(self.analysis_settings_frame)
+        self.sampling_rate_input.grid(row=0, column=1, pady=5, padx=5, sticky='w')
 
-        reset_button = ttk.Button(master=electrode_settings_frame, text='Reset', command=reset)
-        reset_button.grid(row=1, column=1, pady=10, padx=10, sticky='nsew')
+        self.electrode_amnt_label = ctk.CTkLabel(self.analysis_settings_frame, text="Electrode amount:")
+        self.electrode_amnt_label.grid(row=1, column=0, pady=5, padx=5, sticky='w')
+        self.electrode_amnt_input = ctk.CTkEntry(self.analysis_settings_frame)
+        self.electrode_amnt_input.grid(row=1, column=1, pady=5, padx=5, sticky='w')
 
-        disclaimerlabel=ttk.Label(master=electrode_settings_frame, text='Warning: altering these settings will have no effect on the output of the application,\nor further analysis steps such as burst detection.\nThese settings are here purely to visualize how these parameters could alter the analysis pipeline', font=(font,10), anchor='e')
-        disclaimerlabel.grid(row=1, column=2, pady=10, padx=10, sticky='nsew')
+        # Analysis and progress
+        self.start_analysis_button = ctk.CTkButton(self.analysis_progress_frame, text="Initiate Analysis", hover_color=parent.primary_3_hover, command=lambda: threading.Thread(target=self.initiate_analysis).start(), fg_color=parent.primary_3)
+        self.start_analysis_button.grid(row=0, column=0, sticky='nesw', padx=5, pady=5)
 
-        # Now do the same for the burst window
+        self.progressbar = ctk.CTkProgressBar(self.analysis_progress_frame, orientation='horizontal', mode='determinate', progress_color="#239b56", border_color=parent.primary_3)
+        self.progressbar.grid(row=1, column=0, sticky='nesw', padx=5, pady=20)
+        self.progressbar.set(0)
 
-        # Create the initial burst plot
-        burstplotsframe=ttk.Frame(master=burst_frame)
-        burstplotsframe.grid(row=0, column=0, sticky='nesw')
+        self.abort_analysis_bool=False
+        self.abort_analysis_button = ctk.CTkButton(self.analysis_progress_frame, text="Abort Analysis", fg_color=parent.primary_3, hover_color=parent.primary_3_hover, command=self.abort_analysis_func)
+        self.abort_analysis_button.grid(row=2, column=0, sticky='nesw', padx=5, pady=5)
+        self.abort_analysis_button.configure(state='disabled')
 
-        burst_frame.grid_columnconfigure(0, weight=1)
-        burst_frame.grid_rowconfigure(0, weight=3)
+        self.back_button = ctk.CTkButton(self.analysis_progress_frame, text="Return", fg_color=parent.primary_3, hover_color=parent.primary_3_hover, command=lambda: parent.show_frame(main_window))
+        self.back_button.grid(row=3, column=0, sticky='nesw', padx=5, pady=5)
 
-        burstsettingsframe=ttk.Labelframe(master=burst_frame, text='Burst detection settings', style="Custom.TLabelframe")
-        burstsettingsframe.grid(row=1, column=0)
-        burst_frame.grid_rowconfigure(1, weight=1)
 
-        # Burst detection settings
-        minspikes_bw_label=ttk.Label(master=burstsettingsframe, text='Minimal amount of spikes', font=(font,10)).grid(row=0, column=0, pady=10, padx=10, sticky='w')
-        minspikes_bw_entry=ttk.Entry(master=burstsettingsframe)
-        minspikes_bw_entry.grid(row=0, column=1, pady=10, padx=10, sticky='w')
-        def_iv_bw_label=ttk.Label(master=burstsettingsframe, text='Default interval threshold', font=(font,10)).grid(row=1, column=0, pady=10, padx=10, sticky='w')
-        def_iv_bw_entry=ttk.Entry(master=burstsettingsframe)
-        def_iv_bw_entry.grid(row=1, column=1, pady=10, padx=10, sticky='w')
-        max_iv_bw_label=ttk.Label(master=burstsettingsframe, text='Max interval threshold', font=(font,10)).grid(row=2, column=0, pady=10, padx=10, sticky='w')
-        max_iv_bw_entry=ttk.Entry(master=burstsettingsframe)
-        max_iv_bw_entry.grid(row=2, column=1, pady=10, padx=10, sticky='w')
-        kde_bw_bw_label=ttk.Label(master=burstsettingsframe, text='KDE bandwidth', font=(font,10)).grid(row=0, column=2, pady=10, padx=10, sticky='w')
-        kde_bw_bw_entry=ttk.Entry(master=burstsettingsframe)
-        kde_bw_bw_entry.grid(row=0, column=3, pady=10, padx=10, sticky='w')
-        smaller_nb_bw_label=ttk.Label(master=burstsettingsframe, text='Smaller neighbours', font=(font,10)).grid(row=1, column=2, pady=10, padx=10, sticky='w')
-        smaller_nb_bw_entry=ttk.Entry(master=burstsettingsframe)
-        smaller_nb_bw_entry.grid(row=1, column=3, pady=10, padx=10, sticky='w')
+    # Select parent folder
+    def select_folder(self):
+        # Clear existing tree
+        for i in self.tree.get_children():
+            self.tree.delete(i)
+        self.selected_files=[]
 
-        def update_burst_plot():
-            # Get the new parameters from the entry widgets
-            temp_parameters=copy.deepcopy(parameters)
-            temp_parameters["minimal amount of spikes"]=int(minspikes_bw_entry.get())
-            temp_parameters["default interval threshold"]=float(def_iv_bw_entry.get())
-            temp_parameters["max interval threshold"]=float(max_iv_bw_entry.get())
-            temp_parameters["KDE bandwidth"]=float(kde_bw_bw_entry.get())
-            temp_parameters["smaller neighbours"]=int(smaller_nb_bw_entry.get())
+        # Open folder selection dialog
+        folder_path = filedialog.askdirectory()
+        if folder_path:
+            # Populate tree with root folder
+            root_id = self.tree.insert("", "end", text=os.path.basename(folder_path), 
+                                       values=(folder_path, "Folder"), open=True)
+            self.populate_tree(root_id, folder_path)
 
-            plot_burst_detection(master=burstplotsframe, parameters=temp_parameters, electrode_nr=electrode_nr)
+    def populate_tree(self, parent, path):
+        try:
+            for name in sorted(os.listdir(path)):
+                full_path = os.path.join(path, name)
+                if os.path.isdir(full_path):
+                    # Add folder
+                    folder_id = self.tree.insert(parent, "end", text=name, 
+                                                 values=(full_path, "Folder"))
+                    # Add a dummy child to enable expansion
+                    self.tree.insert(folder_id, "end", text="placeholder")
+                else:
+                    # Add file
+                    if name.endswith(".h5"):
+                        self.tree.insert(parent, "end", text=name, 
+                                        values=(full_path, "File"))
+        except PermissionError:
+            print(f"Permission denied for {path}")
 
-        def default_values_burst():
-            # Reset the values to the ones in the JSON file
-            minspikes_bw_entry.delete(0,END)
-            minspikes_bw_entry.insert(0,parameters["minimal amount of spikes"])
-            def_iv_bw_entry.delete(0,END)
-            def_iv_bw_entry.insert(0,parameters["default interval threshold"])
-            max_iv_bw_entry.delete(0,END)
-            max_iv_bw_entry.insert(0,parameters["max interval threshold"])
-            kde_bw_bw_entry.delete(0,END)
-            kde_bw_bw_entry.insert(0,parameters["KDE bandwidth"])
-            smaller_nb_bw_entry.delete(0,END)
-            smaller_nb_bw_entry.insert(0,parameters["smaller neighbours"])
+    def open_folder(self, event):
+        # Remove placeholder and populate actual contents when folder is opened
+        item = self.tree.focus()
+        if self.tree.get_children(item) and \
+           self.tree.item(self.tree.get_children(item)[0])['text'] == 'placeholder':
+            # Remove placeholder
+            self.tree.delete(self.tree.get_children(item)[0])
+            # Populate actual contents
+            self.populate_tree(item, self.tree.item(item, "values")[0])
 
-        def burst_reset():
-            default_values_burst()
-            update_burst_plot()
+    def deselect_all(self):
+        for item in self.tree.selection():
+            self.tree.selection_remove(item)
 
-        # Set default values and create initial plot
-        burst_reset()
+    def add_selection(self, item):
+        if len(self.tree.item(item)['tags'])!=0 and self.tree.item(item)['tags'][0]=="selected":
+            self.tree.item(item, tags=())
+            self.selected_files.remove(item)
+        else:
+            self.tree.item(item, tags="selected")
+            self.selected_files.append(item)
 
-        # Create update and reset buttons
-        update_burst_plot_button=ttk.Button(master=burstsettingsframe, text='Update plot', command=update_burst_plot)
-        update_burst_plot_button.grid(row=3, column=0, pady=10, padx=10, sticky='nsew', columnspan=2)
+    def item_selected(self, event):
+        for selected_item in self.tree.selection():
+            values = self.tree.item(selected_item, "values")
+            # If the selected item is a file
+            if values[1]=="File":
+                self.add_selection(selected_item)
+            # If the selected item is a folder
+            elif values[1]=="Folder":
+                children = self.tree.get_children(selected_item)
+                for child in children:
+                    if self.tree.item(child, "values")[1] == "File" and self.tree.item(child, "values")[0].endswith(".h5"):
+                        self.add_selection(child) 
+        self.deselect_all()
 
-        reset_burst_button = ttk.Button(master=burstsettingsframe, text='Reset', command=burst_reset)
-        reset_burst_button.grid(row=3, column=2, pady=10, padx=10, sticky='nsew', columnspan=2)
+    def confirm_selection(self, parent):
+        self.selected_files_table = ctk.CTkScrollableFrame(self.selected_files_frame, scrollbar_button_color=parent.primary_3, scrollbar_button_hover_color=parent.primary_3_hover)
+        self.selected_files_table.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
+        self.selected_files_table.columnconfigure(0, weight=1)
+        self.selected_files_table.columnconfigure(1, weight=1)
 
-        burstdisclaimerlabel=ttk.Label(master=burstsettingsframe, text='Warning: altering these settings will have no effect on the output of the application,\nor further analysis steps such as network burst detection.\nThese settings are here purely to visualize how these parameters could alter the analysis pipeline', font=(font,10), anchor='e')
-        burstdisclaimerlabel.grid(row=0, column=4, pady=10, padx=10, sticky='nsew')
+        for index, file in enumerate(self.selected_files):
+            label=ctk.CTkLabel(self.selected_files_table, text=self.tree.item(file, "values")[0], corner_radius=20, width=300)
+            label.grid(row=index, column=0, sticky='w')
+            self.selected_files_labels.append(label)
+            progressbar=ctk.CTkProgressBar(self.selected_files_table, orientation='horizontal', mode='determinate', progress_color="#239b56")
+            progressbar.grid(row=index, column=1, sticky='w')
+            progressbar.set(0)
+            self.progressbars.append(progressbar)
+
+        self.process_files_frame.grid(row=0, column=0, sticky='nsew')
+        self.file_selection_frame.grid_forget()
+
+    def call_library(self, file, index):
+        try:
+            electrode_amnt=int(self.electrode_amnt_input.get())
+            sampling_rate=int(self.sampling_rate_input.get())
+            analyse_wells(file, electrode_amnt=electrode_amnt, sampling_rate=sampling_rate, parameters=self.parent.parameters)
+        except:
+            traceback.print_exc()
+            self.progressbars[index].configure(progress_color='#922b21')
+            self.progressbars[index].set(1)
+            self.analysis_crashed=True
+
+    def initiate_analysis(self):
+        self.start_analysis_button.configure(state='disabled')
+        self.back_button.configure(state='disabled')
+        self.abort_analysis_button.configure(state='normal')
+
+        for index, file in enumerate(self.selected_files):
+            if self.abort_analysis_bool:
+                self.abort_analysis_button.configure(text="Aborted Analysis")
+                break
+            # Start the analysis in another thread
+
+            file=self.tree.item(file, "values")[0]
+
+            process=threading.Thread(target=self.call_library, args=(file, index))
+            process.start()
+
+            # Read out the progress
+            progressfile=f'{os.path.split(file)[0]}/progress.npy'
+
+            # Make sure there is no pre-existing progressfile
+            try: os.remove(progressfile)
+            except: pass
+
+            while True:
+                while True: 
+                    if self.analysis_crashed:
+                        break
+                    try:
+                        progress=np.load(progressfile)
+                        break
+                    except: pass
+                try:
+                    if progress[0] == 'done':
+                        break
+                except: pass
+                if self.analysis_crashed:
+                    self.analysis_crashed=False
+                    break
+                try:
+                    currentprogress=(progress[0]/progress[1])
+                    self.progressbars[index].set(currentprogress)
+                except: pass
+            self.progressbar.set((index+1)/len(self.selected_files_labels))
+        
+        self.abort_analysis_button.configure(state="disabled")
+        self.back_button.configure(state='normal')
+
+    def abort_analysis_func(self):
+        self.abort_analysis_bool=True
+        self.abort_analysis_button.configure(text="Aborting analysis after current file")
+        self.abort_analysis_button.configure(state="disabled")
+
+
+"""Compress files"""
+class compress_files(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.parent=parent
+
+        self.select_file_button=ctk.CTkButton(master=self, text="Select a file", command=self.openfiles)
+        self.select_file_button.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky='nesw')
+
+        self.to_main_frame_button=ctk.CTkButton(master=self, text="Return to main menu", command=lambda: parent.show_frame(main_window))
+        self.to_main_frame_button.grid(row=6, column=0, columnspan=2, padx=10, pady=10, sticky='nesw')
+
+        gzip_level_text=ctk.CTkLabel(master=self, text="GZIP compression level: 1")
+        gzip_level_text.grid(row=2, column=0, padx=10, pady=10, sticky='nesw', columnspan=2)
+
+        def show_value(value):
+            gzip_level_text.configure(text=f"GZIP compression level: {int(value)}")
+
+        self.slider_value = ctk.IntVar(value=1)
+        self.gzip_level_slider=ctk.CTkSlider(master=self, from_=1, to=9, orientation='horizontal', variable=self.slider_value, width=200, number_of_steps=8, command=show_value)
+        self.gzip_level_slider.grid(row=3, column=0, padx=10, pady=(0, 10), columnspan=2, sticky='nesw')
+        self.gzip_level_slider.configure(state='disabled')
+
+        def lzf_selected():
+            self.gzip_var.set(False)
+            self.gzip_level_slider.configure(state='disabled')
+            self.compression_method='lzf'
+
+        def gzip_selected():
+            self.lzf_var.set(False)
+            self.gzip_level_slider.configure(state='normal')
+            self.compression_method='gzip'
+
+        self.lzf_var=ctk.IntVar()
+        lzf_button=ctk.CTkCheckBox(self, text='LZF', onvalue=True, offvalue=False, variable=self.lzf_var, command=lzf_selected)
+        lzf_button.grid(row=1, column=0, padx=10, pady=10, sticky='nesw')
+
+        self.gzip_var=ctk.IntVar()
+        gzip_button=ctk.CTkCheckBox(self, text='GZIP', onvalue=True, offvalue=False, variable=self.gzip_var, command=gzip_selected)
+        gzip_button.grid(row=1, column=1, padx=10, pady=10, sticky='nesw')
+
+        self.compress_all=ctk.BooleanVar()
+        compress_all_button=ctk.CTkCheckBox(self, text='Compress all files in folder', onvalue=True, offvalue=False, variable=self.compress_all)
+        compress_all_button.grid(row=4, column=0, padx=10, pady=10, sticky='nesw', columnspan=2)
+        self.compress_all.set(False)
+
+        # Default values
+        self.lzf_var.set(True)
+        self.selected_file=''
+        self.compression_method='lzf'
+        self.compression_level=1
+
+        self.compress_files_button=ctk.CTkButton(master=self, text="Start compression", command=lambda: threading.Thread(target=self.compress_files_function).start())
+        self.compress_files_button.grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky='nesw')
+
+        self.abort_flag=False
+
+    def openfiles(self):
+        selectedfile = filedialog.askopenfilename(filetypes=[("MEA data", "*.h5")])
+        if len(selectedfile)!=0:
+            self.selected_file=selectedfile
+            self.select_file_button.configure(text=selectedfile)
+
+    def compress_files_function(self):
+        if self.selected_file=='':
+            return
+        if self.compress_all.get():
+            folder=os.path.dirname(self.selected_file)
+            mea_files=[os.path.join(folder, f) for f in os.listdir(folder) if f.endswith(".h5")]
+        else:
+            mea_files=[self.selected_file]
+
+        popup=ctk.CTkToplevel(self)
+        popup.title('File Compression')
+        try:
+            popup.after(250, lambda: popup.iconbitmap(os.path.join(self.parent.icon_path)))
+        except Exception as error:
+            print(error)
+        
+        progressinfo=ctk.CTkLabel(master=popup, text=f'Compressing {len(mea_files)} file{"s" if len(mea_files) != 1 else ""}')
+        progressinfo.grid(row=0, column=0, pady=10, padx=20)
+        progressbarlength=300
+        progressbar=ctk.CTkProgressBar(master=popup, orientation='horizontal', width=progressbarlength, mode='determinate', progress_color="#239b56")
+        progressbar.grid(row=1, column=0, pady=10, padx=20)
+        progressbar.set(0)
+        info=ctk.CTkLabel(master=popup, text='')
+        info.grid(row=2, column=0, pady=10, padx=20)
+        finishedfiles=ctk.CTkLabel(master=popup, text='')
+        finishedfiles.grid(row=3, column=0, pady=10, padx=20)
+
+        # Aborting compression
+        def abort_compression():
+            self.abort_flag=True
+            print("Aborting compression for further files...")
+            abort_button.configure(text="Aborting compression for further files...")
+            abort_button.configure(state='disabled')
+
+        abort_button=ctk.CTkButton(master=popup, text="Abort compression", command=abort_compression)
+        abort_button.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky='nesw')
+        popup.protocol("WM_DELETE_WINDOW", abort_compression)
+
+        succesfiles=[]
+        failedfiles=[]
     
 
-    root.mainloop()
+        for file in range(len(mea_files)):
+            if self.abort_flag:
+                self.abort_flag=False
+                popup.destroy()
+                return
+            info.configure(text=f"Compressing file {file+1} out of {len(mea_files)}")
+            try:
+                print(f"Compressing {mea_files[file]}")
+                rechunk_dataset(fileadress=mea_files[file], compression_method=self.compression_method, compression_level=self.compression_level, always_compress_files=True)
+                succesfiles.append(mea_files[file])
+            except Exception as error:
+                print(f"Could not compress {mea_files[file]}")
+                traceback.print_exc()
+                failedfiles.append(mea_files[file])
+            currentprogress=((file+1)/len(mea_files))
+            progressbar.set(currentprogress)
+            finishedfiles_text=""
+            if len(succesfiles) != 0:
+                finishedfiles_text+="Compressed files:\n"
+                for i in range(len(succesfiles)):
+                    finishedfiles_text+=f"{succesfiles[i]}\n"
+            if len(failedfiles) != 0:
+                finishedfiles_text+="Failed files:\n"
+                for i in range(len(failedfiles)):
+                    finishedfiles_text+=f"{failedfiles[i]}\n"
+            finishedfiles.configure(text=finishedfiles_text)
+        
+        abort_button.configure(state='disabled')
+        info.configure(text="Finished compression")
+        popup.protocol("WM_DELETE_WINDOW", popup.destroy)
+
+"""Features over time"""
+class plotting_window(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent)
+        
+        self.parent=parent
+
+        # Weights
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
+        # Plot frames
+        plotting_frame = ctk.CTkFrame(master=self, fg_color='transparent')
+        plotting_frame.grid(row=1, column=0, sticky='nesw')
+
+        select_file_frame = ctk.CTkFrame(master=self, fg_color=self.parent.gray_1)
+        select_file_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nesw', columnspan=4)
+        select_file_frame.grid_columnconfigure(0, weight=1)
+
+        features_over_time_frame = ctk.CTkFrame(master=plotting_frame, fg_color=self.parent.gray_1)
+        features_over_time_frame.grid(row=1, column=0, padx=5, pady=5, sticky='nesw')
+
+        boxplot_frame = ctk.CTkFrame(master=plotting_frame, fg_color=self.parent.gray_1)
+        boxplot_frame.grid(row=2, column=0, sticky='nesw', padx=5, pady=5)
+
+
+        # Selected files frame
+        self.selected_files_frame = ctk.CTkScrollableFrame(master=self)
+        self.selected_files_frame.grid(row=1, column=1, padx=5, pady=5, sticky='nesw')
+
+        # Label frames
+        self.assign_labels_frame = ctk.CTkFrame(master=self)
+        self.assign_labels_frame.grid(row=1, column=2, padx=5, pady=5, sticky='nesw')
+
+        label_main_frame=ctk.CTkFrame(master=self, fg_color='transparent')
+        label_main_frame.grid(row=1, column=3, sticky='nesw')
+
+        create_labels_frame = ctk.CTkFrame(master=label_main_frame, fg_color=self.parent.gray_1)
+        create_labels_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nesw')
+        create_labels_frame.grid_columnconfigure(0, weight=1)
+
+        label_settings_frame=ctk.CTkFrame(label_main_frame, fg_color=self.parent.gray_1)
+        label_settings_frame.grid(row=1, column=0, padx=5, pady=5, sticky='nesw')
+        label_settings_frame.grid_columnconfigure(0, weight=1)
+
+        self.labels_frame = ctk.CTkFrame(master=label_main_frame, fg_color=self.parent.gray_1)
+        self.labels_frame.grid(row=2, column=0, padx=5, pady=5, sticky='nesw')
+        self.labels_frame.grid_columnconfigure(0, weight=1)
+
+        label_main_frame.grid_rowconfigure(0, weight=0)
+        label_main_frame.grid_rowconfigure(1, weight=0)
+        label_main_frame.grid_rowconfigure(2, weight=0)
+
+        # Values
+        self.selected_folder = ''
+        self.well_buttons=[]
+        self.label_buttons=[]
+        self.assigned_labels={}
+        self.selected_label=[]
+        self.default_colors=get_defaultcolors()
+        self.well_amnt=None
+
+        self.select_folder_button=ctk.CTkButton(master=select_file_frame, text='Select a folder', command=self.create_well_buttons)
+        self.select_folder_button.grid(row=0, column=0, columnspan=2, pady=10, padx=10, sticky='nesw')
+
+        # Features over time
+        fot_label=ctk.CTkLabel(master=features_over_time_frame, text="Features over time", font=ctk.CTkFont(size=15))
+        fot_label.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky='w')
+
+        prefix_label=ctk.CTkLabel(master=features_over_time_frame, text="DIV Prefix:")
+        prefix_label.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+
+        self.prefix_entry=ctk.CTkEntry(master=features_over_time_frame)
+        self.prefix_entry.grid(row=1, column=1, padx=10, pady=10, sticky='nesw')
+
+        show_datapoints_label=ctk.CTkLabel(master=features_over_time_frame, text='Show datapoints:')
+        show_datapoints_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+
+        self.show_datapoints_entry=ctk.CTkCheckBox(master=features_over_time_frame, text='')
+        self.show_datapoints_entry.grid(row=2, column=1, padx=10, pady=10, sticky='nesw')
+
+        create_plot_button=ctk.CTkButton(text="Plot Features over time", master=features_over_time_frame, command=self.create_plots)
+        create_plot_button.grid(row=3, column=0, pady=10, padx=10, sticky='nesw', columnspan=2)
+
+        # Combine measurements
+        bp_label=ctk.CTkLabel(master=boxplot_frame, text="Boxplots", font=ctk.CTkFont(size=15))
+        bp_label.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky='w')
+
+        bp_show_datapoints_label=ctk.CTkLabel(master=boxplot_frame, text='Show datapoints:')
+        bp_show_datapoints_label.grid(row=1, column=0, padx=10, pady=10, sticky='w')
+
+        self.bp_show_datapoints_entry=ctk.CTkCheckBox(master=boxplot_frame, text='')
+        self.bp_show_datapoints_entry.grid(row=1, column=1, padx=10, pady=10, sticky='nesw')
+
+        discern_wells_label=ctk.CTkLabel(master=boxplot_frame, text='Color wells:')
+        discern_wells_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+
+        self.discern_wells_entry=ctk.CTkCheckBox(master=boxplot_frame, text='')
+        self.discern_wells_entry.grid(row=2, column=1, padx=10, pady=10, sticky='nesw')
+
+        create_plot_button=ctk.CTkButton(text="Create Boxplots", master=boxplot_frame, command=self.create_boxplots)
+        create_plot_button.grid(row=3, column=0, pady=10, padx=10, sticky='nesw', columnspan=2)
+
+
+        return_to_main = ctk.CTkButton(master=plotting_frame, text="Return to main menu", command=lambda: self.parent.show_frame(main_window), fg_color=parent.gray_1)
+        return_to_main.grid(row=3, column=0, columnspan=2, padx=5, pady=5, sticky='nesw')
+
+        # Create labels
+        self.new_label_entry=ctk.CTkEntry(master=create_labels_frame, placeholder_text="Create a label; e.g.: \'control\'")
+        self.new_label_entry.grid(row=0, column=0, pady=10, padx=10, sticky='nesw')
+
+        new_label_button=ctk.CTkButton(master=create_labels_frame, text='Add Label', command=self.new_label)
+        new_label_button.grid(row=1, column=0, padx=10, pady=5, sticky='nesw')
+
+        save_label_button=ctk.CTkButton(master=label_settings_frame, text="Save Labels", command=self.save_labels)
+        save_label_button.grid(row=2, column=0, padx=10, pady=(10,5), sticky='nesw')
+
+        save_label_button=ctk.CTkButton(master=label_settings_frame, text="Import Labels", command=self.import_labels)
+        save_label_button.grid(row=3, column=0, padx=10, pady=5, sticky='nesw')
+
+        save_label_button=ctk.CTkButton(master=label_settings_frame, text="Reset Labels", command=self.reset_labels)
+        save_label_button.grid(row=4, column=0, padx=10, pady=(5,10), sticky='nesw')
+
+    def save_labels(self):
+        file_path = filedialog.asksaveasfilename(
+        defaultextension=".json",
+        filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        title="Save JSON File")
+
+        if not file_path:
+            return
+        
+        with open(file_path, "w") as json_file:
+            json.dump(self.assigned_labels, json_file, indent=4)
+
+        CTkMessagebox(message=f"Labels succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Labels")
+
+    def import_labels(self):
+        file_path = filedialog.askopenfilename(
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],  # File type filters
+            title="Open JSON File")
+
+        if not file_path:
+            return
+
+        with open(file_path, "r") as json_file:
+            imported_labels = json.load(json_file)
+        self.set_labels(imported_labels)
+
+    def set_labels(self, labels):
+        # Reset labels
+        for label_button in self.label_buttons:
+            label_button.destroy()
+        self.label_buttons=[]
+
+        for label in labels.keys():
+            self.create_label_button(label)
+        self.assigned_labels=labels
+
+        self.update_button_colours()
+
+    def reset_labels(self):
+        self.set_labels({})
+
+    def create_plots(self):
+        # check if there are groups that contain wells
+        valid_groups=False
+        for label in self.assigned_labels.keys():
+            if len(self.assigned_labels[label]) > 0:
+                valid_groups=True
+        if not valid_groups:
+            CTkMessagebox(title="Error",
+                              message='Please create at least one label, and assign at least one well to it.',
+                              icon="cancel",
+                              wraplength=400)
+            return
+        if str(self.prefix_entry.get()) == '':
+            CTkMessagebox(title="Error",
+                              message='Please define the prefix that is used to indicate the age of the neurons, e.g. DIV, t, day',
+                              icon="cancel",
+                              wraplength=400)
+            return
+        try:
+            pdf_path=features_over_time(folder=self.selected_folder, labels=copy.deepcopy(self.assigned_labels), div_prefix=str(self.prefix_entry.get()), colors=self.default_colors, show_datapoints=bool(self.show_datapoints_entry.get()))
+            webbrowser.open(f"file://{pdf_path}")
+        except Exception as error:
+            CTkMessagebox(title="Error",
+                              message='Something went wrong while creating the plots',
+                              icon="cancel",
+                              wraplength=400)
+            
+            traceback.print_exc()
+
+    def create_boxplots(self):
+        # check if there are groups that contain wells
+        valid_groups=False
+        for label in self.assigned_labels.keys():
+            if len(self.assigned_labels[label]) > 0:
+                valid_groups=True
+        if not valid_groups:
+            CTkMessagebox(title="Error",
+                              message='Please create at least one label, and assign at least one well to it.',
+                              icon="cancel",
+                              wraplength=400)
+            return
+        
+        try:
+            pdf_path=combined_feature_boxplots(folder=self.selected_folder, labels=copy.deepcopy(self.assigned_labels), colors=self.default_colors, show_datapoints=bool(self.bp_show_datapoints_entry.get()), discern_wells=bool(self.discern_wells_entry.get()), well_amnt=self.well_amnt)
+            webbrowser.open(f"file://{pdf_path}")
+        except Exception as error:
+            CTkMessagebox(title="Error",
+                              message='Something went wrong while creating the boxplots',
+                              icon="cancel",
+                              wraplength=400)
+            traceback.print_exc()
+
+
+
+    def set_selected_label(self, label):
+        self.selected_label=label
+
+    def create_label_button(self, label):
+        label_button=ctk.CTkButton(master=self.labels_frame, text=label, command=partial(self.set_selected_label, label), fg_color=self.default_colors[len(self.label_buttons)])
+        label_button.grid(row=len(self.label_buttons), column=0, pady=5, padx=10, sticky='nesw')
+        self.label_buttons.append(label_button)
+        self.assigned_labels[label]=[]
+        self.new_label_entry.delete(0, END)
+
+    def new_label(self):
+        label = self.new_label_entry.get()
+        if (label == '') or (label in self.assigned_labels.keys()):
+            return
+        self.create_label_button(label)
+
+    def update_button_colours(self):
+        for well_button in self.well_buttons:
+            well_button.configure(fg_color='#1f6aa5')
+        for index, key in enumerate(self.assigned_labels.keys()):
+            for well in self.assigned_labels[key]:
+                self.well_buttons[well-1].configure(fg_color=self.default_colors[index])
+
+    def well_button_func(self, button):
+        # If the label was already selected, remove the selection
+        if button in self.assigned_labels[self.selected_label]:
+            self.assigned_labels[self.selected_label].remove(button)
+        else:
+            # First remove well from all labels
+            for key in self.assigned_labels.keys():
+                if button in self.assigned_labels[key]:
+                    self.assigned_labels[key].remove(button)
+            self.assigned_labels[self.selected_label].append(button)
+        print(self.assigned_labels)
+        self.update_button_colours()
+
+    def create_well_buttons(self):
+        folder=filedialog.askdirectory()
+        if folder == '':
+            return
+        well_amnts=[]
+        file_names=[]
+        for root, dirs, files in os.walk(folder):
+            for file in files:
+                if file == f"Features.csv":
+                    data=pd.read_csv(os.path.join(root, file))
+                    well_amnts.append(len(data))
+                    file_names.append(os.path.basename(os.path.normpath(root)))
+        if len(well_amnts) < 1:
+            CTkMessagebox(title="Error",
+                              message='Not enough features-files found. Minimum amount is 1',
+                              icon="cancel",
+                              wraplength=400)
+            return
+        if not(np.min(well_amnts) == np.max(well_amnts)):
+            CTkMessagebox(title="Error",
+                              message='Not all experiments have the same amount of wells, please remove the exceptions from the folder.',
+                              icon="cancel",
+                              wraplength=400)
+            return
+        
+        self.well_amnt=int(np.mean(well_amnts))
+        self.selected_folder=folder
+        self.select_folder_button.configure(text=self.selected_folder)
+        width, height = self.parent.calculate_optimal_grid(np.mean(well_amnts))
+        counter=1
+
+        for w in range(width):
+            for h in range(height):
+                well_button=ctk.CTkButton(master=self.assign_labels_frame, text=counter, command=partial(self.well_button_func, counter), height=100, width=100, font=ctk.CTkFont(size=25))
+                well_button.grid(row=w, column=h, sticky='nesw')
+                self.well_buttons.append(well_button)
+                counter+=1
+
+        for i, file in enumerate(file_names):
+            file_label=ctk.CTkLabel(master=self.selected_files_frame, text=file)
+            file_label.grid(row=i, column=0, sticky='w', padx=10, pady=2)
+
+        self.select_folder_button.configure(state='disabled')
+
+def MEA_GUI():
+    app = MainApp()
+    app.mainloop()

@@ -6,15 +6,8 @@ from matplotlib.figure import Figure
 
 def burst_detection(data,                   # Raw data
                     electrode,              # Which electrode is getting analysed
-                    electrode_amnt,         # Amount of electrodes in a well
-                    hertz,                  # Sampling frequency
-                    kde_bandwidth,          # Bandwidth of kernel density estimate
-                    smallerneighbours,      # Amount of smaller neighbouring values a peak in the KDE should have before being used as one
-                    minspikes_burst,        # Minimal amount of spikes for a burst
-                    max_threshold,          # Maximum acceptable distance between spikes in a burst
-                    default_threshold,      # Default threshold used for burst detection
-                    outputpath,             # Path where to save the burst information
-                    plot_electrodes,        # If true, returns a matplotlib figure of the spike detection/validation process. Used for the GUI
+                    parameters,             # Parameters dictionary
+                    plot_electrodes= False, # If true, returns a matplotlib figure of the spike detection/validation process. Used for the GUI
                     savedata=True           # Whether to save the burst information or not
                     ):
     
@@ -27,11 +20,11 @@ def burst_detection(data,                   # Raw data
     fig2=None
 
     # Calculate the well and electrode values to load in the spikedata
-    well = round(electrode_number / electrode_amnt + 0.505)
-    electrode = electrode_number % electrode_amnt + 1
+    well = round(electrode_number / parameters['electrode amount'] + 0.505)
+    electrode = electrode_number % parameters['electrode amount'] + 1
 
     # Get the correct foldername to read and store values
-    path=f'{outputpath}/spike_values'
+    path = f"{(parameters['output path'])}/spike_values"
     # Load in the spikedata
     spikedata=np.load(f'{path}/well_{well}_electrode_{electrode}_spikes.npy')
 
@@ -50,10 +43,10 @@ def burst_detection(data,                   # Raw data
 
     '''Determine how to run the burst detection'''
     # Only run the spike detection when there are enough spikes to form a burst
-    if spikedata.shape[0]>=minspikes_burst:
+    if spikedata.shape[0]>=parameters['minimal amount of spikes']:
         # Reset variables to the base values
         use_ISIth2=False
-        ISIth2_max=max_threshold
+        ISIth2_max=parameters['max interval threshold']
 
         # Chiappalone is the burst detection algorithm using only one threshold
         # used when there are more/less than 2 peaks found, or when the valley between the peaks is less than the default threshold
@@ -65,7 +58,7 @@ def burst_detection(data,                   # Raw data
         # This very specific task (logarithmic kernel density estimate) works suprisingly well in the seaborn library, so we plot a figure there, and just extract the line values
         # Instruct seaborn to use the "Agg" backend. If we do not do this, seaborn will try to create a GUI which will eventually crash the analysis if executed from within the GUI
         matplotlib.use("Agg")
-        output=sns.displot(ISI, alpha=0.2, edgecolor=None, kde=True, color='blue', log_scale=True, kde_kws={'gridsize': 100, 'bw_adjust':kde_bandwidth})
+        output=sns.displot(ISI, alpha=0.2, edgecolor=None, kde=True, color='blue', log_scale=True, kde_kws={'gridsize': 100, 'bw_adjust':parameters['burst detection kde bandwidth']})
         # Extract the line values
         for ax in output.axes.flat:
             for line in ax.lines:
@@ -79,6 +72,7 @@ def burst_detection(data,                   # Raw data
         # Find the peaks in the KDE
         peaks=[]
         # Loop through all the values in the KDE
+        smallerneighbours=10
         for i in range(0, len(x)):
             # Make sure smallerneighbours does not go out of bounds
             lower_boundary=i-smallerneighbours
@@ -106,18 +100,18 @@ def burst_detection(data,                   # Raw data
             peak1=float('inf')
             found_peak1=False
             for j in range(len(peaks)):
-                dist_from_default=abs(x[peaks[j]]-default_threshold)
-                if dist_from_default<0.9*default_threshold:
-                    if dist_from_default<abs(peak1-default_threshold):
+                dist_from_default=abs(x[peaks[j]]-parameters['default interval threshold'])
+                if dist_from_default<0.9*parameters['default interval threshold']:
+                    if dist_from_default<abs(peak1-parameters['default interval threshold']):
                         peak1=peaks[j]
                         found_peak1=True
             # Check which peak is closest to the max threshold
             peak2=float('inf')
             found_peak2=False
             for j in range(len(peaks)):
-                dist_from_default=abs(x[peaks[j]]-max_threshold)
-                if x[peaks[j]]>default_threshold:
-                    if dist_from_default<abs(peak2-max_threshold):
+                dist_from_default=abs(x[peaks[j]]-parameters['max interval threshold'])
+                if x[peaks[j]]>parameters['default interval threshold']:
+                    if dist_from_default<abs(peak2-parameters['max interval threshold']):
                         peak2=peaks[j]
                         found_peak2=True
 
@@ -130,14 +124,14 @@ def burst_detection(data,                   # Raw data
         # Check if 2 peaks were detected
         if len(peaks)!=2:
             # If more/less than two peaks are detected, we use the chiappalone method with the default threshold
-            ISIth1=default_threshold
+            ISIth1=parameters['default interval threshold']
             valid_peaks=False
             use_chiappalone=True
 
         # Check whether peak 1 has happened after default_threshold
-        elif x[peaks[0]]>default_threshold:
+        elif x[peaks[0]]>parameters['default interval threshold']:
             # If the first peak is located after the default threshold, we use the chiappalone method with the default threshold
-            ISIth1=default_threshold
+            ISIth1=parameters['default interval threshold']
             valid_peaks=False
             use_chiappalone=True
 
@@ -152,7 +146,7 @@ def burst_detection(data,                   # Raw data
             valley_y=y[logvalley]
 
             # Check if the valley is located before the default threshold
-            if x[logvalley]<default_threshold:
+            if x[logvalley]<parameters['default interval threshold']:
                 # If this is the case, we use the Chiappalone method with the threshold set at the x (time) value of the valley
                 ISIth1=x[logvalley]
                 use_chiappalone=True
@@ -161,7 +155,7 @@ def burst_detection(data,                   # Raw data
             # If this was not the case, move on to use the advanced burst detection algorithm with threshold1=default threshold and threshold2=valley or max threshold
             else:
                 ISIth2=x[logvalley]
-                ISIth1=default_threshold
+                ISIth1=parameters['default interval threshold']
                 # If the valley exceeds the max threshold, set the second threshold to the max threshold
                 if ISIth2>ISIth2_max:
                     ISIth2=ISIth2_max
@@ -176,11 +170,11 @@ def burst_detection(data,                   # Raw data
 
         # Based on what was previously calculated, apply the burst detection using the correct method and values
         if use_chiappalone:
-            min_spikes_burstcore=minspikes_burst
+            min_spikes_burstcore=parameters['minimal amount of spikes']
             i=0
 
             # Loop through the spikes until it would not be possible to form a burst anymore
-            while i < len(spikedata)-minspikes_burst-1:
+            while i < len(spikedata)-parameters['minimal amount of spikes']-1:
                 start_burst = 0.0
                 end_burst = 0.0
                 # Check if enough closely spaced consecutive spikes are found to form a burst
@@ -197,7 +191,7 @@ def burst_detection(data,                   # Raw data
                     
                     # Loop through each spike and check if it should be added to the burst
                     # Keep increasing the steps (i) while doing this
-                    i+=minspikes_burst-1
+                    i+=parameters['minimal amount of spikes']-1
                     # Keep looping while the interval to the next spike is short enough
                     while ISI[i]<ISIth1:
                         temp_burst=spikedata[i+1]
@@ -217,9 +211,9 @@ def burst_detection(data,                   # Raw data
                 i+=1
 
         if use_pasquale:
-            min_spikes_burstcore=minspikes_burst
+            min_spikes_burstcore=parameters['minimal amount of spikes']
             i=0
-            while i < len(spikedata)-minspikes_burst-1:
+            while i < len(spikedata)-parameters['minimal amount of spikes']-1:
                 start_burst = 0.0
                 end_burst = 0.0
                 # Check if enough closely spaced consecutive spikes are found to form a burst
@@ -246,7 +240,7 @@ def burst_detection(data,                   # Raw data
                         burst_spikes.append(temp_burst)
                         j-=1
                     # Move the index back to the end of the burst
-                    i+=minspikes_burst-1
+                    i+=parameters['minimal amount of spikes']-1
 
                     # Loop forward to check if the next spikes should be added to the burst
                     # Keep looping while the distance to the next spike is less than the threshold
@@ -301,15 +295,15 @@ def burst_detection(data,                   # Raw data
             rawburstplot=fig2.add_subplot(111)
 
             # Plot the data
-            time_seconds = np.arange(0, data.shape[0]) / hertz
+            time_seconds = np.arange(0, data.shape[0]) / parameters['sampling rate']
 
             # Plot the raw voltage signal
             rawburstplot.plot(time_seconds, data, linewidth=0.5, zorder=-1, color=rawdatacolor)
             
             # Plot the bursts
             for burst in range(len(burst_cores)):
-                burst_startx=int(burst_cores[burst][0]*hertz)
-                burst_endx=int(burst_cores[burst][1]*hertz)
+                burst_startx=int(burst_cores[burst][0]*parameters['sampling rate'])
+                burst_endx=int(burst_cores[burst][1]*parameters['sampling rate'])
                 rawburstplot.plot(time_seconds[burst_startx:burst_endx], data[burst_startx:burst_endx], color=burstcolor, linewidth=0.5, alpha=1)
         
             # Plot the spikes
@@ -354,7 +348,7 @@ def burst_detection(data,                   # Raw data
 
     # Save the spike data to a .csv file
     if savedata:
-        path = f'{outputpath}/burst_values'
+        path = f"{(parameters['output path'])}/burst_values"
         np.savetxt(f'{path}/well_{well}_electrode_{electrode}_burst_spikes.csv', burst_spikes, delimiter = ",")
         np.save(f'{path}/well_{well}_electrode_{electrode}_burst_spikes', burst_spikes)
         np.savetxt(f'{path}/well_{well}_electrode_{electrode}_burst_cores.csv', burst_cores, delimiter = ",")

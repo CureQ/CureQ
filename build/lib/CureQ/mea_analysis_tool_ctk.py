@@ -2139,3 +2139,7 @@ class plotting_window(ctk.CTkFrame):
 def MEA_GUI():
     app = MainApp()
     app.mainloop()
+
+
+if __name__ == "__main__":
+    MEA_GUI()

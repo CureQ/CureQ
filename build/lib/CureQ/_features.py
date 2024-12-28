@@ -3,13 +3,8 @@ import pandas as pd
 from statsmodels.tsa.stattools import pacf
 
 '''Calculate the features for all the electrodes'''
-def electrode_features(outputpath,                      # Where to retrieve the data required for feature calculations
-                       well,                      # Which electrodes to analyse
-                       electrode_amnt,                  # Amount of electrodes in a well
-                       measurements,                    # Measurements done (time*sampling rate)
-                       hertz,                           # Sampling rate
-                       activity_threshold,              # Miniumum spike frequency an electrode should have to be considered 'active' (in Hz)
-                       remove_inactive_electrodes       # Whether to remove inactive electrodes from feature calculations
+def electrode_features(well,        # Which electrodes to analyse
+                       parameters   # Parameters dictionary
                        ):
     
     # Define all lists for the features
@@ -19,20 +14,20 @@ def electrode_features(outputpath,                      # Where to retrieve the 
     SCB_rate, IBIPACF = [], []
     
 
-    spikepath=f'{outputpath}/spike_values'
-    burstpath=f'{outputpath}/burst_values'
-    networkpath=f'{outputpath}/network_data'
+    spikepath=f"{(parameters['output path'])}/spike_values"
+    burstpath=f"{(parameters['output path'])}/burst_values"
+    networkpath=f"{(parameters['output path'])}/network_data"
     
-    electrodes=np.arange((well-1)*electrode_amnt, well*electrode_amnt)
+    electrodes=np.arange((well-1)*parameters['electrode amount'], well*parameters['electrode amount'])
 
     # Loop through all the measured electrodes
     for electrode in electrodes:
         # Calculate current well number and append to list
-        well_nr = round(electrode / electrode_amnt + 0.505)
+        well_nr = round(electrode / parameters['electrode amount'] + 0.505)
         wells_df.append(well_nr)
 
         # Calculate current MEA electrode number and append to list
-        electrode_nr = electrode % electrode_amnt + 1
+        electrode_nr = electrode % parameters['electrode amount'] + 1
         electrodes_df.append(electrode_nr)
         
         # Load in the files
@@ -79,7 +74,7 @@ def electrode_features(outputpath,                      # Where to retrieve the 
         spikes.append(spike)
 
         # Calculate the average firing frequency frequency
-        firing_frequency=spike/(measurements/hertz)
+        firing_frequency=spike/(parameters['measurements']/parameters['sampling rate'])
         mean_firingrate.append(firing_frequency)
 
         # Calculate mean inter spike interval
@@ -203,7 +198,7 @@ def electrode_features(outputpath,                      # Where to retrieve the 
 
         # Calculate the single channel burst rate (bursts/s)
         if len(burst_cores)>0:
-            SCB_rate.append(len(burst_cores)/(measurements/hertz))
+            SCB_rate.append(len(burst_cores)/(parameters['measurements']/parameters['sampling rate']))
         else:
             SCB_rate.append(float(0))
         
@@ -233,11 +228,11 @@ def electrode_features(outputpath,                      # Where to retrieve the 
         "Isolated_spikes": isolated_spikes,
         "Single_channel_burst_rate": SCB_rate
     })
-    if remove_inactive_electrodes:
+    if parameters['remove inactive electrodes']:
         # Remove electrodes that do not have enough activity
-        features_df=features_df[features_df["Mean_FiringRate"]>activity_threshold]
+        features_df=features_df[features_df["Mean_FiringRate"]>parameters['activity threshold']]
     # Calculate how many electrodes were active
-    active_electrodes=len(features_df)/electrode_amnt
+    active_electrodes=len(features_df)/parameters['electrode amount']
     # If none of the electrodes have enough activity, make sure we retain the well value
     if len(features_df)==0:
         features_df["Well"]=[well_nr]
@@ -245,11 +240,11 @@ def electrode_features(outputpath,                      # Where to retrieve the 
     return features_df
 
 '''Calculate the features per well'''
-def well_features(outputpath, well, electrode_amnt, measurements, hertz):
+def well_features(well, parameters):
     
-    spikepath=f'{outputpath}/spike_values'
-    burstpath=f'{outputpath}/burst_values'
-    networkpath=f'{outputpath}/network_data'
+    spikepath=f"{(parameters['output path'])}/spike_values"
+    burstpath=f"{(parameters['output path'])}/burst_values"
+    networkpath=f"{(parameters['output path'])}/network_data"
 
     # Load in the network burst data
     network_cores=np.load(f"{networkpath}/well_{well}_network_bursts.npy")
@@ -259,7 +254,7 @@ def well_features(outputpath, well, electrode_amnt, measurements, hertz):
     spikedata_list=[]
     burstcores_list=[]
     burstspikes_list=[]
-    electrodes=np.arange(1, electrode_amnt+1)
+    electrodes=np.arange(1, parameters['electrode amount']+1)
     for electrode in electrodes:
         spikedata=np.load(f'{spikepath}/well_{well}_electrode_{electrode}_spikes.npy')
         spikedata_list.append(spikedata)
@@ -268,8 +263,8 @@ def well_features(outputpath, well, electrode_amnt, measurements, hertz):
         burst_spikes=np.load(f'{burstpath}/well_{well}_electrode_{electrode}_burst_spikes.npy')
         burstspikes_list.append(burst_spikes)
     
-    network_bursts, network_burst_duration, network_burst_core_duration, network_IBI, NB_NBc_ratio, NB_firingrate, NB_ISI = [], [], [], [], [], [], []
-    nIBI_var, nIBI_CV, NB_NBC_ratio_left, NB_NBC_ratio_right, lr_NB_ratio, NBC_duration_CV, NIBIPACF, participating_electrodes = [], [], [], [], [], [], [], []
+    network_bursts, network_burst_duration, network_burst_core_duration, network_IBI, NB_NBc_ratio, NB_firingrate, NB_ISI, mean_spikes_per_network_burst = [], [], [], [], [], [], [], []
+    nIBI_var, nIBI_CV, NB_NBC_ratio_left, NB_NBC_ratio_right, lr_NB_ratio, NBC_duration_CV, NIBIPACF, participating_electrodes, portion_spikes_in_nbs, portion_bursts_in_nbs = [], [], [], [], [], [], [], [], [], []
 
     '''
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -288,7 +283,7 @@ def well_features(outputpath, well, electrode_amnt, measurements, hertz):
                 participating_bursts[burst, 1] = The electrode on which the SCB happened
                 participating_bursts[burst, 2] = The burst ID of the SCB
             spikedata_list
-                spikedata from all the electrodes in this particular well. Index 0 is top left electrodes, last index is bottom right electrode
+                spikedata from all the electrodes in this particular well. Index 0 is top left electrode, last index is bottom right electrode
                 follows the same format as described in the electrode features
             burstcores_list
                 same as previous, but for burst cores
@@ -323,8 +318,11 @@ def well_features(outputpath, well, electrode_amnt, measurements, hertz):
         nIBI_var.append(float("NaN"))
         nIBI_CV.append(float("NaN"))
         NIBIPACF.append(float("NaN"))
+        mean_spikes_per_network_burst.append(float("NaN"))
         NB_firingrate.append(float("NaN"))
         NB_ISI.append(float("NaN"))
+        portion_spikes_in_nbs.append(float("NaN"))
+        portion_bursts_in_nbs.append(float("NaN"))
         participating_electrodes.append(float("NaN"))
     else:
         # Calculate the average length of a network burst
@@ -377,6 +375,9 @@ def well_features(outputpath, well, electrode_amnt, measurements, hertz):
         # Calculate the intra-network burst firing rate and network burst inter spike interval
         single_nb_firingrate=[]
         single_nb_ISI=[]
+        spikes_per_network_burst=[]
+        total_spikes_in_nbs=0
+
         for network_burst in range(len(network_cores)):
             nb_spikes=[]
             # Identify all spikes that happened during the network burst
@@ -386,7 +387,8 @@ def well_features(outputpath, well, electrode_amnt, measurements, hertz):
                     if network_cores[network_burst, 2] <= spikedata_list[channel][spike][0] <= network_cores[network_burst, 3]:
                         nb_spikes.append(spikedata_list[channel][spike][0])
             # Calculate the NB firing rate
-            single_nb_firingrate.append(len(nb_spikes)/(network_cores[network_burst, 3]-network_cores[network_burst, 2]))
+            single_nb_firingrate.append((len(nb_spikes))/(network_cores[network_burst, 3]-network_cores[network_burst, 2]))
+            total_spikes_in_nbs+=len(nb_spikes)
             # Calculate the network burst inter spike interval
             # First sort the spike so they are on chronological order again
             nb_spikes=np.sort(nb_spikes)
@@ -394,9 +396,31 @@ def well_features(outputpath, well, electrode_amnt, measurements, hertz):
             nb_spikes_intervals=nb_spikes[1:-1]-nb_spikes[0:-2]
             # Take the average
             single_nb_ISI.append(np.mean(nb_spikes_intervals))
+            
+            spikes_per_network_burst.append(len(nb_spikes))
         NB_firingrate.append(np.mean(single_nb_firingrate))
         NB_ISI.append(np.mean(single_nb_ISI))
+        mean_spikes_per_network_burst=np.mean(spikes_per_network_burst)
 
+        # Calculate the portion of spikes that participate in network bursts
+        total_spikes=0
+        for channel in range(len(spikedata_list)):
+            total_spikes+=len(spikedata_list[channel])
+        if total_spikes_in_nbs==0 or total_spikes==0:
+            portion_spikes_in_nbs.append(float("NaN"))
+        else:
+            portion_spikes_in_nbs.append(total_spikes_in_nbs/total_spikes)
+
+        # Calculate the portion of bursts that participate in network bursts
+        burst_participating_in_nbs = len(participating_bursts)
+        total_bursts=0
+        for channel in range(len(burstcores_list)):
+            total_bursts+=len(burstcores_list[channel])
+        if burst_participating_in_nbs==0 or total_bursts==0:
+            portion_bursts_in_nbs.append(float("NaN"))
+        else:
+            portion_bursts_in_nbs.append(burst_participating_in_nbs/total_bursts)
+        
         # Calculate average the network burst to network burst core ratio
         ratios=[]
         for i in range(len(network_cores)):
@@ -445,8 +469,11 @@ def well_features(outputpath, well, electrode_amnt, measurements, hertz):
         "NB_to_NBc_ratio": NB_NBc_ratio,
         "Network_IBI_variance": nIBI_var,
         "Network_IBI_coefficient_of_variation": nIBI_CV,
+        "Mean_spikes_per_network_burst": mean_spikes_per_network_burst,
         "Network_burst_firing_rate": NB_firingrate,
-        "Network_burst_ISI": NB_ISI, 
+        "Network_burst_ISI": NB_ISI,
+        "Portion_spikes_in_network_bursts": portion_spikes_in_nbs,
+        "Portion_bursts_in_network_bursts": portion_bursts_in_nbs,
         "Ratio_left_outer_burst_over_core": NB_NBC_ratio_left,
         "Ratio_right_outer_burst_over_core": NB_NBC_ratio_right,
         "Ratio_left_outer_right_outer": lr_NB_ratio,
@@ -488,7 +515,7 @@ first_iteration=True
 for well in range(1, well_amnt+1):
     electrodes=np.arange((well-1)*electrode_amnt, well*electrode_amnt)
     # Calculate electrode and well features
-    features_df=electrode_features(outputpath, electrodes, electrode_amnt, measurements, hertz, activity_threshold, remove_inactive_electrodes)
+    features_df=electrode_features(outputpath, well, electrode_amnt, measurements, hertz, activity_threshold, remove_inactive_electrodes)
     well_features_df=well_features(outputpath, well, electrode_amnt, measurements, hertz)
 
     # If its the first iteration, create the dataframe

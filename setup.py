@@ -7,7 +7,7 @@ with open("README.md", "r") as fh:
 # Setup metadata for initializing the library
 setuptools.setup(
     name="CureQ",
-    version="1.0.12",
+    version="1.1.1",
     author="CureQ",
     author_email="cureq-ft@hva.nl",
     description="Library for analyzing MEA files.",

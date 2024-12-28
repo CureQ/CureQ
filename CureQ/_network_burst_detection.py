@@ -6,37 +6,31 @@ from KDEpy import FFTKDE
 from skimage import filters
 
 '''Takes two burst values and calculates whether they overlap or not'''
-def overlap(burst1, burst2):
+def _overlap(burst1, burst2):
     if burst1[1]<burst2[0] or burst2[1]<burst1[0]:
         return False
     else:
         return True
 
 '''Network burst detection'''
-def network_burst_detection(outputpath,         # Path where to retrieve and save data
-                            wells,              # Which wells to analyse
-                            electrode_amnt,     # Amount of electrodes in a well
-                            measurements,       # Measurements done (time*sampling rate)
-                            hertz,              # Sampling rate
-                            min_channels,       # Percentage of channels that should be active for a network burst
-                            threshold_method,   # Method to determine the automatic threshold
-                            bandwidth,          # KDE bandwidth
-                            plot_electrodes,    # Return plot or not
-                            save_figures,       # Save plot in outputfolder or not
-                            savedata=True       # Save network burst information or not
+def network_burst_detection(wells,                  # Which wells to analyse
+                            parameters,             # Parameters dictionary
+                            plot_electrodes=False,  # Return plot or not
+                            save_figures=True,      # Save plot in outputfolder or not
+                            savedata=True           # Save network burst information or not
                             ):
     # Define where to retrieve information from
-    spikepath=f'{outputpath}/spike_values'
-    burstpath=f'{outputpath}/burst_values'
+    spikepath=f"{(parameters['output path'])}/spike_values"
+    burstpath=f"{(parameters['output path'])}/burst_values"
 
     # Calculate how many channels should be active for a network burst
-    min_channels=round(min_channels*electrode_amnt)
+    min_channels=round(parameters['min channels']*parameters['electrode amount'])
     
     # Initialize arrays
     total_network_burst=[]
     participating_bursts=[]
 
-    time_seconds=np.arange(0, measurements/hertz, 1/hertz)
+    time_seconds=np.arange(0, parameters['measurements']/parameters['sampling rate'], 1/parameters['sampling rate'])
     
     # Iterate over the wells (usually only one)
     for well in wells:
@@ -56,11 +50,11 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
 
         # Plot layout
         ax[1].set_ylabel("Active\nbursts")
-        ax[0].set_xlim([0,measurements/hertz])
-        ax[0].set_ylim([0,electrode_amnt+1])
-        ax[0].set_yticks(np.arange(1, electrode_amnt+1, 1))
+        ax[0].set_xlim([0,parameters['measurements']/parameters['sampling rate']])
+        ax[0].set_ylim([0,parameters['electrode amount']+1])
+        ax[0].set_yticks(np.arange(1, parameters['electrode amount']+1, 1))
         ax[3].set_xlabel("Time in seconds")
-        ax[1].set_ylim([0, electrode_amnt+1])
+        ax[1].set_ylim([0, parameters['electrode amount']+1])
         ax[0].set_ylabel("Electrode")        
         ax[0].set_title(f"Well {well}")       
         ax[2].set_ylabel("Spike\nactivity\n(KDE)")
@@ -73,7 +67,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
         burst_spikes_for_kde=np.array([])
 
         # Iterate over all the electrodes in this well
-        for electrode in range(1,electrode_amnt+1):
+        for electrode in range(1,parameters['electrode amount']+1):
             # Load in spike and burst data
             spikedata=np.load(f'{spikepath}/well_{well}_electrode_{electrode}_spikes.npy')
             burstdata=np.load(f'{burstpath}/well_{well}_electrode_{electrode}_burst_spikes.npy')
@@ -91,17 +85,17 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
         
         '''Top plot'''
         # Plot layout
-        lineoffsets1=np.arange(1,electrode_amnt+1)
+        lineoffsets1=np.arange(1,parameters['electrode amount']+1)
         # Spikes and burst spikes in eventplot
         ax[0].eventplot(well_spikes, alpha=0.5, lineoffsets=lineoffsets1)
         ax[0].eventplot(burst_spikes, alpha=0.25, color='red', lineoffsets=lineoffsets1)
 
         '''2nd plot'''
-        burst_freq=np.zeros(measurements)
+        burst_freq=np.zeros(parameters['measurements'])
         burst_cores_list=[]
 
         # Load in burst core data
-        for electrode in range(1,electrode_amnt+1):
+        for electrode in range(1,parameters['electrode amount']+1):
             burst_cores=np.load(f'{burstpath}/well_{well}_electrode_{electrode}_burst_cores.npy')
             burst_cores_list.append(burst_cores)
             for burstcore in burst_cores:
@@ -111,10 +105,10 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
         '''3rd plot'''
         # Plot the spike frequency using kernel density estimate
         # Create the grid for the KDE
-        KDE_grid=np.arange(0, measurements/hertz, (1/hertz)*10)
+        KDE_grid=np.arange(0, parameters['measurements']/parameters['sampling rate'], (1/parameters['sampling rate'])*1)
         if len(spikes_for_kde)>0:
             # Create the KDE using the KDEpy library
-            y = FFTKDE(bw=bandwidth, kernel='gaussian').fit(spikes_for_kde).evaluate(grid_points=KDE_grid)
+            y = FFTKDE(bw=parameters['nbd kde bandwidth'], kernel='gaussian').fit(spikes_for_kde).evaluate(grid_points=KDE_grid)
             x=KDE_grid
             # Normalise the kde so it ranges from 0 to 1
             y = (y - np.min(y)) / (np.max(y) - np.min(y))
@@ -125,7 +119,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
         # Check if there are any single channel bursts, if there are none, there cannot be any network bursts and we can skip the network burst detection
         if len(burst_spikes_for_kde)>0:
             # Create the KDE from only spikes that are part of a burst using the KDEpy library
-            y = FFTKDE(bw=bandwidth, kernel='gaussian').fit(burst_spikes_for_kde).evaluate(grid_points=KDE_grid)
+            y = FFTKDE(bw=parameters['nbd kde bandwidth'], kernel='gaussian').fit(burst_spikes_for_kde).evaluate(grid_points=KDE_grid)
             x=KDE_grid
             # Normalise the kde so it ranges from 0 to 1
             y = (y - np.min(y)) / (np.max(y) - np.min(y))
@@ -133,6 +127,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
             ax[3].plot(x,y)
 
             # Determine the threshold using either Yen or Otsu automatic thresholding
+            threshold_method=parameters['thresholding method']
             if threshold_method=='Yen' or threshold_method=='yen':
                 threshold=filters.threshold_yen(y, nbins=1000)
             elif threshold_method=='Otsu' or threshold_method=='otsu':
@@ -183,12 +178,12 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
                     channel_participates=False
                     # Now check if there was a burst active at that channel at the time of the network burst core
                     for burst in channel:
-                        if overlap(network_burst_cores[i], burst):
+                        if _overlap(network_burst_cores[i], burst):
                             channel_participates=True
                     # If there was a burst active, increment the number of channels participating
                     if channel_participates: channels_participating+=1
                 # Mark network burst cores that are too close to the start or end of the measurement
-                too_close = network_burst_cores[i][0]<buffer or network_burst_cores[i][1]>(measurements/hertz)-buffer
+                too_close = network_burst_cores[i][0]<buffer or network_burst_cores[i][1]>(parameters['measurements']/parameters['sampling rate'])-buffer
                 # Remove network bust cores that are too close to the end/start, or do not have enough participating channels
                 if channels_participating<min_channels or too_close:
                     unvalid_burst.append(i)
@@ -207,7 +202,7 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
                 for j in range(len(burst_cores_list)):
                     for burst in burst_cores_list[j]:
                         # Check if the burst overlaps with the network burst core
-                        if overlap(network_burst_cores[i], burst):
+                        if _overlap(network_burst_cores[i], burst):
                             # If it starts earlier/ends later then any previous SCB, make this the start/end of the network burst
                             if burst[0]<outer_start: outer_start=burst[0]
                             if burst[1]>outer_end: outer_end=burst[1]
@@ -225,17 +220,16 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
             # Loop through all the bursts
             for i in range(len(network_burst_cores)-1):
                 # Check if there is overlap with the next burst
-                if overlap(network_burst_cores[i][2:4], network_burst_cores[i+1][2:4]):
+                if _overlap(network_burst_cores[i][2:4], network_burst_cores[i+1][2:4]):
                     overlapping_bursts.append(i)
                     overlapping_bursts.append(i+1)
             
             #remove outer edges of overlapping bursts
             if len(overlapping_bursts)>0:
                 for j in overlapping_bursts:
+                    network_burst_cores[j][2] = network_burst_cores[j][0]
                     network_burst_cores[j][3] = network_burst_cores[j][1]
-                    network_burst_cores[j][3] = network_burst_cores[j][2]
-                # Remove participating bursts with the removed ID
-                participating_bursts=np.array(participating_bursts)[~np.isin(np.array(participating_bursts)[:,0],overlapping_bursts)]
+
             total_network_burst=(network_burst_cores)
             # Highlight the burst cores in every graph
             for graph in ax[:]:
@@ -251,14 +245,14 @@ def network_burst_detection(outputpath,         # Path where to retrieve and sav
 
         # Save the network burst data to a file
         if savedata:
-            path = f'{outputpath}/network_data'
+            path = f"{(parameters['output path'])}/network_data"
             np.savetxt(f'{path}/well_{well}_network_bursts.csv', total_network_burst, delimiter = ",")
             np.save(f'{path}/well_{well}_network_bursts', total_network_burst)
             np.savetxt(f'{path}/well_{well}_participating_bursts.csv', participating_bursts, delimiter = ",")
             np.save(f'{path}/well_{well}_participating_bursts', participating_bursts)
     if save_figures:
         # Save the figure
-        path=f"{outputpath}/figures/well_{well}"
+        path=f"{(parameters['output path'])}/figures/well_{well}"
         fig.savefig(path, dpi=240)  # 4k resolution
     if plot_electrodes:
         return fig
