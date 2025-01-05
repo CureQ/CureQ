@@ -20,7 +20,6 @@ try:
     from ._burst_detection import *
     from ._features import *
     from ._network_burst_detection import *
-    from ._open_file import *
     from ._plotting import *
     from ._spike_validation import *
     from ._threshold import *
@@ -30,14 +29,22 @@ except:
     from _burst_detection import *
     from _features import *
     from _network_burst_detection import *
-    from _open_file import *
     from _plotting import *
     from _spike_validation import *
     from _threshold import *
     from _utilities import *
 
-"""Store and retrieve default parameters"""
+
 def get_default_parameters():
+    """
+    Store and retrieve global parameters
+    
+    Returns
+    -------
+    parameters : dict
+        Default parameters for the library.
+    
+    """
     parameters={
         'low cutoff' : 200,
         'high cutoff' : 3500,
@@ -63,14 +70,25 @@ def get_default_parameters():
     }
     return parameters
 
+def _electrode_subprocess(memory_id, shape, _type, electrode, parameters):
+    """
+    Function that can be called to analyse a single electrode as a subprocess when using multiprocessing.
 
-'''Analyse electrode as subprocess
-This is the subproces that gets called when multiprocessing is turned on'''
-def _electrode_subprocess(memory_id, 
-                          shape, 
-                          _type, 
-                          electrode, 
-                          parameters):
+    Parameters
+    ----------
+    memory_id : str
+        The ID of the shared memory block.
+    shape : tuple
+        Shape of the shared array.
+    _type : type
+        Type of the shared array.
+    electrode : int
+        The electrode to be analysed.
+    parameters : dict
+        Dictionary containing global paramaters. The function will extract the values needed.
+    
+    """
+
     # Load in the data from the shared memory block in the RAM
     existing_shm = multiprocessing.shared_memory.SharedMemory(name=memory_id, create=False)
     funcdata=np.ndarray(shape, _type, buffer=existing_shm.buf)
@@ -100,12 +118,52 @@ def _electrode_subprocess(memory_id,
     existing_shm.close()
     print(f"Calculated electrode: {electrode}")
 
-'''Analyse an entire well'''
-def analyse_wells(    fileadress,
-                      sampling_rate,
-                      electrode_amnt,
-                      parameters=''
-                      ):
+def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
+    """
+    Analyse an entire MEA experiment, main function of the library.
+
+    Parameters
+    ----------
+    fileadress : str
+        The file location of the file that is to be analyzed.
+    sampling_rate : int
+        The sampling rate of the MEA experiment.
+    electrode_amnt : int
+        The amount of electrodes per well of the MEA experiment
+    parameters : dict, optional
+        Parameters that can alter the analysis, if left empty, will use default parameters.
+
+    Returns
+    -------
+    output : pd.dataframe
+        Pandas dataframe containing features for the different wells.
+
+    Notes
+    -----
+    This function calls all other functions to perform the full analysis on a MEA-dataset.
+    Besides this, it also communicates the progress with the GUI.
+
+    Always launch the function with an “if __name__ == ‘__main__’:” guard.
+
+    Examples
+    --------
+    >>> from CureQ.mea import analyse_wells, get_default_parameters
+    >>> 
+    >>> if __name__ == '__main__':
+    ...     parameters = get_default_parameters()
+    ...     fileadress = 'H:/MEA_data/mea_experiment.h5'
+    ...     sampling_rate = 20000
+    ...     electrode_amount = 12
+    ...     analyse_wells(
+    ...         fileadress=fileadress,
+    ...         sampling_rate=sampling_rate,
+    ...         electrode_amnt=electrode_amount,
+    ...         parameters=parameters
+    ...     )
+
+    """
+
+
     analysis_time=time.time()
 
     lib_version=version('CureQ')
@@ -167,7 +225,7 @@ def analyse_wells(    fileadress,
     # Flag for if it is the first iteration
     first_iteration=True
 
-    if parameters=='':
+    if parameters=={}:
         parameters=get_default_parameters()
     # Save the parameters that have been given in a JSON file 
     new_values={'output path' : outputpath,
@@ -236,10 +294,10 @@ def analyse_wells(    fileadress,
                 # If its the first iteration, create the dataframe
                 if first_iteration:
                     first_iteration=False
-                    output=feature_output(features_df, well_features_df, electrode_amnt)
+                    output=feature_output(features_df, well_features_df)
                 # If its not the first iteration, keep appending to the dataframe
                 else:
-                    output=pd.concat([output, feature_output(features_df, well_features_df, electrode_amnt)], axis=0)
+                    output=pd.concat([output, feature_output(features_df, well_features_df)], axis=0)
                 end=time.time()
                 print(f"It took {end-start} seconds to analyse well: {well}")
 
@@ -322,10 +380,10 @@ def analyse_wells(    fileadress,
             # If its the first iteration, create the dataframe
             if first_iteration:
                 first_iteration=False
-                output=feature_output(features_df, well_features_df, electrode_amnt)
+                output=feature_output(features_df, well_features_df)
             # If its not the first iteration, keep appending to the dataframe
             else:
-                output=pd.concat([output, feature_output(features_df, well_features_df, electrode_amnt)], axis=0, ignore_index=False)
+                output=pd.concat([output, feature_output(features_df, well_features_df)], axis=0, ignore_index=False)
             end=time.time()
             print(f"It took {end-start} seconds to analyse well: {well}")
         

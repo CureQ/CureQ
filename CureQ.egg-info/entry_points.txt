@@ -1,0 +1,2 @@
+[console_scripts]
+cureq = CureQ.main:main

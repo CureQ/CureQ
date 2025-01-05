@@ -27,7 +27,6 @@ setuptools.setup(
         "scikit-image>=0.22.0", # For determining the threshold of the network bursts
         "plotly>=5.14.0",       # For creating an interactive 3D view of a single well
 	    "KDEpy>=1.1.9",		    # For Kernel Density Estimation in Python
-        "sv-ttk>=2.6.0"         # Theme for tkinter GUI
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -35,7 +34,13 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     package_data={
-        "CureQ":['cureq_icon.ico']
+        "CureQ":['cureq_icon.ico', 'theme.json']
     },
-    include_package_data=True
+    include_package_data=True,
+    py_modules=["main"],
+    entry_points={
+        'console_scripts': [
+            'cureq=CureQ.main:main',
+        ],
+    },
 )

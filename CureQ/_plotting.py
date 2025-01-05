@@ -104,14 +104,31 @@ def fancyplot(outputpath,       # Where to find the spikedata
                     zaxis_title='KDE'),)
         fig.write_html(f"{outputpath}/figures/well_{well}_3dgraph.html")
 
-'''Plots the KDE of all electrodes (x) of a well in x amount of subplots'''
-def well_electrodes_kde(outputpath,         # Where to find the spike information
-                        well,               # Which well to analyse
-                        electrode_amnt,     # Amount of electrodes per well
-                        measurements,       # Measurements done (time*sampling rate)
-                        hertz,              # Sampling frequency
-                        bandwidth=1         # Bandwidth of the KDE
-                        ):
+def well_electrodes_kde(outputpath, well, electrode_amnt, measurements, hertz, bandwidth=1):
+    """
+    Plot a kernel density estimate of all electrodes in a single plot.
+
+    Parameters
+    ----------
+    outputpath : str
+        The folder in where to find the data required to create the KDEs
+    well : int
+        The well number which is to be used for the KDE
+    electrode amnt : int
+        The number of electrodes in a single MEA well
+    measurements : int
+        The total amount of measurements taken in a single electrode in this experiment (samping rate * duration)
+    hertz : int
+        The sampling rate of the MEA experiment
+    bandwidth : float, optional
+        The bandwidth used for the KDE, passed to KDEpy
+
+    Returns
+    -------
+    fig : matplotlib Figure
+
+    """
+
     # Where to find the spike-data
     spikepath=f'{outputpath}/spike_values'
     data_time=measurements/hertz
@@ -152,46 +169,54 @@ def well_electrodes_kde(outputpath,         # Where to find the spike informatio
     return fig
 
 def get_defaultcolors():
-    return ['maroon', 'teal', 'limegreen', 'peachpuff', 'orange', 'tomato', 'violet', 'cyan', 'gray', 'darkviolet', 'slateblue', 'seagreen']
+    """
+    Get default colors used for plotting.
+
+    Returns
+    -------
+    default_colors : list
+        List of hex codes of default colors.
+    
+    """
+
+    default_colors = ['maroon', 'teal', 'limegreen', 'indigo', 'orange', 'tomato', 'violet', 'cyan', 'gray', 'darkviolet', 'slateblue', 'seagreen']
+    return default_colors
 
 
-def feature_boxplots(featurefile, labels, colors=None, show_datapoints=True, outputpath=None, discern_wells=False, well_amnt=None):
+def feature_boxplots(features, labels, output_fileadress, colors=None, show_datapoints=True, discern_wells=False, well_amnt=None):
     """
     Creates a pdf file with boxplots for all different features and labels
 
     Parameters
     ----------
-    featurefile (str/dataframe):
-        Path to the featurefile/pandas dataframe
-    labels (dict):
-        Information about the contents of the well
-    colors (list):
+    features : pandas dataframe
+        Dataframe containing features from a MEA experiment
+    labels : dict
+        Information about the contents of the well in the following format: {'Control':[1, 2, 3], 'Mutated':[4, 5, 6]}
+    output_fileadress : str
+        Location where the file will be saved, must be a .pdf file
+    colors : list, optional
         List of colors to be used for the boxplots. Will use default colors if left empty
-    show_datapoints (bool):
+    show_datapoints : bool, optional
         Whether to show the individual datapoints on the boxplot
-    outputpath (str):
-        Where to save the pdf-file. Required when passing a pandas dataframe.
-    discern_wells (bool):
+    discern_wells : bool, optional
         If True, will assign a random colour to datapoints from each well
-    well_amnt (int):
-        The amount of wells in the MEA-plate
-    """
-    if outputpath == None:
-        outputpath=os.path.dirname(featurefile)
+    well_amnt : int, optional
+        The amount of wells in the MEA-plate, this parameter is required if discern_wells = True
 
-    if not isinstance(featurefile, pd.DataFrame):
-        features=pd.read_csv(featurefile)
-    else:
-        features=featurefile
-        if outputpath==None:
-            raise ValueError(f"Please supply an outputpath when passing a pandas dataframe")
+    Returns
+    -------
+    pdf_path : str
+        Path of output pdf-file
+
+    """
 
     if well_amnt is not None:
         rainbow_colors = [f"#{np.random.randint(0, 0xFFFFFF):06X}" for _ in range(well_amnt)]
 
     not_features=["Well", "Active_electrodes"]
 
-    pdf_path=f'{outputpath}/results.pdf'
+    pdf_path=output_fileadress
     pdf = PdfPages(pdf_path)
 
     # Set default colors
@@ -211,7 +236,8 @@ def feature_boxplots(featurefile, labels, colors=None, show_datapoints=True, out
             plotdata=[]
             for key_index, key in enumerate(labels.keys()):
                 wells=labels[key]
-                temp_data=featuredata[(labels[key])]
+                # -1 to turn wells into indexes
+                temp_data=featuredata[(np.array(labels[key])-1)]
                 plotdata.append(temp_data)
                 temp_data=list(temp_data)
                 if show_datapoints:
@@ -239,22 +265,32 @@ def feature_boxplots(featurefile, labels, colors=None, show_datapoints=True, out
     return pdf_path
 
 
-def combined_feature_boxplots(folder, labels, colors=None, show_datapoints=True, discern_wells=False, well_amnt=None):
+def combined_feature_boxplots(folder, labels, output_fileadress, colors=None, show_datapoints=True, discern_wells=False, well_amnt=None):
     """
     Combine the features of multiple measurements together
 
     Parameters
     ----------
-    folder (str):
+    folder : str
         folder in which to look for featurefiles
-    labels (dict):
-        Information about the contents of the well
-    colors (list):
+    labels : dict
+        Information about the contents of the well in the following format: {'Control':[1, 2, 3], 'Mutated':[4, 5, 6]}
+    output_fileadress : str
+        Location where the file will be saved, must be a .pdf file
+    colors : list, optional
         List of colors to be used for the boxplots. Will use default colors if left empty
-    show_datapoints (bool):
+    show_datapoints : bool, optional
         Whether to show the individual datapoints on the boxplot
-    discern_wells (bool):
+    discern_wells : bool, optional
         If True, will assign a random colour to datapoints from each well
+    well_amnt : int, optional
+        The amount of wells in the MEA-plate, this parameter is required if discern_wells = True
+
+    Returns
+    -------
+    pdf_path : str
+        Path of output pdf-file
+
     """
     
     # Find all featurefiles
@@ -263,7 +299,7 @@ def combined_feature_boxplots(folder, labels, colors=None, show_datapoints=True,
     
     for root, dirs, files in os.walk(folder):
         for file in files:
-            if file == f"Features.csv":
+            if file.endswith("Features.csv"):
                 featurefiles.append(os.path.join(root, file))
                 print(os.path.join(root, file))
 
@@ -279,34 +315,43 @@ def combined_feature_boxplots(folder, labels, colors=None, show_datapoints=True,
     for i in range(1, len(featurefiles)):
         for key in labels.keys():
             combined_labels[key]=((np.append(combined_labels[key], (np.array(labels[key]))+(original_rows*i))).astype(int)).tolist()
-    
+
     # Save the data
     with open(f"{folder}/combined_labels.json", 'w') as outfile:
         json.dump(combined_labels, outfile)
     dataframe.to_csv(f"{folder}/combined_dataframe.csv")
 
     # Plot the data
-    pdf_path=feature_boxplots(dataframe, combined_labels, colors=colors, show_datapoints=show_datapoints, outputpath=folder, discern_wells=discern_wells, well_amnt=well_amnt)
+    pdf_path=feature_boxplots(dataframe, combined_labels, output_fileadress=output_fileadress, colors=colors, show_datapoints=show_datapoints, discern_wells=discern_wells, well_amnt=well_amnt)
     return pdf_path
 
 
 
-def features_over_time(folder, labels, div_prefix, colors=None, show_datapoints=False):
+def features_over_time(folder, labels, div_prefix, output_fileadress, colors=None, show_datapoints=False):
     """
-    Show the different features between groups over time
+    Show the different features between groups over time.
+    The error bars represent the standard error of the mean.
 
     Parameters
     ----------
-    folder (str):
+    folder : str
         folder in which to look for featurefiles
-    labels (dict):
-        Information about the contents of the well
-    div_prefix (str)
+    labels : dict
+        Information about the contents of the well in the following format: {'Control':[1, 2, 3], 'Mutated':[4, 5, 6]}
+    div_prefix : str
         The prefix used to indicate the age of the cells (e.g. DIV, t)
-    colors (list):
-        List of colors to be used for the boxplots. Will use default colors if left empty
-    show_datapoints (bool):
+    output_fileadress : str
+        Location where the file will be saved, must be a .pdf file
+    colors : list, optinal
+        List of colors (hex codes) to be used for the boxplots. Will use default colors if left empty
+    show_datapoints : bool, optional
         Whether to show the individual datapoints on the boxplot
+
+    Returns
+    -------
+    pdf_path : str
+        Path of output pdf-file
+
     """
 
     # Set default colors
@@ -336,7 +381,7 @@ def features_over_time(folder, labels, div_prefix, colors=None, show_datapoints=
     featurefiles = []
     for root, dirs, files in os.walk(folder):
         for file in files:
-            if file == f"Features.csv":
+            if file.endswith("Features.csv"):
                 featurefiles.append(os.path.join(root, file))
                 print(os.path.join(root, file))
 
@@ -357,7 +402,7 @@ def features_over_time(folder, labels, div_prefix, colors=None, show_datapoints=
         graphlabels[i]=f"{div_prefix} {graphlabels[i]}"
 
     # Create pdf
-    pdf = PdfPages(f'{folder}/results over time.pdf')
+    pdf = PdfPages(output_fileadress)
 
     # Convert labels from wells to indexes (subtract 1)
     for label in labels.keys():
@@ -368,7 +413,7 @@ def features_over_time(folder, labels, div_prefix, colors=None, show_datapoints=
     for i in range(len(features)):
         # Check if these are the features we want
         if features[i] not in not_features:      
-            fig, ax = plt.subplots()
+            fig, ax = plt.subplots(figsize=(16, 9))
             means_list=[]
             errors_list=[]
             # Loop over all groups
@@ -390,6 +435,7 @@ def features_over_time(folder, labels, div_prefix, colors=None, show_datapoints=
                     means.append(np.nanmean(temp_data))
                     errors.append(sem(temp_data))
                     if show_datapoints:
+                        # Add some jitter to the datapoints
                         plt.scatter(x=np.array([pos]*len(temp_data))+np.random.uniform(-0.2, 0.2, len(temp_data)), y=temp_data, color=colors[index], s=0.5)
                 means_list.append(means)
                 errors_list.append(errors)
@@ -401,4 +447,4 @@ def features_over_time(folder, labels, div_prefix, colors=None, show_datapoints=
             plt.close()
     pdf.close()
 
-    return f'{folder}/results over time.pdf'
+    return output_fileadress

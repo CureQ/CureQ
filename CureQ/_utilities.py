@@ -5,20 +5,27 @@ def rechunk_dataset(fileadress, compression_method='lzf', compression_level=1, a
     """
     Rechunk an existing hdf5 dataset.
 
+    Parameters
+    ----------
+    fileadress : str
+        Path to the hdf5 file
+    compression_method : {'lzf', 'gzip'}, optional
+        Compression method
+    compression_level : int, optional
+        Compression level when using gzip - ranges 1-9
+    always_compress_files: bool, optional
+        If set to 'True', the algorithm will always perform the rechunking and compression, even when the data is already correctly chunked.
+
+    Returns
+    -------
+    outputfile : str
+        Path of the new file    
+
+    Notes
+    -----
     MCS hdf5 dataset are inefficiently chunked.
     Rechunking the dataset will allow for python to indiviually extract electrode data without having to read the entire dataset.
     Besides rechunking, this function will also apply a compression algorithm to the dataset.
-
-    Parameters
-    ----------
-    fileadress (str): 
-        Path to the hdf5 file
-    compression_method (str):
-        Compression method - options 'lzf' or 'gzip'
-    compression_level (int):
-        Compression level when using gzip - ranges 1-9
-    always_compress_files:
-        If set to 'True', the algorithm will always perform the rechunking and compression, even when the data is already correctly chunked.
     """
 
     outputfile=f"{fileadress[:-3]}_rechunked.h5"

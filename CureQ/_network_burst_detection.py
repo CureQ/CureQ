@@ -1,24 +1,53 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 from KDEpy import FFTKDE
 from skimage import filters
 
-'''Takes two burst values and calculates whether they overlap or not'''
+
 def _overlap(burst1, burst2):
+    """
+    Takes two burst values and calculates whether they overlap or not
+
+    Parameters
+    ----------
+    burst1 : list
+        List containing start and end time of burst
+    burst2 : list
+        List containing start and end time of burst
+
+    """
     if burst1[1]<burst2[0] or burst2[1]<burst1[0]:
         return False
     else:
         return True
 
-'''Network burst detection'''
-def network_burst_detection(wells,                  # Which wells to analyse
-                            parameters,             # Parameters dictionary
-                            plot_electrodes=False,  # Return plot or not
-                            save_figures=True,      # Save plot in outputfolder or not
-                            savedata=True           # Save network burst information or not
-                            ):
+def network_burst_detection(wells, parameters, plot_electrodes=False, save_figures=True, savedata=True):
+    """
+    Perform network burst detection on a specific well.
+
+    Parameters
+    ----------
+    wells : list
+        List of wells to perform network burst detection on.
+    parameters : dict
+        Dictionary containing global paramaters. The function will extract the values needed.
+    plot_electrodes : bool, optional
+        Whether to visualize the burst detection.
+    save_figures : bool, optional
+        Whether to save the figures as a file.
+    savedata : bool, optional
+        Whether to save the data using a .npy/.csv file.
+
+    Returns
+    -------
+    fig : matplotlib.Figure
+        Visualization of the network burst detection
+
+    Notes
+    -----
+    Instead of returning the results of the network burst detection using 'return', the function saves them at a specific file location using .npy and .csv files.
+    """
     # Define where to retrieve information from
     spikepath=f"{(parameters['output path'])}/spike_values"
     burstpath=f"{(parameters['output path'])}/burst_values"
@@ -256,7 +285,3 @@ def network_burst_detection(wells,                  # Which wells to analyse
         fig.savefig(path, dpi=240)  # 4k resolution
     if plot_electrodes:
         return fig
-    else:
-        plt.cla()
-        plt.clf()
-        plt.close()

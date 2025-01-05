@@ -3,18 +3,41 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 import copy
 
-'''Spike validation - noisebased'''
-def spike_validation(data,                      # Raw data from particular electrode
-                     electrode,                 # Which electrode is getting analysed
-                     threshold,                 # Spike detection threshold value
-                     parameters,                # Parameters dictionary
-                     plot_electrodes=False,     # If true, returns a matplotlib figure of the spike detection/validation process. Used for the GUI
-                     savedata=True,             # Whether to save the spike information or not
-                     plot_rectangles=False      # Whether to plot the spike validation in the matplotlib figure
-                     ):
-    # Colors for possible matplotlib figure
-    rawdatacolor='#bb86fc'
+
+def spike_validation(data, electrode, threshold, parameters, plot_electrodes=False, savedata=True, plot_rectangles=False):
+    """
+    Function to perform spike detection and validation on raw data.
+
+    Parameters
+    ----------
+    data : list, np.ndarray
+        Raw single electrode data.
+    electrode : int
+        Electrode number the raw data orignates from.
+    threshold : float
+        Threshold values used for the spike detection.
+    parameters : dict
+        Dictionary containing global paramaters. The function will extract the values needed.
+    plot_electrodes : bool, optional
+        Whether to visualize the burst detection.
+    savedata : bool, optional
+        Whether to save the data using a .npy/.csv file.
+    plot_rectangles : bool, optional
+        Whether to plot the spike validation process.
     
+    Returns
+    -------
+    fig : matplotlib.Figure
+        Visualization of the spike detection process.
+
+    Notes
+    -----
+    Instead of returning the results of the spike detection using 'return', the function saves them at a specific file location using .npy and .csv files.
+    """
+    
+    
+    # Colors for matplotlib figure
+    rawdatacolor='#bb86fc'
     
     '''Spike detection - detect spikes using the threshold and refractory period'''
     i = electrode

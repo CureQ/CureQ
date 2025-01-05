@@ -31,12 +31,13 @@ try:
 except:
     from mea import *
 
-"""Structure:
-This GUI consists of multiple windows, each window will have its own class, where it holds its own variables
-The main application class handles frame selection and 'global' variables
-"""
 
 class MainApp(ctk.CTk):
+    """
+    Structure:
+    This GUI consists of multiple windows, each window will have its own class, where it holds its own variables
+    The MainApp class handles frame selection and some 'global' variables and functions
+    """
     def __init__(self):
         # Initialize GUI
         super().__init__()
@@ -60,15 +61,27 @@ class MainApp(ctk.CTk):
 
         # Colors
         self.primary_1 = '#342d32'
-        self.primary_2 = '#5c565a'
-        self.primary_3 = "#927a8d"
-        self.primary_3_hover = "#84687e"
 
         self.gray_1 = '#333333'
         self.gray_2 = '#2b2b2b'
         self.gray_3 = "#3f3f3f"
 
         self.text_color = '#dce4ee'
+
+        # Theme colors
+        # Green: 
+            # "fg_color": ["#3a7ebf", "#3a994e"],
+            # "hover_color": ["#325882", "#0d8c39"],
+        # Dark Blue:
+            # "fg_color": ["#3a7ebf", "#2b275e"],
+            # "hover_color": ["#325882", "#13112b"],
+        # Other blue
+        #     "fg_color": ["#3a7ebf", "#0f4761"],
+        #     "hover_color": ["#325882", "#07212d"],
+
+        theme_path=os.path.join(base_path, "theme.json")
+        ctk.set_default_color_theme(theme_path)
+        ctk.set_appearance_mode("dark")
 
         # Initialize main frame
         self.show_frame(main_window)
@@ -102,6 +115,10 @@ class MainApp(ctk.CTk):
 
 
 class main_window(ctk.CTkFrame):
+    """
+    Main window and landing page for the user.
+    Allows the user to switch to different frames to perform different tasks.
+    """
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -131,6 +148,10 @@ class main_window(ctk.CTkFrame):
         # Main button frame
         main_buttons_frame=ctk.CTkFrame(self)
         main_buttons_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nesw')
+        main_buttons_frame.grid_columnconfigure(0, weight=1)
+        main_buttons_frame.grid_columnconfigure(1, weight=1)
+        main_buttons_frame.grid_rowconfigure(0, weight=1)
+        main_buttons_frame.grid_rowconfigure(1, weight=1)
 
         # Go to parameter_frame
         to_parameters_button=ctk.CTkButton(master=main_buttons_frame, text="Set Parameters", command=lambda: parent.show_frame(parameter_frame), height=90, width=160)
@@ -152,7 +173,7 @@ class main_window(ctk.CTkFrame):
         util_plot_button_frame=ctk.CTkFrame(master=self)
         util_plot_button_frame.grid(row=1, column=0, columnspan=2, sticky='nesw', pady=5, padx=5)
 
-        compression_button=ctk.CTkButton(master=util_plot_button_frame, text="Compress Files", command=lambda: parent.show_frame(compress_files))
+        compression_button=ctk.CTkButton(master=util_plot_button_frame, text="Compress/Rechunk Files", command=lambda: parent.show_frame(compress_files))
         compression_button.grid(row=0, column=0, sticky='nesw', padx=10, pady=10)
         
         features_over_time_button=ctk.CTkButton(master=util_plot_button_frame, text="Plotting", command=lambda: parent.show_frame(plotting_window))
@@ -162,6 +183,9 @@ class main_window(ctk.CTkFrame):
             util_plot_button_frame.grid_rowconfigure(i, weight=1)
 
 class parameter_frame(ctk.CTkFrame):
+    """
+    Allows the user to set the different parameters for the analysis.
+    """
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -287,7 +311,7 @@ class parameter_frame(ctk.CTkFrame):
         amplitudedropinput=ctk.CTkEntry(master=validationparameters)
         amplitudedropinput.grid(row=4, column=1, padx=10, pady=10, sticky='w')
 
-        maxheightlabel=ctk.CTkLabel(master=validationparameters, text="Max drop amount:")
+        maxheightlabel=ctk.CTkLabel(master=validationparameters, text="Max drop:")
         maxheightlabel.grid(row=5, column=0, padx=10, pady=10, sticky='w')
         maxheighttooltip = CTkToolTip(maxheightlabel, 'Multiplied with the threshold. The maximum height a spike can be required to drop in amplitude in the set timeframe', wraplength=self.tooltipwraplength)
         maxheightinput=ctk.CTkEntry(master=validationparameters)
@@ -500,8 +524,11 @@ class parameter_frame(ctk.CTkFrame):
         save_parameters_button=ctk.CTkButton(master=self, text="Save parameters and return", command=save_parameters)
         save_parameters_button.grid(row=3, column=0, padx=10, pady=10, sticky='nsew')
 
-"""Select folder for results"""
+
 class select_folder_frame(ctk.CTkFrame):
+    """
+    Allows the user to select a dataset and outputfile to inspect the results.
+    """
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -513,16 +540,17 @@ class select_folder_frame(ctk.CTkFrame):
 
         datalocation=ctk.CTkFrame(self)
         datalocation.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
+        datalocation.grid_columnconfigure(1, weight=1)
 
         folderlabel=ctk.CTkLabel(master=datalocation, text="Folder:")
         folderlabel.grid(row=0, column=0, padx=10, pady=10, sticky='w')
         self.btn_selectfolder=ctk.CTkButton(master=datalocation, text="Select a folder", command=self.openfolder)
-        self.btn_selectfolder.grid(row=0, column=1, padx=10, pady=10)
+        self.btn_selectfolder.grid(row=0, column=1, padx=10, pady=10, sticky='nesw')
 
         rawfilelabel=ctk.CTkLabel(master=datalocation, text="File:")
         rawfilelabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
-        self.btn_selectrawfile=ctk.CTkButton(master=datalocation, text="Choose a file", command=self.openrawfile)
-        self.btn_selectrawfile.grid(row=1, column=1, padx=10, pady=10)
+        self.btn_selectrawfile=ctk.CTkButton(master=datalocation, text="Select a file", command=self.openrawfile)
+        self.btn_selectrawfile.grid(row=1, column=1, padx=10, pady=10, sticky='nesw')
 
         view_results_button=ctk.CTkButton(self, text="View results", command= lambda: self.go_to_results(parent))
         view_results_button.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky='nesw')
@@ -573,8 +601,11 @@ class select_folder_frame(ctk.CTkFrame):
         # If everything is good, go to the next frame
         parent.show_frame(view_results, folder=self.folder_path, rawfile=self.data_path)
 
-"""Select folder for results"""
+
 class view_results(ctk.CTkFrame):
+    """
+    Allow the user to view the results of the MEA analysis
+    """
     def __init__(self, parent, folder, rawfile):
         super().__init__(parent)
 
@@ -617,14 +648,14 @@ class view_results(ctk.CTkFrame):
         
         # Wellbuttons
         ywells, xwells=parent.calculate_optimal_grid(well_amnt)
-        sev_wellbuttons=[]
+        self.sev_wellbuttons=[]
         i=1
 
         for y in range(ywells):
             for x in range(xwells):
                 well_btn=ctk.CTkButton(master=sev_well_button_frame, text=i, command=partial(self.set_selected_well, i), height=100, width=100, font=ctk.CTkFont(size=25))
                 well_btn.grid(row=y, column=x, sticky='nesw')
-                sev_wellbuttons.append(well_btn)
+                self.sev_wellbuttons.append(well_btn)
                 i+=1
 
         # Electrode buttons
@@ -668,6 +699,10 @@ class view_results(ctk.CTkFrame):
     
     def set_selected_well(self, i):
         self.selected_well=i
+        for j in range(len(self.sev_wellbuttons)):
+            self.sev_wellbuttons[j].configure(fg_color="#1f6aa5")
+        self.sev_wellbuttons[i-1].configure(fg_color="#144870")
+
 
     def open_sev_tab(self, electrode):
         single_electrode_view(self.parent, self.folder, self.rawfile, self.selected_well, electrode)
@@ -675,8 +710,11 @@ class view_results(ctk.CTkFrame):
     def open_wwv_tab(self, well):
         whole_well_view(self.parent, self.folder, well)
 
-"""Single electrode view toplevel"""
+
 class single_electrode_view(ctk.CTkToplevel):
+    """
+    Allows the user to inpect the spike and burst detection on a single electrode.
+    """
     def __init__(self, parent, folder, rawfile, well, electrode):
         super().__init__(parent)
         self.title(f"Well: {well}, Electrode: {electrode}")
@@ -785,7 +823,7 @@ class single_electrode_view(ctk.CTkToplevel):
         self.dropamplitude_ew_entry=ctk.CTkEntry(master=val_options_ew_frame)
         self.dropamplitude_ew_entry.grid(row=1, column=3, pady=10, padx=10, sticky='w')
 
-        maxdrop_label=ctk.CTkLabel(master=val_options_ew_frame, text='Max drop amount').grid(row=2, column=2, pady=10, padx=10, sticky='w')
+        maxdrop_label=ctk.CTkLabel(master=val_options_ew_frame, text='Max drop').grid(row=2, column=2, pady=10, padx=10, sticky='w')
         self.maxdrop_ew_entry=ctk.CTkEntry(master=val_options_ew_frame)
         self.maxdrop_ew_entry.grid(row=2, column=3, pady=10, padx=10, sticky='w')
 
@@ -1032,8 +1070,11 @@ class single_electrode_view(ctk.CTkToplevel):
         self.default_values_burst()
         self.update_burst_plot(parent)
 
-"""Whole well view toplevel"""
+
 class whole_well_view(ctk.CTkToplevel):
+    """
+    Allows the user to inspect the network burst detection of a single well.
+    """
     def __init__(self, parent, folder, well):
         super().__init__(parent)
         self.title(f"Well: {well}")
@@ -1222,8 +1263,10 @@ class whole_well_view(ctk.CTkToplevel):
         self.well_activity_update_plot()
 
 
-"""Process single file"""
 class process_file_frame(ctk.CTkFrame):
+    """
+    Allows the user to perform analysis on a single MEA experiment.
+    """
     def __init__(self, parent):
         super().__init__(parent)  # Initialize the parent class
 
@@ -1377,8 +1420,11 @@ class process_file_frame(ctk.CTkFrame):
         self.start_button.configure(state='normal')
         self.return_button.configure(state='normal')
 
-"""Batch processing"""
+
 class batch_processing(ctk.CTkFrame):
+    """
+    Allows the user to process multiple MEA experiments.
+    """
     def __init__(self, parent):
         super().__init__(parent)  # Initialize the parent class
 
@@ -1399,10 +1445,6 @@ class batch_processing(ctk.CTkFrame):
         # List to store selected file paths
         self.selected_files = []
 
-        # Configure appearance
-        ctk.set_appearance_mode("System")
-        ctk.set_default_color_theme("blue")
-
         """ Folder selection frame """
         self.folder_frame = ctk.CTkFrame(self.file_selection_frame, fg_color=parent.gray_3)
         self.folder_frame.grid(row=0, column=0, padx=20, pady=10, sticky="ew")
@@ -1411,9 +1453,7 @@ class batch_processing(ctk.CTkFrame):
         self.select_folder_btn = ctk.CTkButton(
             self.folder_frame, 
             text="Select Folder", 
-            command=self.select_folder,
-            fg_color=parent.primary_3,
-            hover_color=parent.primary_3_hover
+            command=self.select_folder
         )
         self.select_folder_btn.pack(pady=10, padx=10, fill="x")
 
@@ -1426,18 +1466,14 @@ class batch_processing(ctk.CTkFrame):
         # Vertical Scrollbar
         self._vertical_scrollbar = ctk.CTkScrollbar(
             self.tree_frame, 
-            orientation="vertical",
-            button_color=parent.primary_3,
-            button_hover_color=parent.primary_3_hover
+            orientation="vertical"
         )
         self._vertical_scrollbar.grid(row=0, column=1, padx=(0, 5), pady=5, sticky='ns')
         
         # Horizontal Scrollbar
         self._horizontal_scrollbar = ctk.CTkScrollbar(
             self.tree_frame, 
-            orientation="horizontal",
-            button_color=parent.primary_3,
-            button_hover_color=parent.primary_3_hover
+            orientation="horizontal"
         )
         self._horizontal_scrollbar.grid(row=1, column=0, padx=5, pady=(0, 5), sticky='ew')
 
@@ -1477,17 +1513,14 @@ class batch_processing(ctk.CTkFrame):
         self.print_files_btn = ctk.CTkButton(
             self.file_selection_frame, 
             text="Confirm Selection", 
-            command=partial(self.confirm_selection, parent),
-            fg_color=parent.primary_3,
-            hover_color=parent.primary_3_hover
+            command=partial(self.confirm_selection, parent)
         )
         self.print_files_btn.grid(row=2, column=0, padx=10, pady=10, sticky='nesw')
 
         to_main_menu=ctk.CTkButton(self.file_selection_frame, 
             text="Return to Main Menu", 
-            command=lambda: parent.show_frame(main_window),
-            fg_color=parent.primary_3,
-            hover_color=parent.primary_3_hover)
+            command=lambda: parent.show_frame(main_window)
+            )
         to_main_menu.grid(row=3, column=0, padx=10, pady=10, sticky='news')
 
         # Bind events
@@ -1534,19 +1567,19 @@ class batch_processing(ctk.CTkFrame):
         self.electrode_amnt_input.grid(row=1, column=1, pady=5, padx=5, sticky='w')
 
         # Analysis and progress
-        self.start_analysis_button = ctk.CTkButton(self.analysis_progress_frame, text="Initiate Analysis", hover_color=parent.primary_3_hover, command=lambda: threading.Thread(target=self.initiate_analysis).start(), fg_color=parent.primary_3)
+        self.start_analysis_button = ctk.CTkButton(self.analysis_progress_frame, text="Initiate Analysis", command=lambda: threading.Thread(target=self.initiate_analysis).start())
         self.start_analysis_button.grid(row=0, column=0, sticky='nesw', padx=5, pady=5)
 
-        self.progressbar = ctk.CTkProgressBar(self.analysis_progress_frame, orientation='horizontal', mode='determinate', progress_color="#239b56", border_color=parent.primary_3)
+        self.progressbar = ctk.CTkProgressBar(self.analysis_progress_frame, orientation='horizontal', mode='determinate', progress_color="#239b56")
         self.progressbar.grid(row=1, column=0, sticky='nesw', padx=5, pady=20)
         self.progressbar.set(0)
 
         self.abort_analysis_bool=False
-        self.abort_analysis_button = ctk.CTkButton(self.analysis_progress_frame, text="Abort Analysis", fg_color=parent.primary_3, hover_color=parent.primary_3_hover, command=self.abort_analysis_func)
+        self.abort_analysis_button = ctk.CTkButton(self.analysis_progress_frame, text="Abort Analysis", command=self.abort_analysis_func)
         self.abort_analysis_button.grid(row=2, column=0, sticky='nesw', padx=5, pady=5)
         self.abort_analysis_button.configure(state='disabled')
 
-        self.back_button = ctk.CTkButton(self.analysis_progress_frame, text="Return", fg_color=parent.primary_3, hover_color=parent.primary_3_hover, command=lambda: parent.show_frame(main_window))
+        self.back_button = ctk.CTkButton(self.analysis_progress_frame, text="Return", command=lambda: parent.show_frame(main_window))
         self.back_button.grid(row=3, column=0, sticky='nesw', padx=5, pady=5)
 
 
@@ -1620,7 +1653,7 @@ class batch_processing(ctk.CTkFrame):
         self.deselect_all()
 
     def confirm_selection(self, parent):
-        self.selected_files_table = ctk.CTkScrollableFrame(self.selected_files_frame, scrollbar_button_color=parent.primary_3, scrollbar_button_hover_color=parent.primary_3_hover)
+        self.selected_files_table = ctk.CTkScrollableFrame(self.selected_files_frame)
         self.selected_files_table.grid(row=0, column=0, padx=10, pady=10, sticky='nesw')
         self.selected_files_table.columnconfigure(0, weight=1)
         self.selected_files_table.columnconfigure(1, weight=1)
@@ -1701,8 +1734,11 @@ class batch_processing(ctk.CTkFrame):
         self.abort_analysis_button.configure(state="disabled")
 
 
-"""Compress files"""
+
 class compress_files(ctk.CTkFrame):
+    """
+    Allows the user to compress/rechunk multiple files.
+    """
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -1838,8 +1874,11 @@ class compress_files(ctk.CTkFrame):
         info.configure(text="Finished compression")
         popup.protocol("WM_DELETE_WINDOW", popup.destroy)
 
-"""Features over time"""
+
 class plotting_window(ctk.CTkFrame):
+    """
+    Allows the user to combine multiple MEA experiments to generate plots and discern between healthy and diseased cultures.
+    """
     def __init__(self, parent):
         super().__init__(parent)
         
@@ -1859,9 +1898,13 @@ class plotting_window(ctk.CTkFrame):
 
         features_over_time_frame = ctk.CTkFrame(master=plotting_frame, fg_color=self.parent.gray_1)
         features_over_time_frame.grid(row=1, column=0, padx=5, pady=5, sticky='nesw')
+        features_over_time_frame.grid_columnconfigure(0, weight=1)
+        features_over_time_frame.grid_columnconfigure(1, weight=1)
 
         boxplot_frame = ctk.CTkFrame(master=plotting_frame, fg_color=self.parent.gray_1)
         boxplot_frame.grid(row=2, column=0, sticky='nesw', padx=5, pady=5)
+        boxplot_frame.grid_columnconfigure(0, weight=1)
+        boxplot_frame.grid_columnconfigure(1, weight=1)
 
 
         # Selected files frame
@@ -1870,7 +1913,7 @@ class plotting_window(ctk.CTkFrame):
 
         # Label frames
         self.assign_labels_frame = ctk.CTkFrame(master=self)
-        self.assign_labels_frame.grid(row=1, column=2, padx=5, pady=5, sticky='nesw')
+        self.assign_labels_frame.grid(row=1, column=2, padx=5, pady=5, sticky='new')
 
         label_main_frame=ctk.CTkFrame(master=self, fg_color='transparent')
         label_main_frame.grid(row=1, column=3, sticky='nesw')
@@ -1965,7 +2008,8 @@ class plotting_window(ctk.CTkFrame):
         file_path = filedialog.asksaveasfilename(
         defaultextension=".json",
         filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
-        title="Save JSON File")
+        title="Save JSON File"
+        )
 
         if not file_path:
             return
@@ -2003,7 +2047,7 @@ class plotting_window(ctk.CTkFrame):
         self.set_labels({})
 
     def create_plots(self):
-        # check if there are groups that contain wells
+        # Perform checks
         valid_groups=False
         for label in self.assigned_labels.keys():
             if len(self.assigned_labels[label]) > 0:
@@ -2020,8 +2064,20 @@ class plotting_window(ctk.CTkFrame):
                               icon="cancel",
                               wraplength=400)
             return
+
+        # Call library
         try:
-            pdf_path=features_over_time(folder=self.selected_folder, labels=copy.deepcopy(self.assigned_labels), div_prefix=str(self.prefix_entry.get()), colors=self.default_colors, show_datapoints=bool(self.show_datapoints_entry.get()))
+            file_path = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")],
+            title="Save PDF File"
+            )
+
+            if not file_path:
+                return
+
+            pdf_path=features_over_time(folder=self.selected_folder, labels=copy.deepcopy(self.assigned_labels), div_prefix=str(self.prefix_entry.get()), output_fileadress=file_path, colors=self.default_colors, show_datapoints=bool(self.show_datapoints_entry.get()))
+            CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
             webbrowser.open(f"file://{pdf_path}")
         except Exception as error:
             CTkMessagebox(title="Error",
@@ -2045,8 +2101,18 @@ class plotting_window(ctk.CTkFrame):
             return
         
         try:
-            pdf_path=combined_feature_boxplots(folder=self.selected_folder, labels=copy.deepcopy(self.assigned_labels), colors=self.default_colors, show_datapoints=bool(self.bp_show_datapoints_entry.get()), discern_wells=bool(self.discern_wells_entry.get()), well_amnt=self.well_amnt)
+            file_path = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")],
+            title="Save PDF File"
+            )
+
+            if not file_path:
+                return
+            
+            pdf_path=combined_feature_boxplots(folder=self.selected_folder, labels=copy.deepcopy(self.assigned_labels), output_fileadress=file_path, colors=self.default_colors, show_datapoints=bool(self.bp_show_datapoints_entry.get()), discern_wells=bool(self.discern_wells_entry.get()), well_amnt=self.well_amnt)
             webbrowser.open(f"file://{pdf_path}")
+            CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
         except Exception as error:
             CTkMessagebox(title="Error",
                               message='Something went wrong while creating the boxplots',
@@ -2100,7 +2166,7 @@ class plotting_window(ctk.CTkFrame):
         file_names=[]
         for root, dirs, files in os.walk(folder):
             for file in files:
-                if file == f"Features.csv":
+                if file.endswith("Features.csv"):
                     data=pd.read_csv(os.path.join(root, file))
                     well_amnts.append(len(data))
                     file_names.append(os.path.basename(os.path.normpath(root)))
@@ -2137,5 +2203,17 @@ class plotting_window(ctk.CTkFrame):
         self.select_folder_button.configure(state='disabled')
 
 def MEA_GUI():
+    """
+    Launches the graphical user interface (GUI) of the CureQ MEA analysis tool.
+
+    Always launch the function with an "if __name__ == '__main__':" guard as follows:
+        if __name__ == "__main__":
+            MEA_GUI()
+    """
+
     app = MainApp()
     app.mainloop()
+
+
+if __name__ == "__main__":
+    MEA_GUI()

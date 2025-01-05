@@ -21,7 +21,6 @@ Requires-Dist: statsmodels>=0.14.0
 Requires-Dist: scikit-image>=0.22.0
 Requires-Dist: plotly>=5.14.0
 Requires-Dist: KDEpy>=1.1.9
-Requires-Dist: sv-ttk>=2.6.0
 
 # CureQ
 

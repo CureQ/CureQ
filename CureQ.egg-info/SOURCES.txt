@@ -12,10 +12,13 @@ CureQ/_spike_validation.py
 CureQ/_threshold.py
 CureQ/_utilities.py
 CureQ/cureq_icon.ico
+CureQ/main.py
 CureQ/mea.py
 CureQ/mea_analysis_tool.py
+CureQ/theme.json
 CureQ.egg-info/PKG-INFO
 CureQ.egg-info/SOURCES.txt
 CureQ.egg-info/dependency_links.txt
+CureQ.egg-info/entry_points.txt
 CureQ.egg-info/requires.txt
 CureQ.egg-info/top_level.txt

@@ -2,10 +2,23 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import pacf
 
-'''Calculate the features for all the electrodes'''
-def electrode_features(well,        # Which electrodes to analyse
-                       parameters   # Parameters dictionary
-                       ):
+def electrode_features(well, parameters):
+    """
+    Calculate electrode features for all electrodes in a well.
+
+    Parameters
+    ----------
+    well : int
+        The well for which the electrode features are to be calculated.
+    parameters : dict
+        Dictionary containing global paramaters. The function will extract the values needed
+
+    Returns
+    -------
+    features_df : pandas Dataframe
+        Dataframe containing electrodes for rows and features for columns.
+    
+    """
     
     # Define all lists for the features
     wells_df, electrodes_df, spikes, mean_firingrate, mean_ISI, median_ISI, ratio_median_over_mean, IIV, CVI, ISIPACF  = [], [], [], [], [], [], [], [], [], []
@@ -63,9 +76,8 @@ def electrode_features(well,        # Which electrodes to analyse
            Warning: sometimes it is not possible to calculate a features due to a lack of detected bursts/spikes.
            always check if there are enough values to calculate the feature using an if-statement, if there are not, append "float("NaN")" to the list
         4. Append your feature to the list
-        5. At the end of this function, add your list to the pandas dataframe, and give it the correct name.
+        5. At the end of this function, add your list to the pandas dataframe, and give the column the correct name.
            Now if you run the analysis again, you should see your own feature in the "Features.csv" output file
-        If there are any questions, feel free to reach out!
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         '''
 
@@ -241,6 +253,22 @@ def electrode_features(well,        # Which electrodes to analyse
 
 '''Calculate the features per well'''
 def well_features(well, parameters):
+    """
+    Calculate well features for a specific well
+
+    Parameters
+    ----------
+    well : int
+        The well for which the features are to be calculated.
+    parameters : dict
+        Dictionary containing global paramaters. The function will extract the values needed
+
+    Returns
+    -------
+    well_features_df : pandas Dataframe
+        Dataframe containing well features
+    
+    """
     
     spikepath=f"{(parameters['output path'])}/spike_values"
     burstpath=f"{(parameters['output path'])}/burst_values"
@@ -481,8 +509,32 @@ def well_features(well, parameters):
     })
     return well_features_df
  
-'''This function will take the electrode and well features, clean them up an give back the output'''
-def feature_output(electrode_features, well_features, electrode_amnt):
+
+def feature_output(electrode_features, well_features):
+    """
+    Function to combine and clean up electrode and well features dataframes
+
+    Parameters
+    ----------
+    electrode_features : pandas Dataframe
+        Electrodes features.
+    well_features : pandas Dataframe
+        Well features.
+
+    Returns
+    -------
+    avg_electrode_features : pandas Dataframe
+        Combined single electrode and well features
+
+    Notes
+    -----
+    This function will do the following things:
+    
+    - Take the average of all single electrode features of a well.
+    - Remove unnecessary and duplicate columns.
+    - Combine the average electrode and well features.
+
+    """
     # Take the average of all the single-electrode features
     avg_electrode_features=pd.DataFrame(electrode_features.mean()).transpose()
 
@@ -494,36 +546,3 @@ def feature_output(electrode_features, well_features, electrode_amnt):
     avg_electrode_features = pd.concat([avg_electrode_features, well_features], axis=1, join='inner')
     
     return avg_electrode_features
-
-
-'''
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Call the functions and test you custom features with the following code!
-This is similair to how the feature extraction gets called during the analysis:
-
-
-outputpath='Path/to/output/folder'
-
-electrode_amnt=12
-well_amnt=12
-measurements=(1200*10000)
-hertz=10000
-activity_threshold=0.1
-remove_inactive_electrodes=True
-
-first_iteration=True
-for well in range(1, well_amnt+1):
-    electrodes=np.arange((well-1)*electrode_amnt, well*electrode_amnt)
-    # Calculate electrode and well features
-    features_df=electrode_features(outputpath, well, electrode_amnt, measurements, hertz, activity_threshold, remove_inactive_electrodes)
-    well_features_df=well_features(outputpath, well, electrode_amnt, measurements, hertz)
-
-    # If its the first iteration, create the dataframe
-    if first_iteration:
-        first_iteration=False
-        output=feature_output(features_df, well_features_df, electrode_amnt)
-    # If its not the first iteration, keep appending to the dataframe
-    else:
-        output=pd.concat([output, feature_output(features_df, well_features_df, electrode_amnt)], axis=0, ignore_index=False)
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-'''

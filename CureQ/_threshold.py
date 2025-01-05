@@ -1,9 +1,26 @@
 import numpy as np
 
-'''Threshold function - returns threshold value'''
-def fast_threshold(data,                    # Raw data of a particular electrode
-                   parameters               # Parameters dictionary
-                   ):  
+def fast_threshold(data, parameters):
+    """
+    Calculate the threshold for a single electrode
+
+    Parameters
+    ----------
+    data : list, np.ndarray
+        Raw single electrode data.
+    parameters : dict
+        Dictionary containing global paramaters. The function will extract the values needed.
+
+    Returns
+    -------
+    threshold_values : float
+        Threshold for the electrode.
+
+    Notes
+    -----
+    This function will first determine periods of noise, then use these periods to calculate a threshold value.
+    
+    """  
         
     measurements=data.shape[0]
 

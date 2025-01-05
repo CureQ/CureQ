@@ -4,12 +4,35 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.figure import Figure
 
-def burst_detection(data,                   # Raw data
-                    electrode,              # Which electrode is getting analysed
-                    parameters,             # Parameters dictionary
-                    plot_electrodes= False, # If true, returns a matplotlib figure of the spike detection/validation process. Used for the GUI
-                    savedata=True           # Whether to save the burst information or not
-                    ):
+def burst_detection(data, electrode, parameters, plot_electrodes= False, savedata=True):
+    """
+    Detect bursts in single electrode MEA-data
+
+    Parameters
+    ----------
+    data : list, np.ndarray
+        Raw data from the corresponding electrode, used for visualization purposes.
+    electrode : int
+        The electrode used for burst detection.
+    parameters : dict
+        Dictionary containing global paramaters. The function will extract the values needed.
+    plot_electrodes : bool, optional
+        Whether to visualize the burst detection.
+    savedata : bool, optional
+        Whether to save the data using a .npy/.csv file.
+
+    Returns
+    -------
+    fig1 : matplotlib.Figure
+        KDE plot of the inter-spike intervals
+    fig2 : matplotlib.Figure
+        Plot of raw data with applied burst detection
+
+    Notes
+    -----
+    Instead of returning the results of the burst detection using 'return', the function saves them at a specific file location using .npy and .csv files.
+    
+    """
     
     # Colors
     rawdatacolor='#bb86fc'

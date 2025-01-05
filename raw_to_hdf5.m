@@ -82,8 +82,8 @@ end
 % bottom right, and from the top left electrode to the bottom right. This
 % means it creates an array of wells*electrodes rows and samples amount of
 % columns. 
-% In the case of a 4*6 (24) well with a 4*4 (16) electrode (so 24*16=384)
-% configuration  and 3000000 samples, the array size would be 384*3000000
+% In the case of a 4x6 (24) well with a 4x4 (16) electrode (so 24*16=384)
+% configuration  and 3000000 samples, the final array size would be 384*3000000
 % 
 % This script has been tested and verified using a 24 well 16 electrode axion plate
 % 
