@@ -1,8 +1,10 @@
+#### This project is still in development.
+
 # CureQ
 
 This is the repository of the CureQ consortium.<br>
 For more information about the CureQ project, visit https://cureq.nl/
-This repository contains a library with functions for analyzing MEA files.<br>
+This repository contains a library with functions for analyzing Microelectrode Array (MEA) experiments.<br>
 This repository is maintained by the Amsterdam University of Applied Sciences (AUMC).<br>
 This library can process both Multi Channel Systems and Axion Biosystems MEA data, although the latter will have to be converted to hdf5 format using our MATLAB script, which can be found in the repository.
 For more information about the analysis or how to use the library, check out the "CureQ MEA-analysis library User Guide.pdf" file.<br>
@@ -27,6 +29,8 @@ Install the MEA analyzer with the following command when you are using Conda:
 conda install CureQ::CureQ
 ```
 
+More elaborate and simple installation instructions can be found in the user guide.
+
 ---
 
 ## Library usage
@@ -35,15 +39,22 @@ Import the function you need, call this function and watch how the pipeline anal
 
 #### Example for analyzing all MEA wells
 ```python
-from CureQ.mea import analyse_wells               # Library function for analyzing wells
+from CureQ.mea import analyse_wells, get_default_parameters
 
-file_path = 'path/to/your/mea_file.h5'           # Path to your MEA file
-hertz = 20000                                    # Sampling frequency of MEA system
-electrodes = 12                                  # Electrode amount per well
+fileadress='C:/mea_data/mea_experiment.h5'
+sampling_rate=20000
+electrode_amount=12
 
-# Analyzes all wells in the MEA file
-if __name__=='__main__':
-   analyse_wells(fileadress=file_path, hertz=hertz, electrode_amnt=electrodes)
+# Get and edit parameters
+parameters = get_default_parameters()
+parameters['use multiprocessing'] = True
+
+if __name__ == '__main__':
+    analyse_wells(fileadress=fileadress,
+                  sampling_rate=sampling_rate,
+                  electrode_amnt=electrode_amount,
+                  parameters=parameters
+                  )
 ```
 
 ---
@@ -61,6 +72,32 @@ if __name__=="__main__":
     MEA_GUI()
 ```
 
+#### Launch from command prompt
+Additionally, he GUI can be launched from the command prompt. Simply open the command prompt, and enter “cureq”.
+```shell
+C:\Users>cureq
+Successfully launched MEA GUI
+```
+The output should look like this, and the GUI should appear on your screen.
+
+#### Create shortcuts
+This process can be simplified by creating shortcuts that in essence perform the same process. In the command prompt, enter “cureq –create-shortcut”.
+
+```shell
+C:\Users>cureq --create-shortcut
+Desktop shortcut created at C:\Users\Desktop\CureQ.lnk
+```
+The output should look like this, and a shortcut should appear on your desktop:
+
+Additionally a shortcut can be added to the start menu. In the command prompt, enter “cureq –add-to-start-menu”.
+```shell
+C:\Users>cureq --add-to-start-menu
+Start Menu shortcut created at C:\Users \AppData\Roaming\Microsoft\Windows\Start Menu\Programs\CureQ\CureQ.lnk
+```
+
+The output should look likes this, and the shortcut should appear in your start menu.
+The shortcut can also be added to the taskbar by pressing “Pin to taskbar”.
+
 ---
 
 ## Example visualisations
@@ -68,16 +105,21 @@ if __name__=="__main__":
 #### Spike detection
 ![Spike detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/spike_detection.png)
 
-#### Single burst detection
-![Burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/burst_detection.PNG)
+#### Single channel burst detection
+![Burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/burst_detection.png)
 
 #### Network burst detection
-![Network burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/network_burst_detection.PNG)
+![Network burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/network_burst_detection.png)
 
-#### GUI
-![results_window](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/results_window.png)
+#### Batch processing
+![Batch processing](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/batch_processing.png)
 
-![main_window](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/main_window.png)
+#### Group comparison
+![Group comparison](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/group_comparison.png)
+
+![Features over time](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/features_over_time.png)
+
+![Boxplots](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/boxplot.png)
 
 <!--
 **CureQ/CureQ** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.

@@ -22,6 +22,7 @@ import h5py
 import customtkinter as ctk
 from CTkToolTip import *
 from CTkMessagebox import CTkMessagebox
+from CTkColorPicker import *
 
 # Import the MEA library
 try:
@@ -41,11 +42,11 @@ class MainApp(ctk.CTk):
         # Get icon - works for both normal and frozen
         relative_path="cureq_icon.ico"
         try:
-            base_path = sys._MEIPASS
+            self.base_path = sys._MEIPASS
         except Exception:
             source_path = Path(__file__).resolve()
-            base_path = source_path.parent
-        self.icon_path=os.path.join(base_path, relative_path)
+            self.base_path = source_path.parent
+        self.icon_path=os.path.join(self.base_path, relative_path)
         try:
             self.iconbitmap(self.icon_path)
         except Exception as error:
@@ -61,23 +62,19 @@ class MainApp(ctk.CTk):
         self.gray_1 = '#333333'
         self.gray_2 = '#2b2b2b'
         self.gray_3 = "#3f3f3f"
+        self.gray_4 = "#212121"
+        self.gray_5 = "#696969"
+        self.gray_6 = "#292929"
+        self.entry_gray = "#565b5e"
 
         self.text_color = '#dce4ee'
 
-        # Theme colors
-        # Green: 
-            # "fg_color": ["#3a7ebf", "#3a994e"],
-            # "hover_color": ["#325882", "#0d8c39"],
-        # Dark Blue:
-            # "fg_color": ["#3a7ebf", "#2b275e"],
-            # "hover_color": ["#325882", "#13112b"],
-        # Other blue
-        #     "fg_color": ["#3a7ebf", "#0f4761"],
-        #     "hover_color": ["#325882", "#07212d"],
-
-        theme_path=os.path.join(base_path, "theme.json")
+        # Set theme from json
+        theme_path=os.path.join(self.base_path, "theme.json")
+        
         with open(theme_path, "r") as json_file:
             self.theme = json.load(json_file)
+
         ctk.set_default_color_theme(theme_path)
         ctk.set_appearance_mode("dark")
 
@@ -88,13 +85,14 @@ class MainApp(ctk.CTk):
         self.parameters = get_default_parameters()
         self.default_parameters = get_default_parameters()
 
+        print("Successfully launched MEA GUI")
+
     # Handle frame switching
     def show_frame(self, frame_class, *args, **kwargs):
         for widget in self.winfo_children():
             widget.destroy()
         frame = frame_class(self, *args, **kwargs)
         frame.pack(expand=True, fill="both") 
-
 
     # Function to calculate the optimal grid
     def calculate_optimal_grid(self, num_items):
@@ -110,7 +108,76 @@ class MainApp(ctk.CTk):
                     optimal_width = width
                     optimal_height = height
         return int(optimal_width), int(optimal_height)
+    
+    def adjust_color(self, hex_color, factor):
+        hex_color = hex_color.lstrip('#')
+        r = int(hex_color[:2], 16)
+        g = int(hex_color[2:4], 16) 
+        b = int(hex_color[4:], 16)
+        
+        r = int(min(255, max(0, r * factor)))
+        g = int(min(255, max(0, g * factor)))
+        b = int(min(255, max(0, b * factor)))
+        
+        return f'#{r:02x}{g:02x}{b:02x}'
 
+    def mix_color(self, hex_color1, hex_color2, factor):
+        # Convert hex colors to RGB
+        hex_color1 = hex_color1.lstrip('#')
+        hex_color2 = hex_color2.lstrip('#')
+        
+        # Original color RGB
+        r1 = int(hex_color1[:2], 16)
+        g1 = int(hex_color1[2:4], 16)
+        b1 = int(hex_color1[4:], 16)
+        
+        # Gray color RGB
+        r2 = int(hex_color2[:2], 16)
+        g2 = int(hex_color2[2:4], 16)
+        b2 = int(hex_color2[4:], 16)
+        
+        # Mix colors based on factor
+        r = int(r1 * (1-factor) + r2 * factor)
+        g = int(g1 * (1-factor) + g2 * factor)
+        b = int(b1 * (1-factor) + b2 * factor)
+        
+        return f'#{r:02x}{g:02x}{b:02x}'
+
+    def set_theme(self, base_color):
+        theme_path=os.path.join(self.base_path, "theme.json")
+
+        with open(theme_path, "r") as json_file:
+            theme = json.load(json_file)
+        
+        # Edit all relevant widgets
+        theme["CTkButton"]["fg_color"]=["#3a7ebf", base_color]
+        theme["CTkButton"]["hover_color"]=["#325882", self.adjust_color(base_color, factor=0.6)]
+
+        theme["CTkCheckBox"]["fg_color"]=["#3a7ebf", base_color]
+        theme["CTkCheckBox"]["hover_color"]=["#325882", self.adjust_color(base_color, factor=0.6)]
+
+        theme["CTkEntry"]["border_color"]=["#325882", self.mix_color(base_color, self.entry_gray, factor=0.5)]
+
+        theme["CTkComboBox"]["border_color"]=["#325882", self.mix_color(base_color, self.entry_gray, factor=0.5)]
+        theme["CTkComboBox"]["button_color"]=["#325882", base_color]
+        theme["CTkComboBox"]["button_hover_color"]=["#325882", self.mix_color(base_color, self.entry_gray, factor=0.5)]
+
+        theme["CTkOptionMenu"]["fg_color"]=["#325882", self.mix_color(base_color, self.entry_gray, factor=0.5)]
+        theme["CTkOptionMenu"]["button_color"]=["#325882", base_color]
+        theme["CTkOptionMenu"]["button_hover_color"]=["#325882", self.mix_color(base_color, self.entry_gray, factor=0.5)]
+        
+        theme["CTkSlider"]["button_color"]=[base_color, base_color]
+        theme["CTkSlider"]["button_hover_color"]=[self.adjust_color(base_color, factor=0.6), self.adjust_color(base_color, factor=0.6)]
+
+        self.primary_1 = self.mix_color(base_color, self.gray_6, factor=0.9)
+
+        with open(theme_path, 'w') as json_file:
+            json.dump(theme, json_file, indent=4)
+        ctk.set_default_color_theme(theme_path)
+
+        self.theme=theme
+
+        self.show_frame(main_window)
 
 class main_window(ctk.CTkFrame):
     """
@@ -119,6 +186,8 @@ class main_window(ctk.CTkFrame):
     """
     def __init__(self, parent):
         super().__init__(parent)
+
+        self.parent=parent
 
         parent.title(f"CureQ MEA analysis tool - Version: {version('CureQ')}")
 
@@ -130,9 +199,10 @@ class main_window(ctk.CTkFrame):
         sidebarframe=ctk.CTkFrame(self)
         sidebarframe.grid(row=0, column=1, padx=5, pady=5, sticky='nesw')
 
-        # Switch between light and dark mode
-        theme_switch = ctk.CTkSwitch(sidebarframe, text="Light theme")
+        # Switch themes
+        theme_switch = ctk.CTkButton(sidebarframe, text="Theme", command=self.colorpicker)
         theme_switch.grid(row=0, column=0, sticky='nesw', pady=10, padx=10)
+        self.selected_color=parent.theme["CTkButton"]["fg_color"][1]
 
         cureq_button=ctk.CTkButton(master=sidebarframe, text="CureQ", command=lambda: webbrowser.open_new("https://cureq.nl/"))
         cureq_button.grid(row=1, column=0, sticky='nesw', pady=10, padx=10)
@@ -180,6 +250,33 @@ class main_window(ctk.CTkFrame):
         for i in range(3):
             util_plot_button_frame.grid_rowconfigure(i, weight=1)
 
+
+    def colorpicker(self):
+        popup=ctk.CTkToplevel(self)
+        popup.title('Theme Selector')
+
+        try:
+            popup.after(250, lambda: popup.iconbitmap(os.path.join(self.parent.icon_path)))
+        except Exception as error:
+            print(error)
+        
+        def set_theme():
+            self.parent.set_theme(self.selected_color)
+            popup.destroy()
+            self.parent.show_frame(main_window)
+
+        def set_color(color):
+            self.selected_color=color
+
+        popup.grid_columnconfigure(0, weight=1)
+        popup.grid_rowconfigure(0, weight=1)
+        popup.grid_rowconfigure(1, weight=1)
+        colorpicker = CTkColorPicker(popup, width=350, command=lambda e: set_color(e), initial_color=self.selected_color)
+        colorpicker.grid(row=0, column=0, sticky='nesw', padx=5, pady=5)
+        confirm_button=ctk.CTkButton(master=popup, text="Confirm", command=set_theme)
+        confirm_button.grid(row=1, column=0, sticky='nesw', padx=5, pady=5)
+    
+
 class parameter_frame(ctk.CTkFrame):
     """
     Allows the user to set the different parameters for the analysis.
@@ -209,21 +306,21 @@ class parameter_frame(ctk.CTkFrame):
         lowcutofflabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
         lowcutofftooltip = CTkToolTip(lowcutofflabel, message='Define the low cutoff value for the butterworth bandpass filter. Values should be given in hertz')
         lowcutoffinput=ctk.CTkEntry(master=filterparameters)
-        lowcutoffinput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+        lowcutoffinput.grid(row=1, column=1, padx=10, pady=10, sticky='e')
 
         # High cutoff
         highcutofflabel=ctk.CTkLabel(master=filterparameters, text="High cutoff:")
         highcutofflabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
         highcutofftooltip = CTkToolTip(highcutofflabel, message='Define the high cutoff value for the butterworth bandpass filter. Values should be given in hertz')
         highcutoffinput=ctk.CTkEntry(master=filterparameters)
-        highcutoffinput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+        highcutoffinput.grid(row=2, column=1, padx=10, pady=10, sticky='e')
 
         # Filter order
         orderlabel=ctk.CTkLabel(master=filterparameters, text="Filter order:")
         orderlabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
         ordertooltip = CTkToolTip(orderlabel, message='The filter order for the butterworth filter')
         orderinput=ctk.CTkEntry(master=filterparameters)
-        orderinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+        orderinput.grid(row=3, column=1, padx=10, pady=10, sticky='e')
 
         """Spike detection parameters"""
         # Set up all the spike detection parameters
@@ -275,7 +372,7 @@ class parameter_frame(ctk.CTkFrame):
         refractoryperiodlabel.grid(row=1, column=0, padx=10, pady=10, sticky='w')
         refractoryperiodtooltip = CTkToolTip(refractoryperiodlabel, message='Define the refractory period in the spike detection In this period after a spike, no other spike can be detected Value should be given in seconds, so 2 ms = 0.002 s', wraplength=self.tooltipwraplength)
         refractoryperiodinput=ctk.CTkEntry(master=validationparameters)
-        refractoryperiodinput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
+        refractoryperiodinput.grid(row=1, column=1, padx=10, pady=10, sticky='e')
 
         # Dropdown menu where the user selects the validation method
         def option_selected(choice):
@@ -295,25 +392,25 @@ class parameter_frame(ctk.CTkFrame):
         dropdownlabel = ctk.CTkLabel(master=validationparameters, text="Spike validation method:")
         dropdownlabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
         dropdown_menu = ctk.CTkComboBox(validationparameters, variable=dropdown_var, values=options, command=option_selected)
-        dropdown_menu.grid(row=2, column=1, padx=10, pady=10, sticky='nesw')
+        dropdown_menu.grid(row=2, column=1, padx=10, pady=10, sticky='nes')
 
         exittimelabel=ctk.CTkLabel(master=validationparameters, text="Exit time:")
         exittimelabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
         exittimetooltip = CTkToolTip(exittimelabel, 'Define the time a spike gets to drop a certain value.\nStarts from the peak of the spike. Value should be given in seconds, so 0.24 ms is 0.00024s', wraplength=self.tooltipwraplength)
         exittimeinput=ctk.CTkEntry(master=validationparameters)
-        exittimeinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+        exittimeinput.grid(row=3, column=1, padx=10, pady=10, sticky='e')
 
         amplitudedroplabel=ctk.CTkLabel(master=validationparameters, text="Drop amplitude:")
         amplitudedroplabel.grid(row=4, column=0, padx=10, pady=10, sticky='w')
         amplitudedroptooltip = CTkToolTip(amplitudedroplabel, 'Multiplied with the standard deviation of the surrounding noise. This is the height the spike will have to drop in\na certain amount of time to be registered', wraplength=self.tooltipwraplength)
         amplitudedropinput=ctk.CTkEntry(master=validationparameters)
-        amplitudedropinput.grid(row=4, column=1, padx=10, pady=10, sticky='w')
+        amplitudedropinput.grid(row=4, column=1, padx=10, pady=10, sticky='e')
 
         maxheightlabel=ctk.CTkLabel(master=validationparameters, text="Max drop:")
         maxheightlabel.grid(row=5, column=0, padx=10, pady=10, sticky='w')
         maxheighttooltip = CTkToolTip(maxheightlabel, 'Multiplied with the threshold. The maximum height a spike can be required to drop in amplitude in the set timeframe', wraplength=self.tooltipwraplength)
         maxheightinput=ctk.CTkEntry(master=validationparameters)
-        maxheightinput.grid(row=5, column=1, padx=10, pady=10, sticky='w')
+        maxheightinput.grid(row=5, column=1, padx=10, pady=10, sticky='e')
 
         """Burst detection parameters"""
         # Set up all the burst detection parameters
@@ -901,7 +998,7 @@ class single_electrode_view(ctk.CTkToplevel):
         
         # Check which colorscheme we have to use
         axiscolour=parent.text_color
-        bgcolor=parent.gray_2
+        bgcolor=parent.gray_4
 
         # Set the plot background
         fig.set_facecolor(bgcolor)
@@ -1003,7 +1100,7 @@ class single_electrode_view(ctk.CTkToplevel):
         
         # Check which colorscheme we have to use
         axiscolour=parent.text_color
-        bgcolor=parent.gray_2
+        bgcolor=parent.gray_4
 
         for fig in [KDE_fig, burst_fig]:
             fig.set_facecolor(bgcolor)
@@ -1111,7 +1208,7 @@ class whole_well_view(ctk.CTkToplevel):
         self.nbd_plot_frame.grid_rowconfigure(0, weight=1)
 
         # Create a frame for the settings
-        nbd_settings_frame=ctk.CTkFrame(master=self.tab_frame.tab("Network Burst Detection"))
+        nbd_settings_frame=ctk.CTkFrame(master=self.tab_frame.tab("Network Burst Detection"), fg_color=parent.primary_1)
         nbd_settings_frame.grid(row=1, column=0)
 
         # Network burst detection settings
@@ -1173,7 +1270,7 @@ class whole_well_view(ctk.CTkToplevel):
         
         # Check which colorscheme we have to use
         axiscolour=self.parent.text_color
-        bgcolor=self.parent.gray_2
+        bgcolor=self.parent.gray_4
 
         fig.set_facecolor(bgcolor)
         for ax in fig.axes:
@@ -1226,7 +1323,7 @@ class whole_well_view(ctk.CTkToplevel):
         
         # Check which colorscheme we have to use
         axiscolour="#586d97"
-        bgcolor=self.parent.gray_2
+        bgcolor=self.parent.gray_4
         
         fig.set_facecolor(bgcolor)
         for ax in fig.axes:

@@ -1,13 +1,13 @@
 import setuptools
 
 # Use the text in the README file for the long description
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 # Setup metadata for initializing the library
 setuptools.setup(
     name="CureQ",
-    version="1.1.1",
+    version="1.2.0",
     author="CureQ",
     author_email="cureq-ft@hva.nl",
     description="Library for analyzing MEA files.",
