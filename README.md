@@ -106,10 +106,10 @@ The shortcut can also be added to the taskbar by pressing “Pin to taskbar”.
 ![Spike detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/spike_detection.png)
 
 #### Single channel burst detection
-![Burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/burst_detection.png)
+![Burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/burst_detection.PNG)
 
 #### Network burst detection
-![Network burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/network_burst_detection.png)
+![Network burst detection](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/network_burst_detection.PNG)
 
 #### Batch processing
 ![Batch processing](https://github.com/CureQ/CureQ/blob/main/Example_visualisations/batch_processing.png)
