@@ -57,8 +57,6 @@ class MainApp(ctk.CTk):
         self.tooltipwraplength=200
 
         # Colors
-        self.primary_1 = '#342d32'
-
         self.gray_1 = '#333333'
         self.gray_2 = '#2b2b2b'
         self.gray_3 = "#3f3f3f"
@@ -77,6 +75,9 @@ class MainApp(ctk.CTk):
 
         ctk.set_default_color_theme(theme_path)
         ctk.set_appearance_mode("dark")
+
+        base_color = self.theme["CTkButton"]["fg_color"][1]
+        self.primary_1 = self.mix_color(base_color, self.gray_6, factor=0.9)
 
         # Initialize main frame
         self.show_frame(main_window)
