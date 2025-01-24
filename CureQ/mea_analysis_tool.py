@@ -170,6 +170,10 @@ class MainApp(ctk.CTk):
         theme["CTkSlider"]["button_color"]=[base_color, base_color]
         theme["CTkSlider"]["button_hover_color"]=[self.adjust_color(base_color, factor=0.6), self.adjust_color(base_color, factor=0.6)]
 
+        # Tabview buttons
+        theme["CTkSegmentedButton"]["selected_color"]=["#3a7ebf", base_color]
+        theme["CTkSegmentedButton"]["selected_hover_color"]=["#325882", self.adjust_color(base_color, factor=0.6)]
+        
         self.primary_1 = self.mix_color(base_color, self.gray_6, factor=0.9)
 
         with open(theme_path, 'w') as json_file:
@@ -859,7 +863,7 @@ class single_electrode_view(ctk.CTkToplevel):
         self.tab_frame.tab("Spike Detection").grid_rowconfigure(0, weight=1)
 
         # Bandpass options
-        bp_options_ew_frame = ctk.CTkFrame(master=electrode_settings_frame, fg_color=parent.primary_1)
+        bp_options_ew_frame = ctk.CTkFrame(master=electrode_settings_frame)
         bp_options_ew_frame.grid(row=0, column=0, pady=10, padx=10)
         bandpass_options_label=ctk.CTkLabel(master=bp_options_ew_frame, text='Bandpass Parameters', font=ctk.CTkFont(size=25)).grid(row=0, column=0, pady=10, padx=10, sticky='w', columnspan=2)
 
@@ -876,7 +880,7 @@ class single_electrode_view(ctk.CTkToplevel):
         self.order_ew_entry.grid(row=3, column=1, pady=10, padx=10, sticky='w')
 
         # Threshold options
-        th_options_ew_frame = ctk.CTkFrame(master=electrode_settings_frame, fg_color=parent.primary_1)
+        th_options_ew_frame = ctk.CTkFrame(master=electrode_settings_frame)
         th_options_ew_frame.grid(row=0, column=1, pady=10, padx=10)
         threshold_options_label=ctk.CTkLabel(master=th_options_ew_frame, text='Threshold Parameters', font=ctk.CTkFont(size=25)).grid(row=0, column=0, pady=10, padx=10, sticky='w', columnspan=2)
         
@@ -893,7 +897,7 @@ class single_electrode_view(ctk.CTkToplevel):
         self.thpn_ew_entry.grid(row=3, column=1, pady=10, padx=10, sticky='w')
 
         # Spike validation options
-        val_options_ew_frame = ctk.CTkFrame(master=electrode_settings_frame, fg_color=parent.primary_1)
+        val_options_ew_frame = ctk.CTkFrame(master=electrode_settings_frame)
         val_options_ew_frame.grid(row=0, column=2, pady=10, padx=10)
         spike_val_options_label=ctk.CTkLabel(master=val_options_ew_frame, text='Spike Detection Parameters', font=ctk.CTkFont(size=25)).grid(row=0, column=0, pady=10, padx=10, sticky='w', columnspan=4)
 
@@ -947,7 +951,7 @@ class single_electrode_view(ctk.CTkToplevel):
         self.burstplotsframe=ctk.CTkFrame(master=self.tab_frame.tab("Burst Detection"))
         self.burstplotsframe.grid(row=0, column=0, sticky='nesw')
 
-        burstsettingsframe=ctk.CTkFrame(master=self.tab_frame.tab("Burst Detection"), fg_color=parent.primary_1)
+        burstsettingsframe=ctk.CTkFrame(master=self.tab_frame.tab("Burst Detection"), fg_color=parent.gray_6)
         burstsettingsframe.grid(row=1, column=0, pady=10, padx=10)
 
         # Burst detection settings
@@ -1209,7 +1213,7 @@ class whole_well_view(ctk.CTkToplevel):
         self.nbd_plot_frame.grid_rowconfigure(0, weight=1)
 
         # Create a frame for the settings
-        nbd_settings_frame=ctk.CTkFrame(master=self.tab_frame.tab("Network Burst Detection"), fg_color=parent.primary_1)
+        nbd_settings_frame=ctk.CTkFrame(master=self.tab_frame.tab("Network Burst Detection"), fg_color=parent.gray_6)
         nbd_settings_frame.grid(row=1, column=0)
 
         # Network burst detection settings
@@ -1245,7 +1249,7 @@ class whole_well_view(ctk.CTkToplevel):
         self.electrode_activity_plot_frame.grid(row=0, column=0, sticky='nsew')
         self.electrode_activity_plot_frame.grid_columnconfigure(0, weight=1)
         self.electrode_activity_plot_frame.grid_rowconfigure(0, weight=1)
-        electrode_activity_settings=ctk.CTkFrame(master=self.tab_frame.tab("Well Activity"))
+        electrode_activity_settings=ctk.CTkFrame(master=self.tab_frame.tab("Well Activity"), fg_color=parent.gray_6)
         electrode_activity_settings.grid(row=1, column=0)
 
         self.def_bw_value=0.1

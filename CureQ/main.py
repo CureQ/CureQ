@@ -3,7 +3,10 @@ import os
 import sys
 from pathlib import Path
 
-from .mea_analysis_tool import MEA_GUI
+try:
+    from .mea_analysis_tool import MEA_GUI
+except:
+    from mea_analysis_tool import MEA_GUI
 
 def launch_gui():
     """GUI launch function"""

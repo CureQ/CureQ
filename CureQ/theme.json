@@ -32,11 +32,11 @@
         "border_width": 0,
         "fg_color": [
             "#3a7ebf",
-            "#001342"
+            "#002b39"
         ],
         "hover_color": [
             "#325882",
-            "#000b27"
+            "#001922"
         ],
         "border_color": [
             "#3E454A",
@@ -68,7 +68,7 @@
         ],
         "border_color": [
             "#325882",
-            "#2b3750"
+            "#2b434b"
         ],
         "text_color": [
             "gray14",
@@ -84,11 +84,11 @@
         "border_width": 3,
         "fg_color": [
             "#3a7ebf",
-            "#001342"
+            "#002b39"
         ],
         "hover_color": [
             "#325882",
-            "#000b27"
+            "#001922"
         ],
         "border_color": [
             "#3E454A",
@@ -191,27 +191,27 @@
             "#AAB0B5"
         ],
         "button_color": [
-            "#001342",
-            "#001342"
+            "#002b39",
+            "#002b39"
         ],
         "button_hover_color": [
-            "#000b27",
-            "#000b27"
+            "#001922",
+            "#001922"
         ]
     },
     "CTkOptionMenu": {
         "corner_radius": 6,
         "fg_color": [
             "#325882",
-            "#2b3750"
+            "#2b434b"
         ],
         "button_color": [
             "#325882",
-            "#001342"
+            "#002b39"
         ],
         "button_hover_color": [
             "#325882",
-            "#2b3750"
+            "#2b434b"
         ],
         "text_color": [
             "#DCE4EE",
@@ -231,15 +231,15 @@
         ],
         "border_color": [
             "#325882",
-            "#2b3750"
+            "#2b434b"
         ],
         "button_color": [
             "#325882",
-            "#001342"
+            "#002b39"
         ],
         "button_hover_color": [
             "#325882",
-            "#2b3750"
+            "#2b434b"
         ],
         "text_color": [
             "gray14",
@@ -272,11 +272,11 @@
         ],
         "selected_color": [
             "#3a7ebf",
-            "#1f538d"
+            "#002b39"
         ],
         "selected_hover_color": [
             "#325882",
-            "#14375e"
+            "#001922"
         ],
         "unselected_color": [
             "#979DA2",

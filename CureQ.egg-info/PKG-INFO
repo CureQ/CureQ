@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: CureQ
-Version: 1.2.0
+Version: 1.2.2
 Summary: Library for analyzing MEA files.
 Home-page: https://github.com/CureQ/CureQ.git
 Author: CureQ
@@ -21,6 +21,11 @@ Requires-Dist: statsmodels>=0.14.0
 Requires-Dist: scikit-image>=0.22.0
 Requires-Dist: plotly>=5.14.0
 Requires-Dist: KDEpy>=1.1.9
+Requires-Dist: customtkinter>=5.2.2
+Requires-Dist: CTkToolTip>=0.8
+Requires-Dist: CTkMessagebox>=2.7
+Requires-Dist: CTkColorPicker>=0.9.0
+Requires-Dist: winshell>=0.6
 
 #### This project is still in development.
 
