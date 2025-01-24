@@ -247,7 +247,7 @@ def feature_boxplots(features, labels, output_fileadress, colors=None, show_data
                             color=rainbow_colors[well%len(rainbow_colors)]
                         else:
                             color='black'
-                        plt.scatter(x[0], temp_data[i], alpha=0.5, color=color, zorder=10)
+                        plt.scatter(x[0], temp_data[i], alpha=0.5, color=color, zorder=10, s=1)
             # Remove NaNs
             plotdata=[d[~np.isnan(d)] for d in plotdata]
             bplot=ax.boxplot(plotdata, vert=True, labels=labels.keys(), patch_artist=True, widths=0.5)
@@ -413,7 +413,7 @@ def features_over_time(folder, labels, div_prefix, output_fileadress, colors=Non
     for i in range(len(features)):
         # Check if these are the features we want
         if features[i] not in not_features:      
-            fig, ax = plt.subplots(figsize=(16, 9))
+            fig, ax = plt.subplots(figsize=(8,4.5))
             means_list=[]
             errors_list=[]
             # Loop over all groups
@@ -436,7 +436,7 @@ def features_over_time(folder, labels, div_prefix, output_fileadress, colors=Non
                     errors.append(sem(temp_data))
                     if show_datapoints:
                         # Add some jitter to the datapoints
-                        plt.scatter(x=np.array([pos]*len(temp_data))+np.random.uniform(-0.2, 0.2, len(temp_data)), y=temp_data, color=colors[index], s=0.5)
+                        plt.scatter(x=np.array([pos]*len(temp_data))+np.random.uniform(-0.2, 0.2, len(temp_data)), y=temp_data, color=colors[index], s=5, alpha=0.5)
                 means_list.append(means)
                 errors_list.append(errors)
                 plt.errorbar(x=range(len(nums)), y=means, yerr=errors, capsize=5, label=key, color=colors[index])

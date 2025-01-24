@@ -8,6 +8,7 @@ from datetime import datetime
 import os
 from importlib.metadata import version
 from multiprocessing.managers import SharedMemoryManager
+from pathlib import Path
 
 # External libraries
 import numpy as np
@@ -170,16 +171,19 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
     print(f"CureQ MEA Library - Version: {lib_version}")
     print(f"Analyzing: {fileadress}")
     
-    # Create a directory which will contain the output
-    outputpath=os.path.splitext(fileadress)[0]#remove the file extension
-    outputpath=outputpath+"_output"
+    path_obj = Path(fileadress)
+    parent_dir=path_obj.parent
 
-    # Add current datetime
-    outputpath=outputpath+f"_{date.today()}"
-    now = datetime.now()
-    current_time = now.strftime("%H-%M-%S")
-    outputpath=outputpath+f"_{current_time}"
+    # Create a directory which will contain the output
+    output_folder=path_obj.stem
+    output_folder+="_output"
+    output_folder+=f"_{date.today()}"
+    output_folder+=f"_{datetime.now().strftime('%H-%M-%S')}"
+
+    outputpath=os.path.join(parent_dir, output_folder)
     os.makedirs(outputpath)
+
+    print(f"{outputpath}/{output_folder}_Features.csv")
 
     # Create a file to commmunicate the progress with the GUI
     progressfile=f'{os.path.split(fileadress)[0]}/progress.npy'
@@ -393,7 +397,7 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
         gc.collect()
 
     # Save the output
-    output.to_csv(f"{outputpath}/Features.csv", index=False)
+    output.to_csv(f"{outputpath}/{output_folder}_Features.csv", index=False)
     
     # Close the analysis
     np.save(progressfile, ['done'])

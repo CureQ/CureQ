@@ -78,6 +78,7 @@ class MainApp(ctk.CTk):
 
         base_color = self.theme["CTkButton"]["fg_color"][1]
         self.primary_1 = self.mix_color(base_color, self.gray_6, factor=0.9)
+        self.primary_1 = self.adjust_color(self.primary_1, 1.5)
 
         # Initialize main frame
         self.show_frame(main_window)
@@ -175,6 +176,7 @@ class MainApp(ctk.CTk):
         theme["CTkSegmentedButton"]["selected_hover_color"]=["#325882", self.adjust_color(base_color, factor=0.6)]
         
         self.primary_1 = self.mix_color(base_color, self.gray_6, factor=0.9)
+        self.primary_1 = self.adjust_color(self.primary_1, 1.5)
 
         with open(theme_path, 'w') as json_file:
             json.dump(theme, json_file, indent=4)

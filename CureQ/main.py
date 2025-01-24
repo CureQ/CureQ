@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
+from importlib.metadata import version
 
 try:
     from .mea_analysis_tool import MEA_GUI
@@ -22,7 +23,7 @@ def add_to_start_menu():
             start_menu = Path(winshell.programs()) / "CureQ"
             start_menu.mkdir(parents=True, exist_ok=True)
             
-            shortcut_path = start_menu / "CureQ.lnk"
+            shortcut_path = start_menu / "MEA Analysis Tool.lnk"
             
             shell = Dispatch('WScript.Shell')
             shortcut = shell.CreateShortCut(str(shortcut_path))
@@ -43,7 +44,7 @@ def create_shortcut():
             from win32com.client import Dispatch
             
             desktop = Path(winshell.desktop())
-            shortcut_path = desktop / "CureQ.lnk"
+            shortcut_path = desktop / "MEA Analysis Tool.lnk"
             
             shell = Dispatch('WScript.Shell')
             shortcut = shell.CreateShortCut(str(shortcut_path))
@@ -56,16 +57,22 @@ def create_shortcut():
             print(f"Failed to create desktop shortcut: {e}")
             input("Press Enter to exit...")
 
+def print_version():
+    print(f"CureQ MEA analysis tool - Version: {version('CureQ')}")
+
 def main():
     parser = argparse.ArgumentParser(description='Launch CureQ GUI')
     parser.add_argument('--create-shortcut', action='store_true', help='Create a desktop shortcut')
     parser.add_argument('--add-to-start-menu', action='store_true', help='Add shortcut to Start Menu')
+    parser.add_argument('--version', action='store_true', help='Add shortcut to Start Menu')
     args = parser.parse_args()
     
     if args.create_shortcut:
         create_shortcut()
     elif args.add_to_start_menu:
         add_to_start_menu()
+    elif args.version:
+        print_version()
     else:
         launch_gui()
 
