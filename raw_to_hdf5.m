@@ -3,9 +3,7 @@
 
 function raw_to_hdf(filePath)
     % Replace the file extension with .h5
-    newExtension = '.h5';
-    [filePathNoExt, fileName, ~] = fileparts(filePath);
-    hdf5_path = fullfile(filePathNoExt, [fileName newExtension]);
+    hdf5_path = strrep(filePath, '.raw', '.h5');
     disp(hdf5_path)
 
     % Load in the MEA data using the Axion file loader
