@@ -97,7 +97,7 @@ def spike_validation(data, electrode, threshold, parameters, plot_electrodes=Fal
     loopvalues=np.nonzero(spikes)[0]
     boxheights=[]
 
-    spikes_before_DMP=copy.deepcopy(spikes)
+    spikes_before_validation=copy.deepcopy(spikes)
 
     if parameters['drop amplitude'] != 0:
         # Iterate over all the spikes
@@ -159,14 +159,14 @@ def spike_validation(data, electrode, threshold, parameters, plot_electrodes=Fal
         rawdataplot.axhline(y=-threshold, color='#737373', linestyle='-', linewidth=1) 
 
         # Plot red dots at rejected spikes
-        rawdataplot.scatter(time_seconds[spikes_before_DMP], data[spikes_before_DMP], color='red', marker='o', s=3)
+        rawdataplot.scatter(time_seconds[spikes_before_validation], data[spikes_before_validation], color='red', marker='o', s=3)
 
         # Plot green dots at accepted spikes
         rawdataplot.scatter(time_seconds[spikes], data[spikes], color='green', marker='o', s=3)
 
         # Plot the 'boxes' used for validation
         if plot_rectangles:
-            loopvalues=np.nonzero(spikes_before_DMP)[0]
+            loopvalues=np.nonzero(spikes_before_validation)[0]
             k=0
             for j in loopvalues:
                 # Different direction of boxes for positive or negative spikes
@@ -192,7 +192,7 @@ def spike_validation(data, electrode, threshold, parameters, plot_electrodes=Fal
                 k+=1
 
         # Plot layout
-        rawdataplot.title.set_text(f"Well {well} - MEA electrode {electrode} - Threshold: {threshold} - Spikes detected before validation: {np.sum(spikes_before_DMP)}, after: {np.sum(spikes)}")
+        rawdataplot.title.set_text(f"Well {well} - MEA electrode {electrode} - Threshold: {threshold} - Spikes detected before validation: {np.sum(spikes_before_validation)}, after: {np.sum(spikes)}")
         rawdataplot.set_xlabel("Time in seconds")
         rawdataplot.set_ylabel("Micro voltage")
         rawdataplot.set_xlim([time_seconds.min(), time_seconds.max()])

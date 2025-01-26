@@ -20,7 +20,7 @@ def add_to_start_menu():
             import winshell
             from win32com.client import Dispatch
             
-            start_menu = Path(winshell.programs()) / "CureQ"
+            start_menu = Path(winshell.programs()) / "MEA Analysis Tool"
             start_menu.mkdir(parents=True, exist_ok=True)
             
             shortcut_path = start_menu / "MEA Analysis Tool.lnk"

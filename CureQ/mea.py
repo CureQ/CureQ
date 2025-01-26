@@ -54,7 +54,7 @@ def get_default_parameters():
         'standard deviation multiplier' : 5,
         'rms multiplier' : 5,
         'refractory period' : 0.001,
-        'spike validation method' : "DMP_noisebased",
+        'spike validation method' : "Noisebased",
         'exit time' : 0.001,
         'drop amplitude' : 5,
         'max drop' : 2,
@@ -104,7 +104,7 @@ def _electrode_subprocess(memory_id, shape, _type, electrode, parameters):
     threshold_value=fast_threshold(data, parameters)
     
     # Calculate spike values
-    if parameters['spike validation method']=="DMP_noisebased":
+    if parameters['spike validation method']=="Noisebased":
         pass
     elif parameters['spike validation method']=='none':
         parameters['drop amplitude']=0
@@ -346,7 +346,7 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
                 threshold_value=fast_threshold(data, parameters)
                 
                 # Calculate spike values
-                if parameters['spike validation method']=="DMP_noisebased":
+                if parameters['spike validation method']=="Noisebased":
                     pass
                 elif parameters['spike validation method']=='none':
                     parameters['drop amplitude']=0
