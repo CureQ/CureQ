@@ -1,0 +1,575 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CureQ._plotting &mdash; MEA Analysis Tool 1.2.6 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=010db75e"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            MEA Analysis Tool
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">CureQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">MEA Analysis Tool</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">CureQ._plotting</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for CureQ._plotting</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">KDEpy</span> <span class="kn">import</span> <span class="n">FFTKDE</span>
+<span class="kn">from</span> <span class="nn">matplotlib.figure</span> <span class="kn">import</span> <span class="n">Figure</span>
+<span class="kn">from</span> <span class="nn">matplotlib.gridspec</span> <span class="kn">import</span> <span class="n">GridSpec</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">matplotlib.backends.backend_pdf</span> <span class="kn">import</span> <span class="n">PdfPages</span>
+<span class="kn">from</span> <span class="nn">copy</span> <span class="kn">import</span> <span class="n">deepcopy</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">sem</span>
+
+
+<span class="sd">&#39;&#39;&#39;This function will calculate a 3d guassian kernel&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="K">
+<a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.K">[docs]</a>
+<span class="k">def</span> <span class="nf">K</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">H</span><span class="p">):</span>
+    <span class="c1"># unpack two dimensions</span>
+    <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="c1"># extract four components from the matrix inv(H)</span>
+    <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">H</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    
+    <span class="n">scale</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">H</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">a</span><span class="o">*</span><span class="n">x1</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">d</span><span class="o">*</span><span class="n">x2</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">b</span><span class="o">+</span><span class="n">c</span><span class="p">)</span><span class="o">*</span><span class="n">x1</span><span class="o">*</span><span class="n">x2</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span></div>
+
+
+<span class="sd">&#39;&#39;&#39;This function will insert a 3d gaussian kernel at the location of every datapoint/spike&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="KDE">
+<a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.KDE">[docs]</a>
+<span class="k">def</span> <span class="nf">KDE</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="c1"># unpack two dimensions</span>
+    <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span>
+    <span class="c1"># prepare the grid for output values</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x1</span><span class="p">)</span>
+    <span class="c1"># process every sample</span>
+    <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="n">output</span> <span class="o">+=</span> <span class="n">K</span><span class="p">([</span><span class="n">x1</span><span class="o">-</span><span class="n">sample</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x2</span><span class="o">-</span><span class="n">sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">H</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">output</span></div>
+
+
+<span class="sd">&#39;&#39;&#39;Create a 3D view of a single well. Every spike will be represented as a 3D gaussian kernel&#39;&#39;&#39;</span>
+<div class="viewcode-block" id="fancyplot">
+<a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.fancyplot">[docs]</a>
+<span class="k">def</span> <span class="nf">fancyplot</span><span class="p">(</span><span class="n">outputpath</span><span class="p">,</span>       <span class="c1"># Where to find the spikedata</span>
+              <span class="n">wells</span><span class="p">,</span>            <span class="c1"># Which wells to generate a plot for</span>
+              <span class="n">electrode_amnt</span><span class="p">,</span>   <span class="c1"># Amount of electrodes in a well</span>
+              <span class="n">measurements</span><span class="p">,</span>     <span class="c1"># Measurements done (time*sampling rate)</span>
+              <span class="n">hertz</span><span class="p">,</span>            <span class="c1"># Sampling rate</span>
+              <span class="n">resolution</span><span class="p">,</span>       <span class="c1"># Resolution of the 3d graph - higher resolution lead to significantly more processing time</span>
+              <span class="n">kernel_size</span><span class="p">,</span>      <span class="c1"># Size of the gaussian kernel</span>
+              <span class="n">aspectratios</span><span class="p">,</span>     <span class="c1"># Ratios of the 3d plot</span>
+              <span class="n">colormap</span>          <span class="c1"># Colourmap used - can be any colourmap supported by plotly</span>
+              <span class="p">):</span>
+
+    <span class="c1"># Example usage:</span>
+    <span class="c1"># fancyplot(&quot;C:/MEA_data/output_folder_of_experiment&quot;, [15], 12, 3000000, 20000, 5, 1, [0.5,0.25,0.5], &quot;deep&quot;)</span>
+
+    <span class="n">spikepath</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s1">/spike_values&#39;</span>
+    <span class="k">for</span> <span class="n">well</span> <span class="ow">in</span> <span class="n">wells</span><span class="p">:</span>
+        <span class="n">kdedata</span><span class="o">=</span><span class="p">[]</span>
+        <span class="k">for</span> <span class="n">electrode</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">electrode_amnt</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+            <span class="c1"># Load in spikedata</span>
+            <span class="n">spikedata</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">spikepath</span><span class="si">}</span><span class="s1">/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s1">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s1">_spikes.npy&#39;</span><span class="p">)</span>
+            <span class="n">spikedata</span><span class="o">=</span><span class="n">spikedata</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">]</span>
+            <span class="n">spikedata</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">electrode</span>
+            <span class="k">for</span> <span class="n">spike</span> <span class="ow">in</span> <span class="n">spikedata</span><span class="p">:</span>
+                <span class="n">kdedata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">spike</span><span class="p">)</span>
+        <span class="n">time</span><span class="o">=</span><span class="n">measurements</span><span class="o">/</span><span class="n">hertz</span>
+
+        <span class="c1"># covariance matrix</span>
+        <span class="c1"># This determines the shape of the gaussian kernel</span>
+        <span class="n">H</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">kdedata</span><span class="p">)</span>
+        <span class="c1"># fix arguments &#39;H&#39; and &#39;data&#39; of KDE function for further calls</span>
+        <span class="n">KDE_partial</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">KDE</span><span class="p">,</span> <span class="n">H</span><span class="o">=</span><span class="n">kernel_size</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">H</span><span class="p">),</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1"># draw contour and surface plots</span>
+        <span class="n">func</span><span class="o">=</span><span class="n">KDE_partial</span>
+
+        <span class="c1"># create a np xy grid using the dimensions of the data</span>
+        <span class="n">yres</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">resolution</span><span class="o">*</span><span class="n">time</span><span class="p">)</span>
+        <span class="n">xres</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">resolution</span><span class="o">*</span><span class="n">electrode_amnt</span><span class="p">)</span>
+        <span class="n">y_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">yres</span><span class="p">)</span>
+        <span class="n">x_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">electrode_amnt</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">xres</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Creating 3D plot, resolution x: </span><span class="si">{</span><span class="n">xres</span><span class="si">}</span><span class="s2"> by y: </span><span class="si">{</span><span class="n">yres</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">y_grid</span><span class="p">,</span> <span class="n">X_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">y_range</span><span class="p">,</span> <span class="n">x_range</span><span class="p">)</span>
+        <span class="n">Z_grid</span> <span class="o">=</span> <span class="n">func</span><span class="p">([</span><span class="n">y_grid</span><span class="p">,</span> <span class="n">X_grid</span><span class="p">])</span>
+        
+        <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="n">go</span><span class="o">.</span><span class="n">Surface</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y_grid</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">X_grid</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">Z_grid</span><span class="p">,</span> <span class="n">colorscale</span><span class="o">=</span><span class="n">colormap</span><span class="p">)])</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span>
+        <span class="n">scene</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">xaxis</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">range</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">electrode_amnt</span><span class="p">]),</span>
+            <span class="n">yaxis</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">range</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">time</span><span class="p">]),</span>
+            <span class="p">),</span>
+        <span class="n">margin</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span>
+
+        <span class="c1"># change the aspect ratio&#39;s of the plot</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_aspectmode</span><span class="o">=</span><span class="s1">&#39;manual&#39;</span><span class="p">,</span>
+                            <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Well: </span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                            <span class="n">scene_aspectratio</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">electrode_amnt</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span><span class="o">*</span><span class="n">aspectratios</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                           <span class="n">y</span><span class="o">=</span><span class="p">(</span><span class="n">time</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span><span class="o">*</span><span class="n">aspectratios</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                           <span class="n">z</span><span class="o">=</span><span class="mi">1</span><span class="o">*</span><span class="n">aspectratios</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+                    <span class="n">xaxis_title</span><span class="o">=</span><span class="s1">&#39;Electrode&#39;</span><span class="p">,</span>
+                    <span class="n">yaxis_title</span><span class="o">=</span><span class="s1">&#39;Time in seconds&#39;</span><span class="p">,</span>
+                    <span class="n">zaxis_title</span><span class="o">=</span><span class="s1">&#39;KDE&#39;</span><span class="p">),)</span>
+        <span class="n">fig</span><span class="o">.</span><span class="n">write_html</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s2">/figures/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">_3dgraph.html&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="well_electrodes_kde">
+<a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.well_electrodes_kde">[docs]</a>
+<span class="k">def</span> <span class="nf">well_electrodes_kde</span><span class="p">(</span><span class="n">outputpath</span><span class="p">,</span> <span class="n">well</span><span class="p">,</span> <span class="n">electrode_amnt</span><span class="p">,</span> <span class="n">measurements</span><span class="p">,</span> <span class="n">hertz</span><span class="p">,</span> <span class="n">bandwidth</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plot a kernel density estimate of all electrodes in a single plot.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    outputpath : str</span>
+<span class="sd">        The folder in where to find the data required to create the KDEs</span>
+<span class="sd">    well : int</span>
+<span class="sd">        The well number which is to be used for the KDE</span>
+<span class="sd">    electrode amnt : int</span>
+<span class="sd">        The number of electrodes in a single MEA well</span>
+<span class="sd">    measurements : int</span>
+<span class="sd">        The total amount of measurements taken in a single electrode in this experiment (samping rate * duration)</span>
+<span class="sd">    hertz : int</span>
+<span class="sd">        The sampling rate of the MEA experiment</span>
+<span class="sd">    bandwidth : float, optional</span>
+<span class="sd">        The bandwidth used for the KDE, passed to KDEpy</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig : matplotlib Figure</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Where to find the spike-data</span>
+    <span class="n">spikepath</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s1">/spike_values&#39;</span>
+    <span class="n">data_time</span><span class="o">=</span><span class="n">measurements</span><span class="o">/</span><span class="n">hertz</span>
+
+    <span class="c1"># Create matplotlib figure</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">Figure</span><span class="p">()</span>
+    
+    <span class="n">gs</span> <span class="o">=</span> <span class="n">GridSpec</span><span class="p">(</span><span class="n">electrode_amnt</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figure</span><span class="o">=</span><span class="n">fig</span><span class="p">)</span>
+    <span class="n">axes</span><span class="o">=</span><span class="p">[]</span>
+
+    <span class="n">first_iteration</span><span class="o">=</span><span class="kc">True</span>
+    <span class="c1"># Loop through all electrodes</span>
+    <span class="k">for</span> <span class="n">electrode</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">electrode_amnt</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">first_iteration</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="n">electrode_amnt</span><span class="o">-</span><span class="n">electrode</span><span class="p">])</span>
+            <span class="n">first_iteration</span><span class="o">=</span><span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="n">electrode_amnt</span><span class="o">-</span><span class="n">electrode</span><span class="p">],</span> <span class="n">sharex</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sharey</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="c1"># Load in the spike data and create a KDE using KDEpy for each well</span>
+        <span class="n">spikedata</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">spikepath</span><span class="si">}</span><span class="s1">/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s1">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s1">_spikes.npy&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spikedata</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">FFTKDE</span><span class="p">(</span><span class="n">bw</span><span class="o">=</span><span class="n">bandwidth</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">spikedata</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">grid_points</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">data_time</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">))</span>
+            <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">spikedata</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">data_time</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">data_time</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">)</span>
+            <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="c1"># Plot the KDE and give the subplot a label</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;E: </span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">measurements</span><span class="o">/</span><span class="n">hertz</span><span class="p">])</span>
+        <span class="n">axes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+    <span class="c1"># Plot layout</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;Time in seconds&quot;</span><span class="p">)</span>
+    <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">measurements</span><span class="o">/</span><span class="n">hertz</span><span class="p">])</span>
+    <span class="n">axes</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Well: </span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2"> activity&quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">fig</span></div>
+
+
+<div class="viewcode-block" id="get_defaultcolors">
+<a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.get_defaultcolors">[docs]</a>
+<span class="k">def</span> <span class="nf">get_defaultcolors</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get default colors used for plotting.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    default_colors : list</span>
+<span class="sd">        List of hex codes of default colors.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">default_colors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;maroon&#39;</span><span class="p">,</span> <span class="s1">&#39;teal&#39;</span><span class="p">,</span> <span class="s1">&#39;limegreen&#39;</span><span class="p">,</span> <span class="s1">&#39;indigo&#39;</span><span class="p">,</span> <span class="s1">&#39;orange&#39;</span><span class="p">,</span> <span class="s1">&#39;tomato&#39;</span><span class="p">,</span> <span class="s1">&#39;violet&#39;</span><span class="p">,</span> <span class="s1">&#39;cyan&#39;</span><span class="p">,</span> <span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="s1">&#39;darkviolet&#39;</span><span class="p">,</span> <span class="s1">&#39;slateblue&#39;</span><span class="p">,</span> <span class="s1">&#39;seagreen&#39;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">default_colors</span></div>
+
+
+
+<div class="viewcode-block" id="feature_boxplots">
+<a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.feature_boxplots">[docs]</a>
+<span class="k">def</span> <span class="nf">feature_boxplots</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">output_fileadress</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_datapoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">discern_wells</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">well_amnt</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a pdf file with boxplots for all different features and labels</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    features : pandas dataframe</span>
+<span class="sd">        Dataframe containing features from a MEA experiment</span>
+<span class="sd">    labels : dict</span>
+<span class="sd">        Information about the contents of the well in the following format: {&#39;Control&#39;:[1, 2, 3], &#39;Mutated&#39;:[4, 5, 6]}</span>
+<span class="sd">    output_fileadress : str</span>
+<span class="sd">        Location where the file will be saved, must be a .pdf file</span>
+<span class="sd">    colors : list, optional</span>
+<span class="sd">        List of colors to be used for the boxplots. Will use default colors if left empty</span>
+<span class="sd">    show_datapoints : bool, optional</span>
+<span class="sd">        Whether to show the individual datapoints on the boxplot</span>
+<span class="sd">    discern_wells : bool, optional</span>
+<span class="sd">        If True, will assign a random colour to datapoints from each well</span>
+<span class="sd">    well_amnt : int, optional</span>
+<span class="sd">        The amount of wells in the MEA-plate, this parameter is required if discern_wells = True</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pdf_path : str</span>
+<span class="sd">        Path of output pdf-file</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">well_amnt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">rainbow_colors</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;#</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mh">0xFFFFFF</span><span class="p">)</span><span class="si">:</span><span class="s2">06X</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">well_amnt</span><span class="p">)]</span>
+
+    <span class="n">not_features</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Well&quot;</span><span class="p">,</span> <span class="s2">&quot;Active_electrodes&quot;</span><span class="p">]</span>
+
+    <span class="n">pdf_path</span><span class="o">=</span><span class="n">output_fileadress</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">PdfPages</span><span class="p">(</span><span class="n">pdf_path</span><span class="p">)</span>
+
+    <span class="c1"># Set default colors</span>
+    <span class="n">defaultcolors</span> <span class="o">=</span> <span class="n">get_defaultcolors</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">colors</span><span class="o">==</span><span class="kc">None</span><span class="p">:</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">defaultcolors</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="o">&gt;</span><span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;You have supplied more labels (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="si">}</span><span class="s2">) than there are colors available (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)</span><span class="si">}</span><span class="s2">). Please supply colors manually using the &#39;colors&#39; parameter.&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="o">&gt;</span><span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;You have supplied more labels (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="si">}</span><span class="s2">) than colors (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)</span><span class="si">}</span><span class="s2">). Please supply more color values, or use the default colors (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">defaultcolors</span><span class="p">)</span><span class="si">}</span><span class="s2"> colors)&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">features</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">feature</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">not_features</span><span class="p">:</span>
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">()</span>
+            <span class="n">featuredata</span><span class="o">=</span><span class="n">features</span><span class="p">[</span><span class="n">feature</span><span class="p">]</span>
+            <span class="n">plotdata</span><span class="o">=</span><span class="p">[]</span>
+            <span class="k">for</span> <span class="n">key_index</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="n">wells</span><span class="o">=</span><span class="n">labels</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+                <span class="c1"># -1 to turn wells into indexes</span>
+                <span class="n">temp_data</span><span class="o">=</span><span class="n">featuredata</span><span class="p">[(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">key</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span>
+                <span class="n">plotdata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">temp_data</span><span class="p">)</span>
+                <span class="n">temp_data</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">temp_data</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">show_datapoints</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">well</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">wells</span><span class="p">):</span>
+                        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">key_index</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="mf">0.07</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                        <span class="k">if</span> <span class="n">discern_wells</span> <span class="ow">and</span> <span class="p">(</span><span class="n">well_amnt</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+                            <span class="n">color</span><span class="o">=</span><span class="n">rainbow_colors</span><span class="p">[</span><span class="n">well</span><span class="o">%</span><span class="nb">len</span><span class="p">(</span><span class="n">rainbow_colors</span><span class="p">)]</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">temp_data</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">zorder</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">s</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># Remove NaNs</span>
+            <span class="n">plotdata</span><span class="o">=</span><span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">d</span><span class="p">)]</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">plotdata</span><span class="p">]</span>
+            <span class="n">bplot</span><span class="o">=</span><span class="n">ax</span><span class="o">.</span><span class="n">boxplot</span><span class="p">(</span><span class="n">plotdata</span><span class="p">,</span> <span class="n">vert</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">patch_artist</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">widths</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">feature</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">patch</span><span class="p">,</span> <span class="n">color</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">bplot</span><span class="p">[</span><span class="s1">&#39;boxes&#39;</span><span class="p">],</span> <span class="n">colors</span><span class="p">):</span>
+                <span class="n">patch</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="n">color</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;whiskers&#39;</span><span class="p">,</span> <span class="s1">&#39;fliers&#39;</span><span class="p">,</span> <span class="s1">&#39;means&#39;</span><span class="p">,</span> <span class="s1">&#39;medians&#39;</span><span class="p">,</span> <span class="s1">&#39;caps&#39;</span><span class="p">]:</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">bplot</span><span class="p">[</span><span class="n">element</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;black&#39;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+            <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">pdf</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">pdf_path</span></div>
+
+
+
+<div class="viewcode-block" id="combined_feature_boxplots">
+<a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.combined_feature_boxplots">[docs]</a>
+<span class="k">def</span> <span class="nf">combined_feature_boxplots</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">output_fileadress</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_datapoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">discern_wells</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">well_amnt</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Combine the features of multiple measurements together</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    folder : str</span>
+<span class="sd">        folder in which to look for featurefiles</span>
+<span class="sd">    labels : dict</span>
+<span class="sd">        Information about the contents of the well in the following format: {&#39;Control&#39;:[1, 2, 3], &#39;Mutated&#39;:[4, 5, 6]}</span>
+<span class="sd">    output_fileadress : str</span>
+<span class="sd">        Location where the file will be saved, must be a .pdf file</span>
+<span class="sd">    colors : list, optional</span>
+<span class="sd">        List of colors to be used for the boxplots. Will use default colors if left empty</span>
+<span class="sd">    show_datapoints : bool, optional</span>
+<span class="sd">        Whether to show the individual datapoints on the boxplot</span>
+<span class="sd">    discern_wells : bool, optional</span>
+<span class="sd">        If True, will assign a random colour to datapoints from each well</span>
+<span class="sd">    well_amnt : int, optional</span>
+<span class="sd">        The amount of wells in the MEA-plate, this parameter is required if discern_wells = True</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pdf_path : str</span>
+<span class="sd">        Path of output pdf-file</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># Find all featurefiles</span>
+    <span class="n">featurefiles</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Extracting features from:&quot;</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">folder</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;Features.csv&quot;</span><span class="p">):</span>
+                <span class="n">featurefiles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">file</span><span class="p">))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">file</span><span class="p">))</span>
+
+    <span class="c1"># Combine the data in one large dataframe</span>
+    <span class="n">dataframes</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">featurefile</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">featurefiles</span><span class="p">)):</span>
+        <span class="n">dataframes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">featurefiles</span><span class="p">[</span><span class="n">featurefile</span><span class="p">]))</span>
+    <span class="n">original_rows</span><span class="o">=</span><span class="n">dataframes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">dataframe</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">dataframes</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># Update the labels</span>
+    <span class="n">combined_labels</span><span class="o">=</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">featurefiles</span><span class="p">)):</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">labels</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">combined_labels</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">=</span><span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">combined_labels</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">key</span><span class="p">]))</span><span class="o">+</span><span class="p">(</span><span class="n">original_rows</span><span class="o">*</span><span class="n">i</span><span class="p">)))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+
+    <span class="c1"># Save the data</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">folder</span><span class="si">}</span><span class="s2">/combined_labels.json&quot;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">combined_labels</span><span class="p">,</span> <span class="n">outfile</span><span class="p">)</span>
+    <span class="n">dataframe</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">folder</span><span class="si">}</span><span class="s2">/combined_dataframe.csv&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Plot the data</span>
+    <span class="n">pdf_path</span><span class="o">=</span><span class="n">feature_boxplots</span><span class="p">(</span><span class="n">dataframe</span><span class="p">,</span> <span class="n">combined_labels</span><span class="p">,</span> <span class="n">output_fileadress</span><span class="o">=</span><span class="n">output_fileadress</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="n">colors</span><span class="p">,</span> <span class="n">show_datapoints</span><span class="o">=</span><span class="n">show_datapoints</span><span class="p">,</span> <span class="n">discern_wells</span><span class="o">=</span><span class="n">discern_wells</span><span class="p">,</span> <span class="n">well_amnt</span><span class="o">=</span><span class="n">well_amnt</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pdf_path</span></div>
+
+
+
+
+<div class="viewcode-block" id="features_over_time">
+<a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.features_over_time">[docs]</a>
+<span class="k">def</span> <span class="nf">features_over_time</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">div_prefix</span><span class="p">,</span> <span class="n">output_fileadress</span><span class="p">,</span> <span class="n">colors</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">show_datapoints</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Show the different features between groups over time.</span>
+<span class="sd">    The error bars represent the standard error of the mean.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    folder : str</span>
+<span class="sd">        folder in which to look for featurefiles</span>
+<span class="sd">    labels : dict</span>
+<span class="sd">        Information about the contents of the well in the following format: {&#39;Control&#39;:[1, 2, 3], &#39;Mutated&#39;:[4, 5, 6]}</span>
+<span class="sd">    div_prefix : str</span>
+<span class="sd">        The prefix used to indicate the age of the cells (e.g. DIV, t)</span>
+<span class="sd">    output_fileadress : str</span>
+<span class="sd">        Location where the file will be saved, must be a .pdf file</span>
+<span class="sd">    colors : list, optinal</span>
+<span class="sd">        List of colors (hex codes) to be used for the boxplots. Will use default colors if left empty</span>
+<span class="sd">    show_datapoints : bool, optional</span>
+<span class="sd">        Whether to show the individual datapoints on the boxplot</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pdf_path : str</span>
+<span class="sd">        Path of output pdf-file</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Set default colors</span>
+    <span class="n">defaultcolors</span> <span class="o">=</span> <span class="n">get_defaultcolors</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">colors</span><span class="o">==</span><span class="kc">None</span><span class="p">:</span>
+        <span class="n">colors</span> <span class="o">=</span> <span class="n">defaultcolors</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="o">&gt;</span><span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;You have supplied more labels (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="si">}</span><span class="s2">) than there are colors available (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)</span><span class="si">}</span><span class="s2">). Please supply colors manually using the &#39;colors&#39; parameter.&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="o">&gt;</span><span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;You have supplied more labels (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span><span class="si">}</span><span class="s2">) than colors (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">)</span><span class="si">}</span><span class="s2">). Please supply more color values, or use the default colors (</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">defaultcolors</span><span class="p">)</span><span class="si">}</span><span class="s2"> colors)&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Function to sort the filenames by DIV</span>
+    <span class="k">def</span> <span class="nf">sort_filenames_by_number</span><span class="p">(</span><span class="n">filenames</span><span class="p">,</span> <span class="n">prefix</span><span class="p">):</span>
+        <span class="n">sorted_filenames</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">filenames</span><span class="p">:</span>
+            <span class="n">match</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">(\d+)&quot;</span><span class="p">,</span> <span class="n">filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">match</span><span class="p">:</span>
+                <span class="n">num_value</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+                <span class="n">sorted_filenames</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">num_value</span><span class="p">,</span> <span class="n">filename</span><span class="p">))</span>
+        <span class="n">sorted_filenames</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="n">numbers</span><span class="p">,</span> <span class="n">filenames</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">sorted_filenames</span><span class="p">)</span> <span class="k">if</span> <span class="n">sorted_filenames</span> <span class="k">else</span> <span class="p">([],</span> <span class="p">[])</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">numbers</span><span class="p">),</span> <span class="n">sorted_filenames</span>
+
+    <span class="c1"># Identify all featurefiles in the main folder</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Extracting features from:&quot;</span><span class="p">)</span>
+    <span class="n">featurefiles</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">root</span><span class="p">,</span> <span class="n">dirs</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">folder</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">files</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;Features.csv&quot;</span><span class="p">):</span>
+                <span class="n">featurefiles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">file</span><span class="p">))</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">file</span><span class="p">))</span>
+
+    <span class="n">nums</span><span class="p">,</span> <span class="n">sorted_featurefiles</span> <span class="o">=</span> <span class="n">sort_filenames_by_number</span><span class="p">(</span><span class="n">featurefiles</span><span class="p">,</span> <span class="n">div_prefix</span><span class="p">)</span>
+
+    <span class="c1"># Read the featurefiles as dataframes</span>
+    <span class="n">sorted_dataframes</span><span class="o">=</span><span class="p">[]</span>
+    <span class="n">all_nums</span><span class="o">=</span><span class="p">[]</span>
+    <span class="k">for</span> <span class="n">featurefile</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sorted_featurefiles</span><span class="p">)):</span>
+        <span class="n">sorted_dataframes</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">sorted_featurefiles</span><span class="p">[</span><span class="n">featurefile</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">sorted_featurefiles</span><span class="p">[</span><span class="n">featurefile</span><span class="p">][</span><span class="mi">1</span><span class="p">])))</span>
+        <span class="n">all_nums</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sorted_featurefiles</span><span class="p">[</span><span class="n">featurefile</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">nums</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">all_nums</span><span class="p">))</span>
+
+    <span class="n">not_features</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Well&quot;</span><span class="p">,</span> <span class="s2">&quot;Active_electrodes&quot;</span><span class="p">]</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="n">sorted_dataframes</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">columns</span>
+    <span class="n">graphlabels</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">nums</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">graphlabels</span><span class="p">)):</span>
+        <span class="n">graphlabels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">div_prefix</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">graphlabels</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Create pdf</span>
+    <span class="n">pdf</span> <span class="o">=</span> <span class="n">PdfPages</span><span class="p">(</span><span class="n">output_fileadress</span><span class="p">)</span>
+
+    <span class="c1"># Convert labels from wells to indexes (subtract 1)</span>
+    <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">labels</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">label</span><span class="p">])):</span>
+            <span class="n">labels</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">value</span><span class="p">]</span><span class="o">=</span> <span class="n">labels</span><span class="p">[</span><span class="n">label</span><span class="p">][</span><span class="n">value</span><span class="p">]</span><span class="o">-</span><span class="mi">1</span>
+
+    <span class="c1"># Loop over all features</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">features</span><span class="p">)):</span>
+        <span class="c1"># Check if these are the features we want</span>
+        <span class="k">if</span> <span class="n">features</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">not_features</span><span class="p">:</span>      
+            <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mf">4.5</span><span class="p">))</span>
+            <span class="n">means_list</span><span class="o">=</span><span class="p">[]</span>
+            <span class="n">errors_list</span><span class="o">=</span><span class="p">[]</span>
+            <span class="c1"># Loop over all groups</span>
+            <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">labels</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+                <span class="n">means</span><span class="o">=</span><span class="p">[]</span>
+                <span class="n">errors</span><span class="o">=</span><span class="p">[]</span>
+                <span class="c1"># Loop over all the DIVs</span>
+                <span class="k">for</span> <span class="n">pos</span><span class="p">,</span> <span class="n">num</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">nums</span><span class="p">):</span>
+                    <span class="n">temp_data</span><span class="o">=</span><span class="p">[]</span>
+                    <span class="n">found</span><span class="o">=</span><span class="mi">0</span>
+                    <span class="c1"># For each DIV, loop over all measurement with that DIV</span>
+                    <span class="k">for</span> <span class="n">dataframe</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">sorted_dataframes</span><span class="p">)):</span>
+                        <span class="k">if</span> <span class="n">sorted_dataframes</span><span class="p">[</span><span class="n">dataframe</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="n">num</span><span class="p">:</span>
+                            <span class="n">temp_data</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">sorted_dataframes</span><span class="p">[</span><span class="n">dataframe</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="n">features</span><span class="p">[</span><span class="n">i</span><span class="p">]][</span><span class="n">labels</span><span class="p">[</span><span class="n">key</span><span class="p">]]))</span>
+                            <span class="n">found</span><span class="o">+=</span><span class="mi">1</span>
+                    <span class="n">temp_data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">temp_data</span><span class="p">)</span>
+                    <span class="n">temp_data</span> <span class="o">=</span> <span class="n">temp_data</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">temp_data</span><span class="p">)]</span>
+                    <span class="c1"># Calculate the mean and std</span>
+                    <span class="n">means</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">temp_data</span><span class="p">))</span>
+                    <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sem</span><span class="p">(</span><span class="n">temp_data</span><span class="p">))</span>
+                    <span class="k">if</span> <span class="n">show_datapoints</span><span class="p">:</span>
+                        <span class="c1"># Add some jitter to the datapoints</span>
+                        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">pos</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">temp_data</span><span class="p">))</span><span class="o">+</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">temp_data</span><span class="p">)),</span> <span class="n">y</span><span class="o">=</span><span class="n">temp_data</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">index</span><span class="p">],</span> <span class="n">s</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+                <span class="n">means_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">means</span><span class="p">)</span>
+                <span class="n">errors_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span>
+                <span class="n">plt</span><span class="o">.</span><span class="n">errorbar</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">)),</span> <span class="n">y</span><span class="o">=</span><span class="n">means</span><span class="p">,</span> <span class="n">yerr</span><span class="o">=</span><span class="n">errors</span><span class="p">,</span> <span class="n">capsize</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">colors</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="n">features</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">xticks</span><span class="p">(</span><span class="n">ticks</span><span class="o">=</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">nums</span><span class="p">)),</span> <span class="n">labels</span><span class="o">=</span><span class="n">graphlabels</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">45</span><span class="p">,</span> <span class="n">ha</span><span class="o">=</span><span class="s2">&quot;right&quot;</span><span class="p">)</span>
+            <span class="n">pdf</span><span class="o">.</span><span class="n">savefig</span><span class="p">()</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="n">pdf</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">output_fileadress</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, K.J. van Beem.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

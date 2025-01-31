@@ -1,0 +1,210 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CureQ._utilities &mdash; MEA Analysis Tool 1.2.6 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=010db75e"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            MEA Analysis Tool
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">CureQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">MEA Analysis Tool</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">CureQ._utilities</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for CureQ._utilities</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">h5py</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+<div class="viewcode-block" id="rechunk_dataset">
+<a class="viewcode-back" href="../../CureQ.html#CureQ._utilities.rechunk_dataset">[docs]</a>
+<span class="k">def</span> <span class="nf">rechunk_dataset</span><span class="p">(</span><span class="n">fileadress</span><span class="p">,</span> <span class="n">compression_method</span><span class="o">=</span><span class="s1">&#39;lzf&#39;</span><span class="p">,</span> <span class="n">compression_level</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">always_compress_files</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Rechunk an existing hdf5 dataset.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fileadress : str</span>
+<span class="sd">        Path to the hdf5 file</span>
+<span class="sd">    compression_method : {&#39;lzf&#39;, &#39;gzip&#39;}, optional</span>
+<span class="sd">        Compression method</span>
+<span class="sd">    compression_level : int, optional</span>
+<span class="sd">        Compression level when using gzip - ranges 1-9</span>
+<span class="sd">    always_compress_files: bool, optional</span>
+<span class="sd">        If set to &#39;True&#39;, the algorithm will always perform the rechunking and compression, even when the data is already correctly chunked.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    outputfile : str</span>
+<span class="sd">        Path of the new file    </span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    MCS hdf5 dataset are inefficiently chunked.</span>
+<span class="sd">    Rechunking the dataset will allow for python to indiviually extract electrode data without having to read the entire dataset.</span>
+<span class="sd">    Besides rechunking, this function will also apply a compression algorithm to the dataset.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">outputfile</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">fileadress</span><span class="p">[:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2">_rechunked.h5&quot;</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">fileadress</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">src</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">outputfile</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">dst</span><span class="p">:</span>
+        <span class="n">dataset_to_rechunk</span><span class="o">=</span><span class="s2">&quot;Data/Recording_0/AnalogStream/Stream_0/ChannelData&quot;</span>
+        <span class="n">original_chunks</span><span class="o">=</span><span class="n">src</span><span class="p">[</span><span class="n">dataset_to_rechunk</span><span class="p">]</span><span class="o">.</span><span class="n">chunks</span>
+        <span class="k">if</span> <span class="n">original_chunks</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dataset is chunked with chunk shape:&quot;</span><span class="p">,</span> <span class="n">original_chunks</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dataset is contiguous.&quot;</span><span class="p">)</span>
+        
+        <span class="n">new_chunks</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">src</span><span class="p">[</span><span class="n">dataset_to_rechunk</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">original_chunks</span><span class="o">==</span><span class="n">new_chunks</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dataset is already correctly chunked&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">always_compress_files</span><span class="p">:</span>
+                <span class="k">return</span>
+        
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rechunking dataset to shape: </span><span class="si">{</span><span class="n">new_chunks</span><span class="si">}</span><span class="s2">, this will create a new file&quot;</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">copy_attributes</span><span class="p">(</span><span class="n">src_obj</span><span class="p">,</span> <span class="n">dst_obj</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">src_obj</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">dst_obj</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+        
+        <span class="k">def</span> <span class="nf">copy_item</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
+            <span class="n">parent_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">parent_path</span> <span class="ow">and</span> <span class="n">parent_path</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">dst</span><span class="p">:</span>
+                <span class="n">dst</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="n">parent_path</span><span class="p">)</span>
+            
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Dataset</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">dataset_to_rechunk</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">compression_method</span><span class="o">==</span><span class="s1">&#39;lzf&#39;</span><span class="p">:</span>
+                        <span class="n">chunks</span> <span class="o">=</span> <span class="n">new_chunks</span>
+                        <span class="n">dst_dataset</span> <span class="o">=</span> <span class="n">dst</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span>
+                            <span class="n">name</span><span class="p">,</span>
+                            <span class="n">shape</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                            <span class="n">dtype</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                            <span class="n">chunks</span><span class="o">=</span><span class="n">chunks</span><span class="p">,</span>
+                            <span class="n">compression</span><span class="o">=</span><span class="n">compression_method</span>
+                        <span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">compression_method</span><span class="o">==</span><span class="s1">&#39;gzip&#39;</span><span class="p">:</span>
+                        <span class="n">chunks</span> <span class="o">=</span> <span class="n">new_chunks</span>
+                        <span class="n">dst_dataset</span> <span class="o">=</span> <span class="n">dst</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span>
+                            <span class="n">name</span><span class="p">,</span>
+                            <span class="n">shape</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                            <span class="n">dtype</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                            <span class="n">chunks</span><span class="o">=</span><span class="n">chunks</span><span class="p">,</span>
+                            <span class="n">compression</span><span class="o">=</span><span class="n">compression_method</span><span class="p">,</span>
+                            <span class="n">compression_opts</span><span class="o">=</span><span class="n">compression_level</span>
+                        <span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">compression_method</span><span class="si">}</span><span class="s2"> is not a valid compression method&quot;</span><span class="p">)</span>
+
+                    <span class="n">dst_dataset</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[:]</span>
+                    
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">dst_dataset</span> <span class="o">=</span> <span class="n">dst</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span>
+                        <span class="n">name</span><span class="p">,</span>
+                        <span class="n">shape</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                        <span class="n">dtype</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                        <span class="n">compression</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">compression</span><span class="p">,</span>
+                        <span class="n">compression_opts</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">compression_opts</span><span class="p">,</span>
+                        <span class="n">shuffle</span><span class="o">=</span><span class="n">obj</span><span class="o">.</span><span class="n">shuffle</span>
+                    <span class="p">)</span>
+                    <span class="n">dst_dataset</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">obj</span><span class="p">[:]</span>
+        
+                <span class="n">copy_attributes</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">dst_dataset</span><span class="p">)</span>
+                
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">h5py</span><span class="o">.</span><span class="n">Group</span><span class="p">):</span>
+                <span class="n">dst_group</span> <span class="o">=</span> <span class="n">dst</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+                <span class="n">copy_attributes</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">dst_group</span><span class="p">)</span>
+
+        <span class="n">src</span><span class="o">.</span><span class="n">visititems</span><span class="p">(</span><span class="n">copy_item</span><span class="p">)</span>
+        <span class="n">original_size</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">fileadress</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+        <span class="n">new_size</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">outputfile</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span><span class="o">/</span><span class="p">(</span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Original size: </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">original_size</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2"> GB</span><span class="se">\n</span><span class="s2">New size: </span><span class="si">{</span><span class="nb">round</span><span class="p">(</span><span class="n">new_size</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2"> GB&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rechunking and compression succesful&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">outputfile</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, K.J. van Beem.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

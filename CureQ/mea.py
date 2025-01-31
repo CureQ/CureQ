@@ -231,6 +231,7 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
 
     if parameters=={}:
         parameters=get_default_parameters()
+        
     # Save the parameters that have been given in a JSON file 
     new_values={'output path' : outputpath,
                 'file adress' : fileadress,

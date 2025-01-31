@@ -1,0 +1,272 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CureQ &mdash; MEA Analysis Tool 1.2.6 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=010db75e"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="CureQ package" href="CureQ.html" />
+    <link rel="prev" title="MEA Analysis Tool documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            MEA Analysis Tool
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CureQ</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html">CureQ package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">MEA Analysis Tool</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">CureQ</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/modules.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="cureq">
+<h1>CureQ<a class="headerlink" href="#cureq" title="Link to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="CureQ.html">CureQ package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ._bandpass">CureQ._bandpass module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._bandpass.butter_bandpass"><code class="docutils literal notranslate"><span class="pre">butter_bandpass()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._bandpass.butter_bandpass_filter"><code class="docutils literal notranslate"><span class="pre">butter_bandpass_filter()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ._burst_detection">CureQ._burst_detection module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._burst_detection.burst_detection"><code class="docutils literal notranslate"><span class="pre">burst_detection()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ._features">CureQ._features module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._features.electrode_features"><code class="docutils literal notranslate"><span class="pre">electrode_features()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._features.feature_output"><code class="docutils literal notranslate"><span class="pre">feature_output()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._features.well_features"><code class="docutils literal notranslate"><span class="pre">well_features()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ._network_burst_detection">CureQ._network_burst_detection module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._network_burst_detection._overlap"><code class="docutils literal notranslate"><span class="pre">_overlap()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._network_burst_detection.network_burst_detection"><code class="docutils literal notranslate"><span class="pre">network_burst_detection()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ._plotting">CureQ._plotting module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._plotting.K"><code class="docutils literal notranslate"><span class="pre">K()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._plotting.KDE"><code class="docutils literal notranslate"><span class="pre">KDE()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._plotting.combined_feature_boxplots"><code class="docutils literal notranslate"><span class="pre">combined_feature_boxplots()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._plotting.fancyplot"><code class="docutils literal notranslate"><span class="pre">fancyplot()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._plotting.feature_boxplots"><code class="docutils literal notranslate"><span class="pre">feature_boxplots()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._plotting.features_over_time"><code class="docutils literal notranslate"><span class="pre">features_over_time()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._plotting.get_defaultcolors"><code class="docutils literal notranslate"><span class="pre">get_defaultcolors()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._plotting.well_electrodes_kde"><code class="docutils literal notranslate"><span class="pre">well_electrodes_kde()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ._spike_validation">CureQ._spike_validation module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._spike_validation.spike_validation"><code class="docutils literal notranslate"><span class="pre">spike_validation()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ._threshold">CureQ._threshold module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._threshold.fast_threshold"><code class="docutils literal notranslate"><span class="pre">fast_threshold()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ._utilities">CureQ._utilities module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ._utilities.rechunk_dataset"><code class="docutils literal notranslate"><span class="pre">rechunk_dataset()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ.main">CureQ.main module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.main.add_to_start_menu"><code class="docutils literal notranslate"><span class="pre">add_to_start_menu()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.main.create_shortcut"><code class="docutils literal notranslate"><span class="pre">create_shortcut()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.main.launch_gui"><code class="docutils literal notranslate"><span class="pre">launch_gui()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.main.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.main.print_version"><code class="docutils literal notranslate"><span class="pre">print_version()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ.mea">CureQ.mea module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea._electrode_subprocess"><code class="docutils literal notranslate"><span class="pre">_electrode_subprocess()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea.analyse_wells"><code class="docutils literal notranslate"><span class="pre">analyse_wells()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea.get_default_parameters"><code class="docutils literal notranslate"><span class="pre">get_default_parameters()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ.mea_analysis_tool">CureQ.mea_analysis_tool module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.MEA_GUI"><code class="docutils literal notranslate"><span class="pre">MEA_GUI()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.MainApp"><code class="docutils literal notranslate"><span class="pre">MainApp</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.MainApp.adjust_color"><code class="docutils literal notranslate"><span class="pre">MainApp.adjust_color()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.MainApp.calculate_optimal_grid"><code class="docutils literal notranslate"><span class="pre">MainApp.calculate_optimal_grid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.MainApp.mix_color"><code class="docutils literal notranslate"><span class="pre">MainApp.mix_color()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.MainApp.set_theme"><code class="docutils literal notranslate"><span class="pre">MainApp.set_theme()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.MainApp.show_frame"><code class="docutils literal notranslate"><span class="pre">MainApp.show_frame()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing"><code class="docutils literal notranslate"><span class="pre">batch_processing</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing.abort_analysis_func"><code class="docutils literal notranslate"><span class="pre">batch_processing.abort_analysis_func()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing.add_selection"><code class="docutils literal notranslate"><span class="pre">batch_processing.add_selection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing.call_library"><code class="docutils literal notranslate"><span class="pre">batch_processing.call_library()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing.confirm_selection"><code class="docutils literal notranslate"><span class="pre">batch_processing.confirm_selection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing.deselect_all"><code class="docutils literal notranslate"><span class="pre">batch_processing.deselect_all()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing.initiate_analysis"><code class="docutils literal notranslate"><span class="pre">batch_processing.initiate_analysis()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing.item_selected"><code class="docutils literal notranslate"><span class="pre">batch_processing.item_selected()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing.open_folder"><code class="docutils literal notranslate"><span class="pre">batch_processing.open_folder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing.populate_tree"><code class="docutils literal notranslate"><span class="pre">batch_processing.populate_tree()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing.select_folder"><code class="docutils literal notranslate"><span class="pre">batch_processing.select_folder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.batch_processing.selected_files"><code class="docutils literal notranslate"><span class="pre">batch_processing.selected_files</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.compress_files"><code class="docutils literal notranslate"><span class="pre">compress_files</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.compress_files.compress_files_function"><code class="docutils literal notranslate"><span class="pre">compress_files.compress_files_function()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.compress_files.openfiles"><code class="docutils literal notranslate"><span class="pre">compress_files.openfiles()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.main_window"><code class="docutils literal notranslate"><span class="pre">main_window</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.main_window.colorpicker"><code class="docutils literal notranslate"><span class="pre">main_window.colorpicker()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.parameter_frame"><code class="docutils literal notranslate"><span class="pre">parameter_frame</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window"><code class="docutils literal notranslate"><span class="pre">plotting_window</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.create_boxplots"><code class="docutils literal notranslate"><span class="pre">plotting_window.create_boxplots()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.create_label_button"><code class="docutils literal notranslate"><span class="pre">plotting_window.create_label_button()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.create_plots"><code class="docutils literal notranslate"><span class="pre">plotting_window.create_plots()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.create_well_buttons"><code class="docutils literal notranslate"><span class="pre">plotting_window.create_well_buttons()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.import_labels"><code class="docutils literal notranslate"><span class="pre">plotting_window.import_labels()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.new_label"><code class="docutils literal notranslate"><span class="pre">plotting_window.new_label()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.reset_labels"><code class="docutils literal notranslate"><span class="pre">plotting_window.reset_labels()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.save_labels"><code class="docutils literal notranslate"><span class="pre">plotting_window.save_labels()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.set_labels"><code class="docutils literal notranslate"><span class="pre">plotting_window.set_labels()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.set_selected_label"><code class="docutils literal notranslate"><span class="pre">plotting_window.set_selected_label()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.update_button_colours"><code class="docutils literal notranslate"><span class="pre">plotting_window.update_button_colours()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.plotting_window.well_button_func"><code class="docutils literal notranslate"><span class="pre">plotting_window.well_button_func()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.process_file_frame"><code class="docutils literal notranslate"><span class="pre">process_file_frame</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.process_file_frame.abort_analysis"><code class="docutils literal notranslate"><span class="pre">process_file_frame.abort_analysis()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.process_file_frame.call_library"><code class="docutils literal notranslate"><span class="pre">process_file_frame.call_library()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.process_file_frame.select_file"><code class="docutils literal notranslate"><span class="pre">process_file_frame.select_file()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.process_file_frame.start_analysis"><code class="docutils literal notranslate"><span class="pre">process_file_frame.start_analysis()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.select_folder_frame"><code class="docutils literal notranslate"><span class="pre">select_folder_frame</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.select_folder_frame.go_to_results"><code class="docutils literal notranslate"><span class="pre">select_folder_frame.go_to_results()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.select_folder_frame.openfolder"><code class="docutils literal notranslate"><span class="pre">select_folder_frame.openfolder()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.select_folder_frame.openrawfile"><code class="docutils literal notranslate"><span class="pre">select_folder_frame.openrawfile()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.single_electrode_view"><code class="docutils literal notranslate"><span class="pre">single_electrode_view</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.single_electrode_view.burst_reset"><code class="docutils literal notranslate"><span class="pre">single_electrode_view.burst_reset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.single_electrode_view.default_values"><code class="docutils literal notranslate"><span class="pre">single_electrode_view.default_values()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.single_electrode_view.default_values_burst"><code class="docutils literal notranslate"><span class="pre">single_electrode_view.default_values_burst()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.single_electrode_view.folder"><code class="docutils literal notranslate"><span class="pre">single_electrode_view.folder</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.single_electrode_view.plot_burst_detection"><code class="docutils literal notranslate"><span class="pre">single_electrode_view.plot_burst_detection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.single_electrode_view.plot_single_electrode"><code class="docutils literal notranslate"><span class="pre">single_electrode_view.plot_single_electrode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.single_electrode_view.reset"><code class="docutils literal notranslate"><span class="pre">single_electrode_view.reset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.single_electrode_view.set_states"><code class="docutils literal notranslate"><span class="pre">single_electrode_view.set_states()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.single_electrode_view.update_burst_plot"><code class="docutils literal notranslate"><span class="pre">single_electrode_view.update_burst_plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.single_electrode_view.update_plot"><code class="docutils literal notranslate"><span class="pre">single_electrode_view.update_plot()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.view_results"><code class="docutils literal notranslate"><span class="pre">view_results</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.view_results.open_sev_tab"><code class="docutils literal notranslate"><span class="pre">view_results.open_sev_tab()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.view_results.open_wwv_tab"><code class="docutils literal notranslate"><span class="pre">view_results.open_wwv_tab()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.view_results.set_selected_well"><code class="docutils literal notranslate"><span class="pre">view_results.set_selected_well()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.whole_well_view"><code class="docutils literal notranslate"><span class="pre">whole_well_view</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.whole_well_view.default_values"><code class="docutils literal notranslate"><span class="pre">whole_well_view.default_values()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.whole_well_view.parent"><code class="docutils literal notranslate"><span class="pre">whole_well_view.parent</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.whole_well_view.plot_network_bursts"><code class="docutils literal notranslate"><span class="pre">whole_well_view.plot_network_bursts()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.whole_well_view.plot_well_activity"><code class="docutils literal notranslate"><span class="pre">whole_well_view.plot_well_activity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.whole_well_view.reset"><code class="docutils literal notranslate"><span class="pre">whole_well_view.reset()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.whole_well_view.reset_electrode_activity"><code class="docutils literal notranslate"><span class="pre">whole_well_view.reset_electrode_activity()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.whole_well_view.update_plot"><code class="docutils literal notranslate"><span class="pre">whole_well_view.update_plot()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="CureQ.html#CureQ.mea_analysis_tool.whole_well_view.well_activity_update_plot"><code class="docutils literal notranslate"><span class="pre">whole_well_view.well_activity_update_plot()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="CureQ.html#module-CureQ">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="MEA Analysis Tool documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="CureQ.html" class="btn btn-neutral float-right" title="CureQ package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, K.J. van Beem.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
