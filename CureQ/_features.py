@@ -24,7 +24,7 @@ def electrode_features(well, parameters):
     wells_df, electrodes_df, spikes, mean_firingrate, mean_ISI, median_ISI, ratio_median_over_mean, IIV, CVI, ISIPACF  = [], [], [], [], [], [], [], [], [], []
     burst_amnt, avg_burst_len, burst_var, burst_CV, mean_IBI, IBI_var, IBI_CV= [], [], [], [], [], [], []
     intraBFR, interBFR, mean_spikes_per_burst, isolated_spikes, MAD_spikes_per_burst = [], [], [], [], []
-    SCB_rate, IBIPACF = [], []
+    SCB_rate, IBIPACF, mean_spike_amplitude, median_spike_amplitude, cv_spike_amplitude = [], [], [], [], []
     
 
     spikepath=f"{(parameters['output path'])}/spike_values"
@@ -210,6 +210,24 @@ def electrode_features(well, parameters):
             SCB_rate.append(len(burst_cores)/(parameters['measurements']/parameters['sampling rate']))
         else:
             SCB_rate.append(float(0))
+
+        # Calculate average spike amplitude
+        if spikedata.shape[0]==0:
+            mean_spike_amplitude.append(float("NaN"))
+        else:
+            mean_spike_amplitude.append(np.mean(np.abs(spikedata[:, 1])))
+
+        # Calculate median spike amplitude
+        if spikedata.shape[0]==0:
+            median_spike_amplitude.append(float("NaN"))
+        else:
+            median_spike_amplitude.append(np.median(np.abs(spikedata[:, 1])))
+
+        # Calculate spike amplitude coefficient of variation
+        if spikedata.shape[0]<2:
+            cv_spike_amplitude.append(float("NaN"))
+        else:
+            cv_spike_amplitude.append(np.std(np.abs(spikedata[:, 1]))/np.mean(np.abs(spikedata[:, 1])))
         
     # Create pandas dataframe with all features as columns 
     features_df = pd.DataFrame({
@@ -235,8 +253,12 @@ def electrode_features(well, parameters):
         "Mean_spikes_per_burst": mean_spikes_per_burst,
         "MAD_spikes_per_burst": MAD_spikes_per_burst,
         "Isolated_spikes": isolated_spikes,
-        "Single_channel_burst_rate": SCB_rate
+        "Single_channel_burst_rate": SCB_rate,
+        "Mean_absolute_spike_amplitude" : mean_spike_amplitude,
+        "Median_absolute_spike_amplitude" : median_spike_amplitude,
+        "Coefficient_of_variation_absolute_spike_amplitude" : cv_spike_amplitude
     })
+
     if parameters['remove inactive electrodes']:
         # Remove electrodes that do not have enough activity
         features_df=features_df[features_df["Mean_FiringRate"]>parameters['activity threshold']]
@@ -245,7 +267,8 @@ def electrode_features(well, parameters):
     # If none of the electrodes have enough activity, make sure we retain the well value
     if len(features_df)==0:
         features_df["Well"]=[well_nr]
-    features_df.insert(1, "Active_electrodes", [active_electrodes]*len(features_df))
+    if parameters['remove inactive electrodes']:
+        features_df.insert(2, "Active_electrodes", [active_electrodes]*len(features_df))
     return features_df
 
 '''Calculate the features per well'''

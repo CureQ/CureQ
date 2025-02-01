@@ -292,17 +292,19 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
                 print(f"Calculated network bursts well: {well}")
 
                 # Calculate electrode and well features
-                features_df=electrode_features(well, parameters)
+                electrode_features_df=electrode_features(well, parameters)
                 well_features_df=well_features(well, parameters)
                 print(f"Calculated features well: {well}")
 
                 # If its the first iteration, create the dataframe
                 if first_iteration:
                     first_iteration=False
-                    output=feature_output(features_df, well_features_df)
+                    electrode_features_output=copy.deepcopy(electrode_features_df)
+                    output=feature_output(electrode_features_df, well_features_df)
                 # If its not the first iteration, keep appending to the dataframe
                 else:
-                    output=pd.concat([output, feature_output(features_df, well_features_df)], axis=0)
+                    electrode_features_output=pd.concat([electrode_features_output, copy.deepcopy(electrode_features_df)], ignore_index=False)
+                    output=pd.concat([output, feature_output(electrode_features_df, well_features_df)], axis=0, ignore_index=False)
                 end=time.time()
                 print(f"It took {end-start} seconds to analyse well: {well}")
 
@@ -378,17 +380,19 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
             print(f"Calculated network bursts well: {well}")
 
             # Calculate electrode and well features
-            features_df=electrode_features(well, parameters)
+            electrode_features_df=electrode_features(well, parameters)
             well_features_df=well_features(well, parameters)
             print(f"Calculated features well: {well}")
 
             # If its the first iteration, create the dataframe
             if first_iteration:
                 first_iteration=False
-                output=feature_output(features_df, well_features_df)
+                electrode_features_output=copy.deepcopy(electrode_features_df)
+                output=feature_output(electrode_features_df, well_features_df)
             # If its not the first iteration, keep appending to the dataframe
             else:
-                output=pd.concat([output, feature_output(features_df, well_features_df)], axis=0, ignore_index=False)
+                electrode_features_output=pd.concat([electrode_features_output, copy.deepcopy(electrode_features_df)], ignore_index=False)
+                output=pd.concat([output, feature_output(electrode_features_df, well_features_df)], axis=0, ignore_index=False)
             end=time.time()
             print(f"It took {end-start} seconds to analyse well: {well}")
         
@@ -399,6 +403,7 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
 
     # Save the output
     output.to_csv(f"{outputpath}/{output_folder}_Features.csv", index=False)
+    electrode_features_output.to_csv(f"{outputpath}/{output_folder}_Electrode_Features.csv", index=False)
     
     # Close the analysis
     np.save(progressfile, ['done'])
