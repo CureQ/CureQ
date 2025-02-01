@@ -24,7 +24,7 @@ def electrode_features(well, parameters):
     wells_df, electrodes_df, spikes, mean_firingrate, mean_ISI, median_ISI, ratio_median_over_mean, IIV, CVI, ISIPACF  = [], [], [], [], [], [], [], [], [], []
     burst_amnt, avg_burst_len, burst_var, burst_CV, mean_IBI, IBI_var, IBI_CV= [], [], [], [], [], [], []
     intraBFR, interBFR, mean_spikes_per_burst, isolated_spikes, MAD_spikes_per_burst = [], [], [], [], []
-    SCB_rate, IBIPACF = [], []
+    SCB_rate, IBIPACF, mean_spike_amplitude, median_spike_amplitude, cv_spike_amplitude = [], [], [], [], []
     
 
     spikepath=f"{(parameters['output path'])}/spike_values"
@@ -69,9 +69,6 @@ def electrode_features(well, parameters):
             contains a row for every single spike in an electrode that is part of a burst, each row contains 4 columns
                 burst_spikes[spike, 0:3] = exactly the same as spikedata^
                 burst_spikes[spike, 3] = The burst ID of the burst that it participates in
-            electrode_amnt = the amount of electrodes each MEA-well contains
-            measurements = the total amount of measurements the MEA has taken in a single channel (recording time * sampling rate)
-            hertz = the sampling rate of the MEA
         3. Calculate the feature. If you calculate it in this for-loop, it will automatically be calculated for each of the electrodes
            Warning: sometimes it is not possible to calculate a features due to a lack of detected bursts/spikes.
            always check if there are enough values to calculate the feature using an if-statement, if there are not, append "float("NaN")" to the list
@@ -213,6 +210,24 @@ def electrode_features(well, parameters):
             SCB_rate.append(len(burst_cores)/(parameters['measurements']/parameters['sampling rate']))
         else:
             SCB_rate.append(float(0))
+
+        # Calculate average spike amplitude
+        if spikedata.shape[0]==0:
+            mean_spike_amplitude.append(float("NaN"))
+        else:
+            mean_spike_amplitude.append(np.mean(np.abs(spikedata[:, 1])))
+
+        # Calculate median spike amplitude
+        if spikedata.shape[0]==0:
+            median_spike_amplitude.append(float("NaN"))
+        else:
+            median_spike_amplitude.append(np.median(np.abs(spikedata[:, 1])))
+
+        # Calculate spike amplitude coefficient of variation
+        if spikedata.shape[0]<2:
+            cv_spike_amplitude.append(float("NaN"))
+        else:
+            cv_spike_amplitude.append(np.std(np.abs(spikedata[:, 1]))/np.mean(np.abs(spikedata[:, 1])))
         
     # Create pandas dataframe with all features as columns 
     features_df = pd.DataFrame({
@@ -238,8 +253,12 @@ def electrode_features(well, parameters):
         "Mean_spikes_per_burst": mean_spikes_per_burst,
         "MAD_spikes_per_burst": MAD_spikes_per_burst,
         "Isolated_spikes": isolated_spikes,
-        "Single_channel_burst_rate": SCB_rate
+        "Single_channel_burst_rate": SCB_rate,
+        "Mean_absolute_spike_amplitude" : mean_spike_amplitude,
+        "Median_absolute_spike_amplitude" : median_spike_amplitude,
+        "Coefficient_of_variation_absolute_spike_amplitude" : cv_spike_amplitude
     })
+
     if parameters['remove inactive electrodes']:
         # Remove electrodes that do not have enough activity
         features_df=features_df[features_df["Mean_FiringRate"]>parameters['activity threshold']]
@@ -248,7 +267,8 @@ def electrode_features(well, parameters):
     # If none of the electrodes have enough activity, make sure we retain the well value
     if len(features_df)==0:
         features_df["Well"]=[well_nr]
-    features_df.insert(1, "Active_electrodes", [active_electrodes]*len(features_df))
+    if parameters['remove inactive electrodes']:
+        features_df.insert(2, "Active_electrodes", [active_electrodes]*len(features_df))
     return features_df
 
 '''Calculate the features per well'''
@@ -301,11 +321,11 @@ def well_features(well, parameters):
         1. Initialize a list prior to this for-loop, you will be adding the calculated feature of the well to this list
         2. You have access to the following variables after this line of code:
             network_cores = All the network bursts that have been detected in this well. Contains a row for each network burst, each row contains 5 columns
-                network_cores[burst, 0] = start of the network burst core (seconds)
-                network_cores[burst, 1] = end of the network burst core
-                network_cores[burst, 2] = start of the total network burst
-                network_cores[burst, 3] = end of the total network burst
-                network_cores[burst, 4] = ID of the network burst, used to couple network burst to participating single-channel bursts
+                network_bursts[burst, 0] = start of the network burst core (seconds)
+                network_bursts[burst, 1] = end of the network burst core
+                network_bursts[burst, 2] = start of the total network burst
+                network_bursts[burst, 3] = end of the total network burst
+                network_bursts[burst, 4] = ID of the network burst, used to couple network burst to participating single-channel bursts
             participating_bursts = All the bursts that have participated in a network burst in this well. Contains a row for each single-channel burst (SCB), each row contains 3 colomns
                 participating_bursts[burst, 0] = The network burst ID
                 participating_bursts[burst, 1] = The electrode on which the SCB happened
@@ -317,9 +337,6 @@ def well_features(well, parameters):
                 same as previous, but for burst cores
             burstspikes_list
                 same as previous, but for burst spikes
-            electrode_amnt = the amount of electrodes each MEA-well contains
-            measurements = the total amount of measurements the MEA has taken in a single channel (recording time * sampling rate)
-            hertz = the sampling rate of the MEA
         3. Calculate the feature.
            Warning: sometimes it is not possible to calculate a features due to a lack of detected network bursts.
            always check if there are enough values to calculate the feature using an if-statement, if there are not, append "float("NaN")" to the list
