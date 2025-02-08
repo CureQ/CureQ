@@ -12,6 +12,8 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 from importlib.metadata import version
+import requests
+import subprocess
 import traceback
 
 # External libraries
@@ -87,7 +89,7 @@ class MainApp(ctk.CTk):
         self.parameters = get_default_parameters()
         self.default_parameters = get_default_parameters()
 
-        print("Successfully launched MEA GUI")
+        print("Successfully launched MEA Analysis Tool")
 
     # Handle frame switching
     def show_frame(self, frame_class, *args, **kwargs):
@@ -196,7 +198,7 @@ class main_window(ctk.CTkFrame):
 
         self.parent=parent
 
-        parent.title(f"CureQ MEA analysis tool - Version: {version('CureQ')}")
+        parent.title(f"MEA Analysis Tool - Version: {version('CureQ')}")
 
         # Weights
         self.grid_columnconfigure(0, weight=1)
@@ -219,6 +221,15 @@ class main_window(ctk.CTkFrame):
 
         github_button=ctk.CTkButton(master=sidebarframe, text="GitHub", command=lambda: webbrowser.open_new("https://github.com/CureQ"))
         github_button.grid(row=3, column=0, sticky='nesw', pady=10, padx=10)
+
+        # Check for updates
+        installed_version=self.get_installed_version()
+        latest_version=self.get_latest_version()
+
+        if installed_version is not None and latest_version is not None:
+            if latest_version != installed_version:
+                update_button=ctk.CTkButton(master=sidebarframe, text="A new version is available!\nClick here to install it.", command=self.update_package, fg_color="#1d5200", hover_color="#0f2b00")
+                update_button.grid(row=4, column=0, sticky='nesw', pady=10, padx=10)
 
         # Main button frame
         main_buttons_frame=ctk.CTkFrame(self)
@@ -257,6 +268,30 @@ class main_window(ctk.CTkFrame):
         for i in range(3):
             util_plot_button_frame.grid_rowconfigure(i, weight=1)
 
+    def get_installed_version(self):
+        try:
+            return version("CureQ")
+        except importlib.metadata.PackageNotFoundError:
+            return None
+
+    def get_latest_version(self):
+        url = f"https://pypi.org/pypi/CureQ/json"
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()["info"]["version"]
+        return None
+
+    def update_package(self):
+        latest_version = self.get_latest_version()
+        if self.get_installed_version() != latest_version:
+            try:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", f"CureQ=={latest_version}"])
+                print(f"Successfully installed CureQ version {latest_version}.")
+                CTkMessagebox(message=f"Successfully installed CureQ version {latest_version}. Please restart the application for the changes to take effect.", icon="check", option_1="Ok", title="Updated Package", wraplength=400)
+            except Exception as error:
+                print(f"Failed to install CureQ version {latest_version}.")
+                traceback.print_exc()
+                CTkMessagebox(title="Error", message=f"Failed to install CureQ version {latest_version}:\n{error}", icon="cancel", wraplength=400)
 
     def colorpicker(self):
         popup=ctk.CTkToplevel(self)
@@ -688,10 +723,6 @@ class select_folder_frame(ctk.CTkFrame):
         if self.folder_path == '' or self.data_path == '':
             CTkMessagebox(title="Error", message='Please select an output folder and raw datafile', icon="cancel", wraplength=400)
             return
-        # Check for subfolders
-        if not(os.path.exists(f"{self.folder_path}/burst_values") and os.path.exists(f"{self.folder_path}/spike_values") and os.path.exists(f"{self.folder_path}/network_data")):
-            CTkMessagebox(title="Error", message='Could not load in the results, please make sure you have selected the correct folder', icon="cancel", wraplength=400)
-            return
         
         # Check for parameters json
         try:
@@ -726,7 +757,7 @@ class view_results(ctk.CTkFrame):
         self.rawfile=rawfile
         self.parent=parent
 
-        self.parent.title(f"CureQ MEA analysis tool - Version: {version('CureQ')} - {self.folder}")
+        self.parent.title(f"MEA Analysis Tool - Version: {version('CureQ')} - {self.folder}")
 
         self.tab_frame=ctk.CTkTabview(self, anchor='nw')
         self.tab_frame.grid(column=0, row=0, sticky='nesw', pady=10, padx=10)
@@ -1340,7 +1371,7 @@ class whole_well_view(ctk.CTkToplevel):
         self.update_plot()
 
     def plot_well_activity(self):
-        fig=well_electrodes_kde(outputpath=self.folder, well=self.well, electrode_amnt=self.parameters["electrode amount"], measurements=self.parameters["measurements"], hertz=self.parameters["sampling rate"], bandwidth=float(self.el_act_bw_entry.get()))
+        fig=well_electrodes_kde(outputpath=self.folder, well=self.well, parameters=self.parameters, bandwidth=float(self.el_act_bw_entry.get()))
         
         # Check which colorscheme we have to use
         axiscolour="#586d97"
@@ -2323,7 +2354,7 @@ class plotting_window(ctk.CTkFrame):
 
 def MEA_GUI():
     """
-    Launches the graphical user interface (GUI) of the CureQ MEA analysis tool.
+    Launches the graphical user interface (GUI) of the MEA Analysis Tool.
 
     Always launch the function with an "if __name__ == '__main__':" guard as follows:
         if __name__ == "__main__":

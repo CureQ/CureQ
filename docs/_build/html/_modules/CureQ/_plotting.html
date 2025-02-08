@@ -71,8 +71,6 @@
   <h1>Source code for CureQ._plotting</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">plotly.graph_objects</span> <span class="k">as</span> <span class="nn">go</span>
-<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
 <span class="kn">from</span> <span class="nn">KDEpy</span> <span class="kn">import</span> <span class="n">FFTKDE</span>
 <span class="kn">from</span> <span class="nn">matplotlib.figure</span> <span class="kn">import</span> <span class="n">Figure</span>
 <span class="kn">from</span> <span class="nn">matplotlib.gridspec</span> <span class="kn">import</span> <span class="n">GridSpec</span>
@@ -83,110 +81,12 @@
 <span class="kn">import</span> <span class="nn">json</span>
 <span class="kn">import</span> <span class="nn">re</span>
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">sem</span>
-
-
-<span class="sd">&#39;&#39;&#39;This function will calculate a 3d guassian kernel&#39;&#39;&#39;</span>
-<div class="viewcode-block" id="K">
-<a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.K">[docs]</a>
-<span class="k">def</span> <span class="nf">K</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">H</span><span class="p">):</span>
-    <span class="c1"># unpack two dimensions</span>
-    <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span>
-    <span class="c1"># extract four components from the matrix inv(H)</span>
-    <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">inv</span><span class="p">(</span><span class="n">H</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
-    
-    <span class="n">scale</span> <span class="o">=</span> <span class="mi">2</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">det</span><span class="p">(</span><span class="n">H</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="n">a</span><span class="o">*</span><span class="n">x1</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">d</span><span class="o">*</span><span class="n">x2</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">b</span><span class="o">+</span><span class="n">c</span><span class="p">)</span><span class="o">*</span><span class="n">x1</span><span class="o">*</span><span class="n">x2</span><span class="p">)</span><span class="o">/</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">scale</span></div>
-
-
-<span class="sd">&#39;&#39;&#39;This function will insert a 3d gaussian kernel at the location of every datapoint/spike&#39;&#39;&#39;</span>
-<div class="viewcode-block" id="KDE">
-<a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.KDE">[docs]</a>
-<span class="k">def</span> <span class="nf">KDE</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
-    <span class="c1"># unpack two dimensions</span>
-    <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span> <span class="o">=</span> <span class="n">x</span>
-    <span class="c1"># prepare the grid for output values</span>
-    <span class="n">output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">x1</span><span class="p">)</span>
-    <span class="c1"># process every sample</span>
-    <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-        <span class="n">output</span> <span class="o">+=</span> <span class="n">K</span><span class="p">([</span><span class="n">x1</span><span class="o">-</span><span class="n">sample</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">x2</span><span class="o">-</span><span class="n">sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">H</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">output</span></div>
-
-
-<span class="sd">&#39;&#39;&#39;Create a 3D view of a single well. Every spike will be represented as a 3D gaussian kernel&#39;&#39;&#39;</span>
-<div class="viewcode-block" id="fancyplot">
-<a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.fancyplot">[docs]</a>
-<span class="k">def</span> <span class="nf">fancyplot</span><span class="p">(</span><span class="n">outputpath</span><span class="p">,</span>       <span class="c1"># Where to find the spikedata</span>
-              <span class="n">wells</span><span class="p">,</span>            <span class="c1"># Which wells to generate a plot for</span>
-              <span class="n">electrode_amnt</span><span class="p">,</span>   <span class="c1"># Amount of electrodes in a well</span>
-              <span class="n">measurements</span><span class="p">,</span>     <span class="c1"># Measurements done (time*sampling rate)</span>
-              <span class="n">hertz</span><span class="p">,</span>            <span class="c1"># Sampling rate</span>
-              <span class="n">resolution</span><span class="p">,</span>       <span class="c1"># Resolution of the 3d graph - higher resolution lead to significantly more processing time</span>
-              <span class="n">kernel_size</span><span class="p">,</span>      <span class="c1"># Size of the gaussian kernel</span>
-              <span class="n">aspectratios</span><span class="p">,</span>     <span class="c1"># Ratios of the 3d plot</span>
-              <span class="n">colormap</span>          <span class="c1"># Colourmap used - can be any colourmap supported by plotly</span>
-              <span class="p">):</span>
-
-    <span class="c1"># Example usage:</span>
-    <span class="c1"># fancyplot(&quot;C:/MEA_data/output_folder_of_experiment&quot;, [15], 12, 3000000, 20000, 5, 1, [0.5,0.25,0.5], &quot;deep&quot;)</span>
-
-    <span class="n">spikepath</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s1">/spike_values&#39;</span>
-    <span class="k">for</span> <span class="n">well</span> <span class="ow">in</span> <span class="n">wells</span><span class="p">:</span>
-        <span class="n">kdedata</span><span class="o">=</span><span class="p">[]</span>
-        <span class="k">for</span> <span class="n">electrode</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">electrode_amnt</span><span class="o">+</span><span class="mi">1</span><span class="p">):</span>
-            <span class="c1"># Load in spikedata</span>
-            <span class="n">spikedata</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">spikepath</span><span class="si">}</span><span class="s1">/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s1">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s1">_spikes.npy&#39;</span><span class="p">)</span>
-            <span class="n">spikedata</span><span class="o">=</span><span class="n">spikedata</span><span class="p">[:,:</span><span class="mi">2</span><span class="p">]</span>
-            <span class="n">spikedata</span><span class="p">[:,</span><span class="mi">1</span><span class="p">]</span><span class="o">=</span><span class="n">electrode</span>
-            <span class="k">for</span> <span class="n">spike</span> <span class="ow">in</span> <span class="n">spikedata</span><span class="p">:</span>
-                <span class="n">kdedata</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">spike</span><span class="p">)</span>
-        <span class="n">time</span><span class="o">=</span><span class="n">measurements</span><span class="o">/</span><span class="n">hertz</span>
-
-        <span class="c1"># covariance matrix</span>
-        <span class="c1"># This determines the shape of the gaussian kernel</span>
-        <span class="n">H</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
-            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]]</span>
-
-        <span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">kdedata</span><span class="p">)</span>
-        <span class="c1"># fix arguments &#39;H&#39; and &#39;data&#39; of KDE function for further calls</span>
-        <span class="n">KDE_partial</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">KDE</span><span class="p">,</span> <span class="n">H</span><span class="o">=</span><span class="n">kernel_size</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">H</span><span class="p">),</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
-
-        <span class="c1"># draw contour and surface plots</span>
-        <span class="n">func</span><span class="o">=</span><span class="n">KDE_partial</span>
-
-        <span class="c1"># create a np xy grid using the dimensions of the data</span>
-        <span class="n">yres</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">resolution</span><span class="o">*</span><span class="n">time</span><span class="p">)</span>
-        <span class="n">xres</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">resolution</span><span class="o">*</span><span class="n">electrode_amnt</span><span class="p">)</span>
-        <span class="n">y_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">time</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">yres</span><span class="p">)</span>
-        <span class="n">x_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">electrode_amnt</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="n">xres</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Creating 3D plot, resolution x: </span><span class="si">{</span><span class="n">xres</span><span class="si">}</span><span class="s2"> by y: </span><span class="si">{</span><span class="n">yres</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-        <span class="n">y_grid</span><span class="p">,</span> <span class="n">X_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">y_range</span><span class="p">,</span> <span class="n">x_range</span><span class="p">)</span>
-        <span class="n">Z_grid</span> <span class="o">=</span> <span class="n">func</span><span class="p">([</span><span class="n">y_grid</span><span class="p">,</span> <span class="n">X_grid</span><span class="p">])</span>
-        
-        <span class="n">fig</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">Figure</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">[</span><span class="n">go</span><span class="o">.</span><span class="n">Surface</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="n">y_grid</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">X_grid</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="n">Z_grid</span><span class="p">,</span> <span class="n">colorscale</span><span class="o">=</span><span class="n">colormap</span><span class="p">)])</span>
-        <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span>
-        <span class="n">scene</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-            <span class="n">xaxis</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">range</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="n">electrode_amnt</span><span class="p">]),</span>
-            <span class="n">yaxis</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">range</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="n">time</span><span class="p">]),</span>
-            <span class="p">),</span>
-        <span class="n">margin</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">r</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">l</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">t</span><span class="o">=</span><span class="mi">10</span><span class="p">))</span>
-
-        <span class="c1"># change the aspect ratio&#39;s of the plot</span>
-        <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene_aspectmode</span><span class="o">=</span><span class="s1">&#39;manual&#39;</span><span class="p">,</span>
-                            <span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Well: </span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-                            <span class="n">scene_aspectratio</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">electrode_amnt</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span><span class="o">*</span><span class="n">aspectratios</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
-                                           <span class="n">y</span><span class="o">=</span><span class="p">(</span><span class="n">time</span><span class="o">/</span><span class="mi">10</span><span class="p">)</span><span class="o">*</span><span class="n">aspectratios</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
-                                           <span class="n">z</span><span class="o">=</span><span class="mi">1</span><span class="o">*</span><span class="n">aspectratios</span><span class="p">[</span><span class="mi">2</span><span class="p">]))</span>
-        <span class="n">fig</span><span class="o">.</span><span class="n">update_layout</span><span class="p">(</span><span class="n">scene</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
-                    <span class="n">xaxis_title</span><span class="o">=</span><span class="s1">&#39;Electrode&#39;</span><span class="p">,</span>
-                    <span class="n">yaxis_title</span><span class="o">=</span><span class="s1">&#39;Time in seconds&#39;</span><span class="p">,</span>
-                    <span class="n">zaxis_title</span><span class="o">=</span><span class="s1">&#39;KDE&#39;</span><span class="p">),)</span>
-        <span class="n">fig</span><span class="o">.</span><span class="n">write_html</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s2">/figures/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">_3dgraph.html&quot;</span><span class="p">)</span></div>
+<span class="kn">import</span> <span class="nn">h5py</span>
 
 
 <div class="viewcode-block" id="well_electrodes_kde">
 <a class="viewcode-back" href="../../CureQ.html#CureQ._plotting.well_electrodes_kde">[docs]</a>
-<span class="k">def</span> <span class="nf">well_electrodes_kde</span><span class="p">(</span><span class="n">outputpath</span><span class="p">,</span> <span class="n">well</span><span class="p">,</span> <span class="n">electrode_amnt</span><span class="p">,</span> <span class="n">measurements</span><span class="p">,</span> <span class="n">hertz</span><span class="p">,</span> <span class="n">bandwidth</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">well_electrodes_kde</span><span class="p">(</span><span class="n">outputpath</span><span class="p">,</span> <span class="n">well</span><span class="p">,</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">bandwidth</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plot a kernel density estimate of all electrodes in a single plot.</span>
 
@@ -196,12 +96,8 @@
 <span class="sd">        The folder in where to find the data required to create the KDEs</span>
 <span class="sd">    well : int</span>
 <span class="sd">        The well number which is to be used for the KDE</span>
-<span class="sd">    electrode amnt : int</span>
-<span class="sd">        The number of electrodes in a single MEA well</span>
-<span class="sd">    measurements : int</span>
-<span class="sd">        The total amount of measurements taken in a single electrode in this experiment (samping rate * duration)</span>
-<span class="sd">    hertz : int</span>
-<span class="sd">        The sampling rate of the MEA experiment</span>
+<span class="sd">    parameters : dict</span>
+<span class="sd">        Dictionary containing global paramaters. The function will extract the values needed.</span>
 <span class="sd">    bandwidth : float, optional</span>
 <span class="sd">        The bandwidth used for the KDE, passed to KDEpy</span>
 
@@ -210,6 +106,10 @@
 <span class="sd">    fig : matplotlib Figure</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">electrode_amnt</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;electrode amount&#39;</span><span class="p">]</span>
+    <span class="n">measurements</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;measurements&#39;</span><span class="p">]</span>
+    <span class="n">hertz</span> <span class="o">=</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;sampling rate&#39;</span><span class="p">]</span>
 
     <span class="c1"># Where to find the spike-data</span>
     <span class="n">spikepath</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s1">/spike_values&#39;</span>
@@ -229,8 +129,14 @@
             <span class="n">first_iteration</span><span class="o">=</span><span class="kc">False</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="o">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="n">gs</span><span class="p">[</span><span class="n">electrode_amnt</span><span class="o">-</span><span class="n">electrode</span><span class="p">],</span> <span class="n">sharex</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">sharey</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        
         <span class="c1"># Load in the spike data and create a KDE using KDEpy for each well</span>
-        <span class="n">spikedata</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">spikepath</span><span class="si">}</span><span class="s1">/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s1">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s1">_spikes.npy&#39;</span><span class="p">)</span>
+        <span class="n">output_hdf_file</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;output hdf file&#39;</span><span class="p">]</span>
+
+        <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">output_hdf_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">dataset</span><span class="o">=</span><span class="n">f</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;spike_values/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s2">_spikes&quot;</span><span class="p">]</span>
+            <span class="n">spikedata</span><span class="o">=</span><span class="n">dataset</span><span class="p">[:]</span>
+
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spikedata</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span><span class="o">&gt;</span><span class="mi">0</span><span class="p">:</span>
             <span class="n">y</span> <span class="o">=</span> <span class="n">FFTKDE</span><span class="p">(</span><span class="n">bw</span><span class="o">=</span><span class="n">bandwidth</span><span class="p">,</span> <span class="n">kernel</span><span class="o">=</span><span class="s1">&#39;gaussian&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">spikedata</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">grid_points</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">data_time</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">))</span>
             <span class="n">y</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">spikedata</span><span class="p">[:,</span><span class="mi">0</span><span class="p">])</span>

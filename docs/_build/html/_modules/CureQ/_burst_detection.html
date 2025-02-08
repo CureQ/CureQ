@@ -74,6 +74,7 @@
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
 <span class="kn">import</span> <span class="nn">seaborn</span> <span class="k">as</span> <span class="nn">sns</span>
 <span class="kn">from</span> <span class="nn">matplotlib.figure</span> <span class="kn">import</span> <span class="n">Figure</span>
+<span class="kn">import</span> <span class="nn">h5py</span>
 
 <div class="viewcode-block" id="burst_detection">
 <a class="viewcode-back" href="../../CureQ.html#CureQ._burst_detection.burst_detection">[docs]</a>
@@ -119,10 +120,17 @@
     <span class="n">well</span> <span class="o">=</span> <span class="nb">round</span><span class="p">(</span><span class="n">electrode_number</span> <span class="o">/</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;electrode amount&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mf">0.505</span><span class="p">)</span>
     <span class="n">electrode</span> <span class="o">=</span> <span class="n">electrode_number</span> <span class="o">%</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;electrode amount&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
 
-    <span class="c1"># Get the correct foldername to read and store values</span>
-    <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">(</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;output path&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">/spike_values&quot;</span>
-    <span class="c1"># Load in the spikedata</span>
-    <span class="n">spikedata</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s1">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s1">_spikes.npy&#39;</span><span class="p">)</span>
+    <span class="c1"># Retrieve spike data from hdf5 files</span>
+    <span class="n">output_hdf_file</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;output hdf file&#39;</span><span class="p">]</span>
+
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">output_hdf_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">dataset</span><span class="o">=</span><span class="n">f</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;spike_values/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s2">_spikes&quot;</span><span class="p">]</span>
+                <span class="n">spikedata</span><span class="o">=</span><span class="n">dataset</span><span class="p">[:]</span>
+            <span class="k">break</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">continue</span>
 
     <span class="c1"># Calculate the inter-spike intervals</span>
     <span class="n">ISI</span><span class="o">=</span><span class="p">[]</span>
@@ -444,11 +452,17 @@
 
     <span class="c1"># Save the spike data to a .csv file</span>
     <span class="k">if</span> <span class="n">savedata</span><span class="p">:</span>
-        <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="p">(</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;output path&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2">/burst_values&quot;</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s1">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s1">_burst_spikes.csv&#39;</span><span class="p">,</span> <span class="n">burst_spikes</span><span class="p">,</span> <span class="n">delimiter</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="p">)</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s1">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s1">_burst_spikes&#39;</span><span class="p">,</span> <span class="n">burst_spikes</span><span class="p">)</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">savetxt</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s1">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s1">_burst_cores.csv&#39;</span><span class="p">,</span> <span class="n">burst_cores</span><span class="p">,</span> <span class="n">delimiter</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="p">)</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s1">/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s1">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s1">_burst_cores&#39;</span><span class="p">,</span> <span class="n">burst_cores</span><span class="p">)</span>
+        <span class="c1"># Save to hdf5 files</span>
+        <span class="n">output_hdf_file</span><span class="o">=</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;output hdf file&#39;</span><span class="p">]</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">output_hdf_file</span><span class="p">,</span> <span class="s1">&#39;a&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;burst_values/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s1">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s1">_burst_spikes&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">burst_spikes</span><span class="p">)</span>
+                    <span class="n">f</span><span class="o">.</span><span class="n">create_dataset</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;burst_values/well_</span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s1">_electrode_</span><span class="si">{</span><span class="n">electrode</span><span class="si">}</span><span class="s1">_burst_cores&#39;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">burst_cores</span><span class="p">)</span>
+                <span class="k">break</span>
+            <span class="k">except</span><span class="p">:</span>
+                <span class="k">continue</span>
         
     <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">fig2</span></div>
 

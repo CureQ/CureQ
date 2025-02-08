@@ -3,6 +3,7 @@ from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 from KDEpy import FFTKDE
 from skimage import filters
+import h5py
 
 
 def _overlap(burst1, burst2):
@@ -48,9 +49,9 @@ def network_burst_detection(wells, parameters, plot_electrodes=False, save_figur
     -----
     Instead of returning the results of the network burst detection using 'return', the function saves them at a specific file location using .npy and .csv files.
     """
+
     # Define where to retrieve information from
-    spikepath=f"{(parameters['output path'])}/spike_values"
-    burstpath=f"{(parameters['output path'])}/burst_values"
+    output_hdf_file=parameters['output hdf file']
 
     # Calculate how many channels should be active for a network burst
     min_channels=round(parameters['min channels']*parameters['electrode amount'])
@@ -96,10 +97,13 @@ def network_burst_detection(wells, parameters, plot_electrodes=False, save_figur
         burst_spikes_for_kde=np.array([])
 
         # Iterate over all the electrodes in this well
-        for electrode in range(1,parameters['electrode amount']+1):
+        for electrode in range(1,parameters['electrode amount']+1):   
             # Load in spike and burst data
-            spikedata=np.load(f'{spikepath}/well_{well}_electrode_{electrode}_spikes.npy')
-            burstdata=np.load(f'{burstpath}/well_{well}_electrode_{electrode}_burst_spikes.npy')
+            with h5py.File(output_hdf_file, 'r') as f:
+                spikedata=f[f"spike_values/well_{well}_electrode_{electrode}_spikes"]
+                spikedata=spikedata[:]
+                burstdata=f[f"burst_values/well_{well}_electrode_{electrode}_burst_spikes"]
+                burstdata=burstdata[:]
             
             # Extract the spike data from the files
             well_spikes.append(spikedata[:,0])
@@ -125,7 +129,9 @@ def network_burst_detection(wells, parameters, plot_electrodes=False, save_figur
 
         # Load in burst core data
         for electrode in range(1,parameters['electrode amount']+1):
-            burst_cores=np.load(f'{burstpath}/well_{well}_electrode_{electrode}_burst_cores.npy')
+            with h5py.File(output_hdf_file, 'r') as f:
+                burst_cores=f[f"burst_values/well_{well}_electrode_{electrode}_burst_cores"]
+                burst_cores=burst_cores[:]
             burst_cores_list.append(burst_cores)
             for burstcore in burst_cores:
                 burst_freq[int(burstcore[2]):int(burstcore[3])]+=1       
@@ -274,11 +280,10 @@ def network_burst_detection(wells, parameters, plot_electrodes=False, save_figur
 
         # Save the network burst data to a file
         if savedata:
-            path = f"{(parameters['output path'])}/network_data"
-            np.savetxt(f'{path}/well_{well}_network_bursts.csv', total_network_burst, delimiter = ",")
-            np.save(f'{path}/well_{well}_network_bursts', total_network_burst)
-            np.savetxt(f'{path}/well_{well}_participating_bursts.csv', participating_bursts, delimiter = ",")
-            np.save(f'{path}/well_{well}_participating_bursts', participating_bursts)
+            with h5py.File(output_hdf_file, 'a') as f:
+                f.create_dataset(f'network_values/well_{well}_network_bursts', data=total_network_burst)
+                f.create_dataset(f'network_values/well_{well}_participating_bursts', data=participating_bursts)
+
     if save_figures:
         # Save the figure
         path=f"{(parameters['output path'])}/figures/well_{well}"

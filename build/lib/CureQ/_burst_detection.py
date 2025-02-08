@@ -3,6 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.figure import Figure
+import h5py
 
 def burst_detection(data, electrode, parameters, plot_electrodes= False, savedata=True):
     """
@@ -46,10 +47,17 @@ def burst_detection(data, electrode, parameters, plot_electrodes= False, savedat
     well = round(electrode_number / parameters['electrode amount'] + 0.505)
     electrode = electrode_number % parameters['electrode amount'] + 1
 
-    # Get the correct foldername to read and store values
-    path = f"{(parameters['output path'])}/spike_values"
-    # Load in the spikedata
-    spikedata=np.load(f'{path}/well_{well}_electrode_{electrode}_spikes.npy')
+    # Retrieve spike data from hdf5 files
+    output_hdf_file=parameters['output hdf file']
+
+    while True:
+        try:
+            with h5py.File(output_hdf_file, "r") as f:
+                dataset=f[f"spike_values/well_{well}_electrode_{electrode}_spikes"]
+                spikedata=dataset[:]
+            break
+        except:
+            continue
 
     # Calculate the inter-spike intervals
     ISI=[]
@@ -371,10 +379,16 @@ def burst_detection(data, electrode, parameters, plot_electrodes= False, savedat
 
     # Save the spike data to a .csv file
     if savedata:
-        path = f"{(parameters['output path'])}/burst_values"
-        np.savetxt(f'{path}/well_{well}_electrode_{electrode}_burst_spikes.csv', burst_spikes, delimiter = ",")
-        np.save(f'{path}/well_{well}_electrode_{electrode}_burst_spikes', burst_spikes)
-        np.savetxt(f'{path}/well_{well}_electrode_{electrode}_burst_cores.csv', burst_cores, delimiter = ",")
-        np.save(f'{path}/well_{well}_electrode_{electrode}_burst_cores', burst_cores)
+        # Save to hdf5 files
+        output_hdf_file=parameters['output hdf file']
+
+        while True:
+            try:
+                with h5py.File(output_hdf_file, 'a') as f:
+                    f.create_dataset(f'burst_values/well_{well}_electrode_{electrode}_burst_spikes', data=burst_spikes)
+                    f.create_dataset(f'burst_values/well_{well}_electrode_{electrode}_burst_cores', data=burst_cores)
+                break
+            except:
+                continue
         
     return fig, fig2

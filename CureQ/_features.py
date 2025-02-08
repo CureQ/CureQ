@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import h5py
 from statsmodels.tsa.stattools import pacf
 
 def electrode_features(well, parameters):
@@ -26,11 +27,6 @@ def electrode_features(well, parameters):
     intraBFR, interBFR, mean_spikes_per_burst, isolated_spikes, MAD_spikes_per_burst = [], [], [], [], []
     SCB_rate, IBIPACF, mean_spike_amplitude, median_spike_amplitude, cv_spike_amplitude = [], [], [], [], []
     
-
-    spikepath=f"{(parameters['output path'])}/spike_values"
-    burstpath=f"{(parameters['output path'])}/burst_values"
-    networkpath=f"{(parameters['output path'])}/network_data"
-    
     electrodes=np.arange((well-1)*parameters['electrode amount'], well*parameters['electrode amount'])
 
     # Loop through all the measured electrodes
@@ -44,9 +40,15 @@ def electrode_features(well, parameters):
         electrodes_df.append(electrode_nr)
         
         # Load in the files
-        spikedata=np.load(f'{spikepath}/well_{well_nr}_electrode_{electrode_nr}_spikes.npy')
-        burst_cores=np.load(f'{burstpath}/well_{well_nr}_electrode_{electrode_nr}_burst_cores.npy')
-        burst_spikes=np.load(f'{burstpath}/well_{well_nr}_electrode_{electrode_nr}_burst_spikes.npy')
+        output_hdf_file=parameters['output hdf file']
+
+        with h5py.File(output_hdf_file, 'r') as f:
+            spikedata=f[f"spike_values/well_{well_nr}_electrode_{electrode_nr}_spikes"]
+            spikedata=spikedata[:]
+            burst_cores=f[f"burst_values/well_{well_nr}_electrode_{electrode_nr}_burst_cores"]
+            burst_cores=burst_cores[:]
+            burst_spikes=f[f"burst_values/well_{well_nr}_electrode_{electrode_nr}_burst_spikes"]
+            burst_spikes=burst_spikes[:]
 
         '''
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -290,25 +292,33 @@ def well_features(well, parameters):
     
     """
     
-    spikepath=f"{(parameters['output path'])}/spike_values"
-    burstpath=f"{(parameters['output path'])}/burst_values"
-    networkpath=f"{(parameters['output path'])}/network_data"
+    output_hdf_file=parameters['output hdf file']
 
     # Load in the network burst data
-    network_cores=np.load(f"{networkpath}/well_{well}_network_bursts.npy")
-    participating_bursts=np.load(f"{networkpath}/well_{well}_participating_bursts.npy")
+    with h5py.File(output_hdf_file, 'r') as f:
+        network_cores=f[f"network_values/well_{well}_network_bursts"]
+        network_cores=network_cores[:]
+        participating_bursts=f[f"network_values/well_{well}_participating_bursts"]
+        participating_bursts=participating_bursts[:]
 
     # Load in data from electrodes from this well
     spikedata_list=[]
     burstcores_list=[]
     burstspikes_list=[]
+
     electrodes=np.arange(1, parameters['electrode amount']+1)
+
     for electrode in electrodes:
-        spikedata=np.load(f'{spikepath}/well_{well}_electrode_{electrode}_spikes.npy')
+        with h5py.File(output_hdf_file, 'r') as f:
+            spikedata=f[f"spike_values/well_{well}_electrode_{electrode}_spikes"]
+            spikedata=spikedata[:]
+            burst_cores=f[f"burst_values/well_{well}_electrode_{electrode}_burst_cores"]
+            burst_cores=burst_cores[:]
+            burst_spikes=f[f"burst_values/well_{well}_electrode_{electrode}_burst_spikes"]
+            burst_spikes=burst_spikes[:]
+            
         spikedata_list.append(spikedata)
-        burst_cores=np.load(f'{burstpath}/well_{well}_electrode_{electrode}_burst_cores.npy')
         burstcores_list.append(burst_cores)
-        burst_spikes=np.load(f'{burstpath}/well_{well}_electrode_{electrode}_burst_spikes.npy')
         burstspikes_list.append(burst_spikes)
     
     network_bursts, network_burst_duration, network_burst_core_duration, network_IBI, NB_NBc_ratio, NB_firingrate, NB_ISI, mean_spikes_per_network_burst = [], [], [], [], [], [], [], []

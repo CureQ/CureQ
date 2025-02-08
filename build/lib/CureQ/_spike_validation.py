@@ -2,6 +2,7 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.patches import Rectangle
 import copy
+import h5py
 
 
 def spike_validation(data, electrode, threshold, parameters, plot_electrodes=False, savedata=True, plot_rectangles=False):
@@ -202,16 +203,25 @@ def spike_validation(data, electrode, threshold, parameters, plot_electrodes=Fal
     
     # Save the spike data to a .csv file
     if savedata:
-        path = f"{(parameters['output path'])}/spike_values"
+        # Prepare data for saving
         spike_x_values = time_seconds[spikes]   # Timestamps of spikes
         spike_y_values = data[spikes]           # Amplitudes of spikes
-        spike_indexes=np.arange(data.shape[0])  # Indexes of spikes
-        spike_indexes=spike_indexes[spikes]
-        # Combine in a signle array
+        spike_indexes=np.arange(data.shape[0])  
+        spike_indexes=spike_indexes[spikes]     # Indexes of spikes
+
+        # Combine in a single array
         spike_output = np.column_stack((spike_x_values, spike_y_values, spike_indexes))
-        # Save in both .csv and .npy format
-        np.savetxt(f"{path}/well_{well}_electrode_{electrode}_spikes.csv", spike_output, delimiter = ",")
-        np.save(f"{path}/well_{well}_electrode_{electrode}_spikes", spike_output)
+
+        # Save to hdf5 file
+        output_hdf_file=parameters['output hdf file']
+
+        while True:
+            try:
+                with h5py.File(output_hdf_file, 'a') as f:
+                    f.create_dataset(f"spike_values/well_{well}_electrode_{electrode}_spikes", data=spike_output)
+                break
+            except:
+                continue
     
     # Return the figure
     return fig

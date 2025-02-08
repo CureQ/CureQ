@@ -69,6 +69,7 @@ def get_default_parameters():
         'activity threshold' : 0.1,
         'use multiprocessing' : False
     }
+
     return parameters
 
 def _electrode_subprocess(memory_id, shape, _type, electrode, parameters):
@@ -168,7 +169,7 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
     analysis_time=time.time()
 
     lib_version=version('CureQ')
-    print(f"CureQ MEA Library - Version: {lib_version}")
+    print(f"MEA Analysis Tool - Version: {lib_version}")
     print(f"Analyzing: {fileadress}")
     
     path_obj = Path(fileadress)
@@ -178,12 +179,10 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
     output_folder=path_obj.stem
     output_folder+="_output"
     output_folder+=f"_{date.today()}"
-    output_folder+=f"_{datetime.now().strftime('%H-%M-%S')}"
+    output_folder+=f"_{datetime.now().strftime('%H_%M_%S')}"
 
     outputpath=os.path.join(parent_dir, output_folder)
     os.makedirs(outputpath)
-
-    print(f"{outputpath}/{output_folder}_Features.csv")
 
     # Create a file to commmunicate the progress with the GUI
     progressfile=f'{os.path.split(fileadress)[0]}/progress.npy'
@@ -218,22 +217,23 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
             np.save(progressfile, ['rechunking'])
             fileadress=rechunk_dataset(fileadress=fileadress, compression_method='lzf')
 
-    # Create different folders for the output
-    os.makedirs(f"{outputpath}/burst_values")
-    os.makedirs(f"{outputpath}/spike_values")
-    os.makedirs(f"{outputpath}/network_data")
+    # Create figures folder for output
     os.makedirs(f"{outputpath}/figures")
     
-    wells=list(range(1,int(datashape[0]/electrode_amnt)+1))
+    # Create hdf5 file for output
+    output_hdf_file=f"{outputpath}/output_values.h5"
+    with h5py.File(output_hdf_file, 'w') as f:
+        f.create_group("spike_values")
+        f.create_group("burst_values")
+        f.create_group("network_values")
 
-    # Flag for if it is the first iteration
-    first_iteration=True
-
+    # Load default parameters if none were given
     if parameters=={}:
         parameters=get_default_parameters()
         
     # Save the parameters that have been given in a JSON file 
     new_values={'output path' : outputpath,
+                'output hdf file' : output_hdf_file,
                 'file adress' : fileadress,
                 'sampling rate' : sampling_rate,
                 'electrode amount' : electrode_amnt,
@@ -243,6 +243,12 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
 
     with open(f"{outputpath}/parameters.json", 'w') as outfile:
         json.dump(parameters, outfile, indent=4)
+
+    # Create a list of all wells
+    wells=list(range(1,int(datashape[0]/electrode_amnt)+1))
+
+    # Flag for the first iteration
+    first_iteration=True
 
     # With multiprocessing
     if parameters['use multiprocessing']:
@@ -265,6 +271,7 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
         memory_id=sharedmemory.name
         # Clear up memory
         data=None
+
 
         # Start up a process for every single electrode
         print("Initializing processes")
@@ -325,9 +332,11 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
                 
                 # Communicate progression with GUI
                 np.save(progressfile, [(well)*electrode_amnt, datashape[0]])
+
         # Clean up the shared memory
         sharedmemory.close()
         sharedmemory.unlink()
+
     # Without multiprocessing
     else:  
         for well in wells:
@@ -356,7 +365,7 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
                 else:
                     raise ValueError(f"\"{parameters['spike validation method']}\" is not a valid spike validation method")
                 spike_validation(data, electrode, threshold_value, parameters)
-                
+
                 # Detect the bursts
                 burst_detection(data, electrode, parameters)
                 

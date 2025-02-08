@@ -142,6 +142,7 @@
         <span class="s1">&#39;activity threshold&#39;</span> <span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span>
         <span class="s1">&#39;use multiprocessing&#39;</span> <span class="p">:</span> <span class="kc">False</span>
     <span class="p">}</span>
+
     <span class="k">return</span> <span class="n">parameters</span></div>
 
 
@@ -247,7 +248,7 @@
     <span class="n">analysis_time</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
 
     <span class="n">lib_version</span><span class="o">=</span><span class="n">version</span><span class="p">(</span><span class="s1">&#39;CureQ&#39;</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CureQ MEA Library - Version: </span><span class="si">{</span><span class="n">lib_version</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MEA Analysis Tool - Version: </span><span class="si">{</span><span class="n">lib_version</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analyzing: </span><span class="si">{</span><span class="n">fileadress</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
     
     <span class="n">path_obj</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">fileadress</span><span class="p">)</span>
@@ -257,12 +258,10 @@
     <span class="n">output_folder</span><span class="o">=</span><span class="n">path_obj</span><span class="o">.</span><span class="n">stem</span>
     <span class="n">output_folder</span><span class="o">+=</span><span class="s2">&quot;_output&quot;</span>
     <span class="n">output_folder</span><span class="o">+=</span><span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="n">output_folder</span><span class="o">+=</span><span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%H-%M-%S&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+    <span class="n">output_folder</span><span class="o">+=</span><span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s1">&#39;%H_%M_%S&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
     <span class="n">outputpath</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parent_dir</span><span class="p">,</span> <span class="n">output_folder</span><span class="p">)</span>
     <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">outputpath</span><span class="p">)</span>
-
-    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">output_folder</span><span class="si">}</span><span class="s2">_Features.csv&quot;</span><span class="p">)</span>
 
     <span class="c1"># Create a file to commmunicate the progress with the GUI</span>
     <span class="n">progressfile</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">fileadress</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">/progress.npy&#39;</span>
@@ -297,22 +296,23 @@
             <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">progressfile</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;rechunking&#39;</span><span class="p">])</span>
             <span class="n">fileadress</span><span class="o">=</span><span class="n">rechunk_dataset</span><span class="p">(</span><span class="n">fileadress</span><span class="o">=</span><span class="n">fileadress</span><span class="p">,</span> <span class="n">compression_method</span><span class="o">=</span><span class="s1">&#39;lzf&#39;</span><span class="p">)</span>
 
-    <span class="c1"># Create different folders for the output</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s2">/burst_values&quot;</span><span class="p">)</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s2">/spike_values&quot;</span><span class="p">)</span>
-    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s2">/network_data&quot;</span><span class="p">)</span>
+    <span class="c1"># Create figures folder for output</span>
     <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s2">/figures&quot;</span><span class="p">)</span>
     
-    <span class="n">wells</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="n">datashape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">electrode_amnt</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+    <span class="c1"># Create hdf5 file for output</span>
+    <span class="n">output_hdf_file</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s2">/output_values.h5&quot;</span>
+    <span class="k">with</span> <span class="n">h5py</span><span class="o">.</span><span class="n">File</span><span class="p">(</span><span class="n">output_hdf_file</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">&quot;spike_values&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">&quot;burst_values&quot;</span><span class="p">)</span>
+        <span class="n">f</span><span class="o">.</span><span class="n">create_group</span><span class="p">(</span><span class="s2">&quot;network_values&quot;</span><span class="p">)</span>
 
-    <span class="c1"># Flag for if it is the first iteration</span>
-    <span class="n">first_iteration</span><span class="o">=</span><span class="kc">True</span>
-
+    <span class="c1"># Load default parameters if none were given</span>
     <span class="k">if</span> <span class="n">parameters</span><span class="o">==</span><span class="p">{}:</span>
         <span class="n">parameters</span><span class="o">=</span><span class="n">get_default_parameters</span><span class="p">()</span>
         
     <span class="c1"># Save the parameters that have been given in a JSON file </span>
     <span class="n">new_values</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;output path&#39;</span> <span class="p">:</span> <span class="n">outputpath</span><span class="p">,</span>
+                <span class="s1">&#39;output hdf file&#39;</span> <span class="p">:</span> <span class="n">output_hdf_file</span><span class="p">,</span>
                 <span class="s1">&#39;file adress&#39;</span> <span class="p">:</span> <span class="n">fileadress</span><span class="p">,</span>
                 <span class="s1">&#39;sampling rate&#39;</span> <span class="p">:</span> <span class="n">sampling_rate</span><span class="p">,</span>
                 <span class="s1">&#39;electrode amount&#39;</span> <span class="p">:</span> <span class="n">electrode_amnt</span><span class="p">,</span>
@@ -322,6 +322,12 @@
 
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s2">/parameters.json&quot;</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">outfile</span><span class="p">:</span>
         <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">parameters</span><span class="p">,</span> <span class="n">outfile</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+
+    <span class="c1"># Create a list of all wells</span>
+    <span class="n">wells</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="nb">int</span><span class="p">(</span><span class="n">datashape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="n">electrode_amnt</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="c1"># Flag for the first iteration</span>
+    <span class="n">first_iteration</span><span class="o">=</span><span class="kc">True</span>
 
     <span class="c1"># With multiprocessing</span>
     <span class="k">if</span> <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;use multiprocessing&#39;</span><span class="p">]:</span>
@@ -344,6 +350,7 @@
         <span class="n">memory_id</span><span class="o">=</span><span class="n">sharedmemory</span><span class="o">.</span><span class="n">name</span>
         <span class="c1"># Clear up memory</span>
         <span class="n">data</span><span class="o">=</span><span class="kc">None</span>
+
 
         <span class="c1"># Start up a process for every single electrode</span>
         <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Initializing processes&quot;</span><span class="p">)</span>
@@ -371,17 +378,19 @@
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Calculated network bursts well: </span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
                 <span class="c1"># Calculate electrode and well features</span>
-                <span class="n">features_df</span><span class="o">=</span><span class="n">electrode_features</span><span class="p">(</span><span class="n">well</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+                <span class="n">electrode_features_df</span><span class="o">=</span><span class="n">electrode_features</span><span class="p">(</span><span class="n">well</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
                 <span class="n">well_features_df</span><span class="o">=</span><span class="n">well_features</span><span class="p">(</span><span class="n">well</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Calculated features well: </span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
                 <span class="c1"># If its the first iteration, create the dataframe</span>
                 <span class="k">if</span> <span class="n">first_iteration</span><span class="p">:</span>
                     <span class="n">first_iteration</span><span class="o">=</span><span class="kc">False</span>
-                    <span class="n">output</span><span class="o">=</span><span class="n">feature_output</span><span class="p">(</span><span class="n">features_df</span><span class="p">,</span> <span class="n">well_features_df</span><span class="p">)</span>
+                    <span class="n">electrode_features_output</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">electrode_features_df</span><span class="p">)</span>
+                    <span class="n">output</span><span class="o">=</span><span class="n">feature_output</span><span class="p">(</span><span class="n">electrode_features_df</span><span class="p">,</span> <span class="n">well_features_df</span><span class="p">)</span>
                 <span class="c1"># If its not the first iteration, keep appending to the dataframe</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">output</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">output</span><span class="p">,</span> <span class="n">feature_output</span><span class="p">(</span><span class="n">features_df</span><span class="p">,</span> <span class="n">well_features_df</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                    <span class="n">electrode_features_output</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">electrode_features_output</span><span class="p">,</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">electrode_features_df</span><span class="p">)],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                    <span class="n">output</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">output</span><span class="p">,</span> <span class="n">feature_output</span><span class="p">(</span><span class="n">electrode_features_df</span><span class="p">,</span> <span class="n">well_features_df</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
                 <span class="n">end</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
                 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;It took </span><span class="si">{</span><span class="n">end</span><span class="o">-</span><span class="n">start</span><span class="si">}</span><span class="s2"> seconds to analyse well: </span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
@@ -402,9 +411,11 @@
                 
                 <span class="c1"># Communicate progression with GUI</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">progressfile</span><span class="p">,</span> <span class="p">[(</span><span class="n">well</span><span class="p">)</span><span class="o">*</span><span class="n">electrode_amnt</span><span class="p">,</span> <span class="n">datashape</span><span class="p">[</span><span class="mi">0</span><span class="p">]])</span>
+
         <span class="c1"># Clean up the shared memory</span>
         <span class="n">sharedmemory</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
         <span class="n">sharedmemory</span><span class="o">.</span><span class="n">unlink</span><span class="p">()</span>
+
     <span class="c1"># Without multiprocessing</span>
     <span class="k">else</span><span class="p">:</span>  
         <span class="k">for</span> <span class="n">well</span> <span class="ow">in</span> <span class="n">wells</span><span class="p">:</span>
@@ -433,7 +444,7 @@
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\&quot;</span><span class="si">{</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;spike validation method&#39;</span><span class="p">]</span><span class="si">}</span><span class="se">\&quot;</span><span class="s2"> is not a valid spike validation method&quot;</span><span class="p">)</span>
                 <span class="n">spike_validation</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">electrode</span><span class="p">,</span> <span class="n">threshold_value</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
-                
+
                 <span class="c1"># Detect the bursts</span>
                 <span class="n">burst_detection</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">electrode</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
                 
@@ -457,17 +468,19 @@
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Calculated network bursts well: </span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="c1"># Calculate electrode and well features</span>
-            <span class="n">features_df</span><span class="o">=</span><span class="n">electrode_features</span><span class="p">(</span><span class="n">well</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
+            <span class="n">electrode_features_df</span><span class="o">=</span><span class="n">electrode_features</span><span class="p">(</span><span class="n">well</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
             <span class="n">well_features_df</span><span class="o">=</span><span class="n">well_features</span><span class="p">(</span><span class="n">well</span><span class="p">,</span> <span class="n">parameters</span><span class="p">)</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Calculated features well: </span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
             <span class="c1"># If its the first iteration, create the dataframe</span>
             <span class="k">if</span> <span class="n">first_iteration</span><span class="p">:</span>
                 <span class="n">first_iteration</span><span class="o">=</span><span class="kc">False</span>
-                <span class="n">output</span><span class="o">=</span><span class="n">feature_output</span><span class="p">(</span><span class="n">features_df</span><span class="p">,</span> <span class="n">well_features_df</span><span class="p">)</span>
+                <span class="n">electrode_features_output</span><span class="o">=</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">electrode_features_df</span><span class="p">)</span>
+                <span class="n">output</span><span class="o">=</span><span class="n">feature_output</span><span class="p">(</span><span class="n">electrode_features_df</span><span class="p">,</span> <span class="n">well_features_df</span><span class="p">)</span>
             <span class="c1"># If its not the first iteration, keep appending to the dataframe</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">output</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">output</span><span class="p">,</span> <span class="n">feature_output</span><span class="p">(</span><span class="n">features_df</span><span class="p">,</span> <span class="n">well_features_df</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">electrode_features_output</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">electrode_features_output</span><span class="p">,</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">electrode_features_df</span><span class="p">)],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">output</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">output</span><span class="p">,</span> <span class="n">feature_output</span><span class="p">(</span><span class="n">electrode_features_df</span><span class="p">,</span> <span class="n">well_features_df</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="n">end</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
             <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;It took </span><span class="si">{</span><span class="n">end</span><span class="o">-</span><span class="n">start</span><span class="si">}</span><span class="s2"> seconds to analyse well: </span><span class="si">{</span><span class="n">well</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         
@@ -478,6 +491,7 @@
 
     <span class="c1"># Save the output</span>
     <span class="n">output</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">output_folder</span><span class="si">}</span><span class="s2">_Features.csv&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">electrode_features_output</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">outputpath</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">output_folder</span><span class="si">}</span><span class="s2">_Electrode_Features.csv&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     
     <span class="c1"># Close the analysis</span>
     <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">progressfile</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;done&#39;</span><span class="p">])</span>

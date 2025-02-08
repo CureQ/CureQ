@@ -83,6 +83,8 @@
 <span class="kn">from</span> <span class="nn">tkinter</span> <span class="kn">import</span> <span class="n">ttk</span>
 <span class="kn">from</span> <span class="nn">tkinter</span> <span class="kn">import</span> <span class="n">filedialog</span>
 <span class="kn">from</span> <span class="nn">importlib.metadata</span> <span class="kn">import</span> <span class="n">version</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
 <span class="kn">import</span> <span class="nn">traceback</span>
 
 <span class="c1"># External libraries</span>
@@ -160,7 +162,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span> <span class="o">=</span> <span class="n">get_default_parameters</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">default_parameters</span> <span class="o">=</span> <span class="n">get_default_parameters</span><span class="p">()</span>
 
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Successfully launched MEA GUI&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Successfully launched MEA Analysis Tool&quot;</span><span class="p">)</span>
 
     <span class="c1"># Handle frame switching</span>
 <div class="viewcode-block" id="MainApp.show_frame">
@@ -287,7 +289,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">=</span><span class="n">parent</span>
 
-        <span class="n">parent</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CureQ MEA analysis tool - Version: </span><span class="si">{</span><span class="n">version</span><span class="p">(</span><span class="s1">&#39;CureQ&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">parent</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MEA Analysis Tool - Version: </span><span class="si">{</span><span class="n">version</span><span class="p">(</span><span class="s1">&#39;CureQ&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="c1"># Weights</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">grid_columnconfigure</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
@@ -310,6 +312,15 @@
 
         <span class="n">github_button</span><span class="o">=</span><span class="n">ctk</span><span class="o">.</span><span class="n">CTkButton</span><span class="p">(</span><span class="n">master</span><span class="o">=</span><span class="n">sidebarframe</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;GitHub&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">webbrowser</span><span class="o">.</span><span class="n">open_new</span><span class="p">(</span><span class="s2">&quot;https://github.com/CureQ&quot;</span><span class="p">))</span>
         <span class="n">github_button</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s1">&#39;nesw&#39;</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">padx</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+        <span class="c1"># Check for updates</span>
+        <span class="n">installed_version</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_installed_version</span><span class="p">()</span>
+        <span class="n">latest_version</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_latest_version</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">installed_version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">latest_version</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">latest_version</span> <span class="o">!=</span> <span class="n">installed_version</span><span class="p">:</span>
+                <span class="n">update_button</span><span class="o">=</span><span class="n">ctk</span><span class="o">.</span><span class="n">CTkButton</span><span class="p">(</span><span class="n">master</span><span class="o">=</span><span class="n">sidebarframe</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="s2">&quot;A new version is available!</span><span class="se">\n</span><span class="s2">Click here to install it.&quot;</span><span class="p">,</span> <span class="n">command</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">update_package</span><span class="p">,</span> <span class="n">fg_color</span><span class="o">=</span><span class="s2">&quot;#1d5200&quot;</span><span class="p">,</span> <span class="n">hover_color</span><span class="o">=</span><span class="s2">&quot;#0f2b00&quot;</span><span class="p">)</span>
+                <span class="n">update_button</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">row</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s1">&#39;nesw&#39;</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">padx</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 
         <span class="c1"># Main button frame</span>
         <span class="n">main_buttons_frame</span><span class="o">=</span><span class="n">ctk</span><span class="o">.</span><span class="n">CTkFrame</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
@@ -347,6 +358,39 @@
 
         <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
             <span class="n">util_plot_button_frame</span><span class="o">.</span><span class="n">grid_rowconfigure</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<div class="viewcode-block" id="main_window.get_installed_version">
+<a class="viewcode-back" href="../../CureQ.html#CureQ.mea_analysis_tool.main_window.get_installed_version">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_installed_version</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">version</span><span class="p">(</span><span class="s2">&quot;CureQ&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">importlib</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">PackageNotFoundError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="main_window.get_latest_version">
+<a class="viewcode-back" href="../../CureQ.html#CureQ.mea_analysis_tool.main_window.get_latest_version">[docs]</a>
+    <span class="k">def</span> <span class="nf">get_latest_version</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https://pypi.org/pypi/CureQ/json&quot;</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;info&quot;</span><span class="p">][</span><span class="s2">&quot;version&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+<div class="viewcode-block" id="main_window.update_package">
+<a class="viewcode-back" href="../../CureQ.html#CureQ.mea_analysis_tool.main_window.update_package">[docs]</a>
+    <span class="k">def</span> <span class="nf">update_package</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">latest_version</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_latest_version</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_installed_version</span><span class="p">()</span> <span class="o">!=</span> <span class="n">latest_version</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">subprocess</span><span class="o">.</span><span class="n">check_call</span><span class="p">([</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="s2">&quot;-m&quot;</span><span class="p">,</span> <span class="s2">&quot;pip&quot;</span><span class="p">,</span> <span class="s2">&quot;install&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;CureQ==</span><span class="si">{</span><span class="n">latest_version</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">])</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successfully installed CureQ version </span><span class="si">{</span><span class="n">latest_version</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                <span class="n">CTkMessagebox</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Successfully installed CureQ version </span><span class="si">{</span><span class="n">latest_version</span><span class="si">}</span><span class="s2">. Please restart the application for the changes to take effect.&quot;</span><span class="p">,</span> <span class="n">icon</span><span class="o">=</span><span class="s2">&quot;check&quot;</span><span class="p">,</span> <span class="n">option_1</span><span class="o">=</span><span class="s2">&quot;Ok&quot;</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Updated Package&quot;</span><span class="p">,</span> <span class="n">wraplength</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to install CureQ version </span><span class="si">{</span><span class="n">latest_version</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+                <span class="n">traceback</span><span class="o">.</span><span class="n">print_exc</span><span class="p">()</span>
+                <span class="n">CTkMessagebox</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Error&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;Failed to install CureQ version </span><span class="si">{</span><span class="n">latest_version</span><span class="si">}</span><span class="s2">:</span><span class="se">\n</span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">icon</span><span class="o">=</span><span class="s2">&quot;cancel&quot;</span><span class="p">,</span> <span class="n">wraplength</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="main_window.colorpicker">
@@ -796,10 +840,6 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">folder_path</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">data_path</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
             <span class="n">CTkMessagebox</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Error&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Please select an output folder and raw datafile&#39;</span><span class="p">,</span> <span class="n">icon</span><span class="o">=</span><span class="s2">&quot;cancel&quot;</span><span class="p">,</span> <span class="n">wraplength</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
             <span class="k">return</span>
-        <span class="c1"># Check for subfolders</span>
-        <span class="k">if</span> <span class="ow">not</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">folder_path</span><span class="si">}</span><span class="s2">/burst_values&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">folder_path</span><span class="si">}</span><span class="s2">/spike_values&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">folder_path</span><span class="si">}</span><span class="s2">/network_data&quot;</span><span class="p">)):</span>
-            <span class="n">CTkMessagebox</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s2">&quot;Error&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Could not load in the results, please make sure you have selected the correct folder&#39;</span><span class="p">,</span> <span class="n">icon</span><span class="o">=</span><span class="s2">&quot;cancel&quot;</span><span class="p">,</span> <span class="n">wraplength</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
-            <span class="k">return</span>
         
         <span class="c1"># Check for parameters json</span>
         <span class="k">try</span><span class="p">:</span>
@@ -838,7 +878,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">rawfile</span><span class="o">=</span><span class="n">rawfile</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">=</span><span class="n">parent</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;CureQ MEA analysis tool - Version: </span><span class="si">{</span><span class="n">version</span><span class="p">(</span><span class="s1">&#39;CureQ&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MEA Analysis Tool - Version: </span><span class="si">{</span><span class="n">version</span><span class="p">(</span><span class="s1">&#39;CureQ&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">tab_frame</span><span class="o">=</span><span class="n">ctk</span><span class="o">.</span><span class="n">CTkTabview</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">anchor</span><span class="o">=</span><span class="s1">&#39;nw&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">tab_frame</span><span class="o">.</span><span class="n">grid</span><span class="p">(</span><span class="n">column</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">row</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sticky</span><span class="o">=</span><span class="s1">&#39;nesw&#39;</span><span class="p">,</span> <span class="n">pady</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">padx</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
@@ -1508,7 +1548,7 @@
 <div class="viewcode-block" id="whole_well_view.plot_well_activity">
 <a class="viewcode-back" href="../../CureQ.html#CureQ.mea_analysis_tool.whole_well_view.plot_well_activity">[docs]</a>
     <span class="k">def</span> <span class="nf">plot_well_activity</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="n">fig</span><span class="o">=</span><span class="n">well_electrodes_kde</span><span class="p">(</span><span class="n">outputpath</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="p">,</span> <span class="n">well</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">well</span><span class="p">,</span> <span class="n">electrode_amnt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;electrode amount&quot;</span><span class="p">],</span> <span class="n">measurements</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;measurements&quot;</span><span class="p">],</span> <span class="n">hertz</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;sampling rate&quot;</span><span class="p">],</span> <span class="n">bandwidth</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">el_act_bw_entry</span><span class="o">.</span><span class="n">get</span><span class="p">()))</span>
+        <span class="n">fig</span><span class="o">=</span><span class="n">well_electrodes_kde</span><span class="p">(</span><span class="n">outputpath</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="p">,</span> <span class="n">well</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">well</span><span class="p">,</span> <span class="n">parameters</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">,</span> <span class="n">bandwidth</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">el_act_bw_entry</span><span class="o">.</span><span class="n">get</span><span class="p">()))</span>
         
         <span class="c1"># Check which colorscheme we have to use</span>
         <span class="n">axiscolour</span><span class="o">=</span><span class="s2">&quot;#586d97&quot;</span>
@@ -2597,7 +2637,7 @@
 <a class="viewcode-back" href="../../CureQ.html#CureQ.mea_analysis_tool.MEA_GUI">[docs]</a>
 <span class="k">def</span> <span class="nf">MEA_GUI</span><span class="p">():</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Launches the graphical user interface (GUI) of the CureQ MEA analysis tool.</span>
+<span class="sd">    Launches the graphical user interface (GUI) of the MEA Analysis Tool.</span>
 
 <span class="sd">    Always launch the function with an &quot;if __name__ == &#39;__main__&#39;:&quot; guard as follows:</span>
 <span class="sd">        if __name__ == &quot;__main__&quot;:</span>
