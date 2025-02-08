@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 # Setup metadata for initializing the library
 setuptools.setup(
     name="CureQ",
-    version="1.2.8",
+    version="1.2.9",
     author="CureQ",
     author_email="cureq-ft@hva.nl",
     description="Library for analyzing MEA files.",
@@ -32,7 +32,8 @@ setuptools.setup(
         "CTkMessagebox>=2.7",   # ctk messagebox widget
         "CTkColorPicker>=0.9.0",# ctk colorpicker widget
         "winshell>=0.6",
-        "pywin32>=308"
+        "pywin32>=308",
+        'requests>=2.32.3'
     ],
     classifiers=[
         "Programming Language :: Python :: 3",

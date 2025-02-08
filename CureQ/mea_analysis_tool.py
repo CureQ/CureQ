@@ -12,7 +12,6 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 from importlib.metadata import version
-import requests
 import subprocess
 import traceback
 
@@ -25,6 +24,7 @@ import customtkinter as ctk
 from CTkToolTip import *
 from CTkMessagebox import CTkMessagebox
 from CTkColorPicker import *
+import requests
 
 # Import the MEA library
 try:
