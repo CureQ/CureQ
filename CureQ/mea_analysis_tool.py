@@ -228,7 +228,7 @@ class main_window(ctk.CTkFrame):
 
         if installed_version is not None and latest_version is not None:
             if latest_version != installed_version:
-                update_button=ctk.CTkButton(master=sidebarframe, text="A new version is available!\nClick here to install it.", command=self.update_package, fg_color="#1d5200", hover_color="#0f2b00")
+                update_button=ctk.CTkButton(master=sidebarframe, text="A new version is available!\n Close the application and run\n\"pip install CureQ --upgrade\"\nto install it.", fg_color="#1d5200", hover_color="#0f2b00")
                 update_button.grid(row=4, column=0, sticky='nesw', pady=10, padx=10)
 
         # Main button frame
@@ -280,18 +280,6 @@ class main_window(ctk.CTkFrame):
         if response.status_code == 200:
             return response.json()["info"]["version"]
         return None
-
-    def update_package(self):
-        latest_version = self.get_latest_version()
-        if self.get_installed_version() != latest_version:
-            try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", f"CureQ=={latest_version}"])
-                print(f"Successfully installed CureQ version {latest_version}.")
-                CTkMessagebox(message=f"Successfully installed CureQ version {latest_version}. Please restart the application for the changes to take effect.", icon="check", option_1="Ok", title="Updated Package", wraplength=400)
-            except Exception as error:
-                print(f"Failed to install CureQ version {latest_version}.")
-                traceback.print_exc()
-                CTkMessagebox(title="Error", message=f"Failed to install CureQ version {latest_version}:\n{error}", icon="cancel", wraplength=400)
 
     def colorpicker(self):
         popup=ctk.CTkToplevel(self)
