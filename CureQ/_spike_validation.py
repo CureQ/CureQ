@@ -194,8 +194,8 @@ def spike_validation(data, electrode, threshold, parameters, plot_electrodes=Fal
 
         # Plot layout
         rawdataplot.title.set_text(f"Well {well} - MEA electrode {electrode} - Threshold: {threshold} - Spikes detected before validation: {np.sum(spikes_before_validation)}, after: {np.sum(spikes)}")
-        rawdataplot.set_xlabel("Time in seconds")
-        rawdataplot.set_ylabel("Micro voltage")
+        rawdataplot.set_xlabel("Time (s)")
+        rawdataplot.set_ylabel("Voltage")
         rawdataplot.set_xlim([time_seconds.min(), time_seconds.max()])
         rawdataplot.set_ylim([np.min(data)*1.5, np.max(data)*1.5])
     else:

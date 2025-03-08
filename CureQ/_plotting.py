@@ -77,7 +77,7 @@ def well_electrodes_kde(outputpath, well, parameters, bandwidth=1):
         ax.set_xlim([0, measurements/hertz])
         axes.append(ax)
     # Plot layout
-    axes[0].set_xlabel("Time in seconds")
+    axes[0].set_xlabel("Time (s)")
     axes[0].set_xlim([0, measurements/hertz])
     axes[-1].set_title(f"Well: {well} activity")
     
@@ -94,7 +94,21 @@ def get_defaultcolors():
     
     """
 
-    default_colors = ['maroon', 'teal', 'limegreen', 'indigo', 'orange', 'tomato', 'violet', 'cyan', 'gray', 'darkviolet', 'slateblue', 'seagreen']
+    default_colors = [
+    "#800000",  # maroon
+    "#008080",  # teal
+    "#32CD32",  # limegreen
+    "#4B0082",  # indigo
+    "#FFA500",  # orange
+    "#FF6347",  # tomato
+    "#EE82EE",  # violet
+    "#00FFFF",  # cyan
+    "#808080",  # gray
+    "#9400D3",  # darkviolet
+    "#6A5ACD",  # slateblue
+    "#2E8B57"   # seagreen
+]
+
     return default_colors
 
 
@@ -356,6 +370,7 @@ def features_over_time(folder, labels, div_prefix, output_fileadress, colors=Non
                 errors_list.append(errors)
                 plt.errorbar(x=range(len(nums)), y=means, yerr=errors, capsize=5, label=key, color=colors[index])
             plt.title(features[i])
+            plt.ylabel(features[i])
             plt.legend()
             plt.xticks(ticks=range(len(nums)), labels=graphlabels, rotation=45, ha="right")
             pdf.savefig()
