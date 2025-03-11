@@ -642,7 +642,7 @@ class parameter_frame(ctk.CTkFrame):
             except Exception as error:
                 traceback.print_exc()
                 CTkMessagebox(title="Error",
-                              message='Certain parameters could not be converted to the correct datatype (e.g. int or float). Please check if every parameter has the correct values',
+                              message=f'Certain parameters could not be converted to the correct datatype (e.g. int or float). Please check if every parameter has the correct values\n\n{error}',
                               icon="cancel",
                               wraplength=400)
         

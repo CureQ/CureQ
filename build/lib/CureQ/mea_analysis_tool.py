@@ -642,7 +642,7 @@ class parameter_frame(ctk.CTkFrame):
             except Exception as error:
                 traceback.print_exc()
                 CTkMessagebox(title="Error",
-                              message='Certain parameters could not be converted to the correct datatype (e.g. int or float). Please check if every parameter has the correct values',
+                              message=f'Certain parameters could not be converted to the correct datatype (e.g. int or float). Please check if every parameter has the correct values\n\n{error}',
                               icon="cancel",
                               wraplength=400)
         
@@ -2264,7 +2264,7 @@ class plotting_window(ctk.CTkFrame):
         self.selected_label=label
 
     def create_label_button(self, label):
-        label_button=ctk.CTkButton(master=self.labels_frame, text=label, command=partial(self.set_selected_label, label), fg_color=self.default_colors[len(self.label_buttons)])
+        label_button=ctk.CTkButton(master=self.labels_frame, text=label, command=partial(self.set_selected_label, label), fg_color=self.default_colors[len(self.label_buttons)], hover_color=self.parent.adjust_color(self.default_colors[len(self.label_buttons)], 0.6))
         label_button.grid(row=len(self.label_buttons), column=0, pady=5, padx=10, sticky='nesw')
         self.label_buttons.append(label_button)
         self.assigned_labels[label]=[]
@@ -2281,7 +2281,7 @@ class plotting_window(ctk.CTkFrame):
             well_button.configure(fg_color=self.parent.theme["CTkButton"]["fg_color"][1])
         for index, key in enumerate(self.assigned_labels.keys()):
             for well in self.assigned_labels[key]:
-                self.well_buttons[well-1].configure(fg_color=self.default_colors[index])
+                self.well_buttons[well-1].configure(fg_color=self.default_colors[index], hover_color=self.parent.adjust_color(self.default_colors[index], 0.6))
 
     def well_button_func(self, button):
         # If the label was already selected, remove the selection

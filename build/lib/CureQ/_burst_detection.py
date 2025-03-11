@@ -355,8 +355,8 @@ def burst_detection(data, electrode, parameters, plot_electrodes= False, savedat
             else:
                 thresholdtext=f"Default burst detection, ISIth1: {ISIth1}"
             rawburstplot.title.set_text(f"Well {well} - MEA electrode {electrode}, bursts detected: {len(burst_cores)}, {thresholdtext}")
-            rawburstplot.set_xlabel("Time in seconds")
-            rawburstplot.set_ylabel("Micro voltage")
+            rawburstplot.set_xlabel("Time (s)")
+            rawburstplot.set_ylabel("Voltage")
             rawburstplot.set_xlim([time_seconds.min(), time_seconds.max()])
             rawburstplot.set_ylim([np.min(data)*1.5, np.max(data)*1.5])
 
@@ -368,8 +368,8 @@ def burst_detection(data, electrode, parameters, plot_electrodes= False, savedat
             fig2=Figure(figsize=(3,1))
             fillerplot2=fig2.add_subplot(111)
             fillerplot2.title.set_text(f"No burst detection possible for well {well}, electrode {electrode} - not enough values")
-            fillerplot2.set_xlabel("Time in seconds")
-            fillerplot2.set_ylabel("Micro voltage")
+            fillerplot2.set_xlabel("Time (s)")
+            fillerplot2.set_ylabel("Voltage")
         else:
             fig=None
             fig2=None

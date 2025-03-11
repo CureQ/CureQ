@@ -342,7 +342,7 @@ def features_over_time(folder, labels, div_prefix, output_fileadress, colors=Non
     for i in range(len(features)):
         # Check if these are the features we want
         if features[i] not in not_features:      
-            fig, ax = plt.subplots(figsize=(8,4.5))
+            fig, ax = plt.subplots(figsize=(12,4.5))
             means_list=[]
             errors_list=[]
             # Loop over all groups
@@ -373,6 +373,7 @@ def features_over_time(folder, labels, div_prefix, output_fileadress, colors=Non
             plt.ylabel(features[i])
             plt.legend()
             plt.xticks(ticks=range(len(nums)), labels=graphlabels, rotation=45, ha="right")
+            plt.tight_layout()
             pdf.savefig()
             plt.close()
     pdf.close()

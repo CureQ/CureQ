@@ -13,6 +13,4 @@ customtkinter>=5.2.2
 CTkToolTip>=0.8
 CTkMessagebox>=2.7
 CTkColorPicker>=0.9.0
-winshell>=0.6
-pywin32>=308
 requests>=2.32.3

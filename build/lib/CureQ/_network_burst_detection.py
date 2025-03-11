@@ -83,7 +83,7 @@ def network_burst_detection(wells, parameters, plot_electrodes=False, save_figur
         ax[0].set_xlim([0,parameters['measurements']/parameters['sampling rate']])
         ax[0].set_ylim([0,parameters['electrode amount']+1])
         ax[0].set_yticks(np.arange(1, parameters['electrode amount']+1, 1))
-        ax[3].set_xlabel("Time in seconds")
+        ax[3].set_xlabel("Time (s)")
         ax[1].set_ylim([0, parameters['electrode amount']+1])
         ax[0].set_ylabel("Electrode")        
         ax[0].set_title(f"Well {well}")       
