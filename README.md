@@ -99,7 +99,7 @@ MEAlytics offers a wide range of parameters that can be used to alter the analys
 
 MEAlytics is capable of using **multiprocessing** to make optimal use of all available resources, speeding up the analysis!
 
-![Spike detection](./Example_visualisations/process.png)
+![](./Example_visualisations/process.PNG)
 
 ### Spike detection
 
@@ -134,7 +134,7 @@ Perform high-throughput analysis using the batch processing module!
 
 MEAlytics calculates over 40 descriptive well and electrode features and saves them in a csv file. These can then be read by other applications such as excel!
 
-![Group comparison](./Example_visualisations/features.png)
+![](./Example_visualisations/features.PNG)
 
 ### Group comparison
 
