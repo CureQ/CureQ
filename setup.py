@@ -21,17 +21,17 @@ setuptools.setup(
         "h5py>=3.9.0",          # For reading the HDF5 file in python
         "pandas>=2.1.4",        # For creating and using a 2D Dataframe
         "scipy>=1.11.4",        # For scientific functions in Python
-        "scikit-learn>=1.3.0",  # For basic Machine Learning modules
         "seaborn>=0.12.2",      # For statistical data visualization
         "statsmodels>=0.14.0",  # For calculating the partial autocorrelation function
         "scikit-image>=0.22.0", # For determining the threshold of the network bursts
         "plotly>=5.14.0",       # For creating an interactive 3D view of a single well
-	    "KDEpy>=1.1.9",		    # For Kernel Density Estimation in Python
+	    "KDEpy>=1.1.9",		    # For fast and efficient Kernel Density Estimation in Python
         "customtkinter>=5.2.2", # Graphical user interface
         "CTkToolTip>=0.8",      # customtkinter tooltip
         "CTkMessagebox>=2.7",   # ctk messagebox widget
         "CTkColorPicker>=0.9.0",# ctk colorpicker widget
-        'requests>=2.32.3'      # Used to get information about newest available version of package
+        'requests>=2.32.3',     # Used to get information about newest available version of package
+        'pyshortcuts>=1.9.5'    # Create desktop shortcuts
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
@@ -39,7 +39,7 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     package_data={
-        "CureQ":['cureq_icon.ico', 'theme.json']
+        "CureQ":['MEAlytics_logo.ico', 'theme.json']
     },
     include_package_data=True,
     py_modules=["main"],

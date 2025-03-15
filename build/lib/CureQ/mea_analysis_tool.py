@@ -42,7 +42,7 @@ class MainApp(ctk.CTk):
         super().__init__()
 
         # Get icon - works for both normal and frozen
-        relative_path="cureq_icon.ico"
+        relative_path="MEAlytics_logo.ico"
         try:
             self.base_path = sys._MEIPASS
         except Exception:
@@ -89,7 +89,7 @@ class MainApp(ctk.CTk):
         self.parameters = get_default_parameters()
         self.default_parameters = get_default_parameters()
 
-        print("Successfully launched MEA Analysis Tool")
+        print("Successfully launched MEAlytics GUI")
 
     # Handle frame switching
     def show_frame(self, frame_class, *args, **kwargs):
@@ -198,7 +198,7 @@ class main_window(ctk.CTkFrame):
 
         self.parent=parent
 
-        parent.title(f"MEA Analysis Tool - Version: {version('CureQ')}")
+        parent.title(f"MEAlytics - Version: {version('CureQ')}")
 
         # Weights
         self.grid_columnconfigure(0, weight=1)
@@ -745,7 +745,7 @@ class view_results(ctk.CTkFrame):
         self.rawfile=rawfile
         self.parent=parent
 
-        self.parent.title(f"MEA Analysis Tool - Version: {version('CureQ')} - {self.folder}")
+        self.parent.title(f"MEAlytics - Version: {version('CureQ')} - {self.folder}")
 
         self.tab_frame=ctk.CTkTabview(self, anchor='nw')
         self.tab_frame.grid(column=0, row=0, sticky='nesw', pady=10, padx=10)
@@ -2342,7 +2342,7 @@ class plotting_window(ctk.CTkFrame):
 
 def MEA_GUI():
     """
-    Launches the graphical user interface (GUI) of the MEA Analysis Tool.
+    Launches the graphical user interface (GUI) of MEAlytics.
 
     Always launch the function with an "if __name__ == '__main__':" guard as follows:
         if __name__ == "__main__":

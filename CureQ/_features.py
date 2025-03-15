@@ -263,7 +263,7 @@ def electrode_features(well, parameters):
 
     if parameters['remove inactive electrodes']:
         # Remove electrodes that do not have enough activity
-        features_df=features_df[features_df["Mean_FiringRate"]>parameters['activity threshold']]
+        features_df=features_df[features_df["Mean Firing Rate"]>parameters['activity threshold']]
     # Calculate how many electrodes were active
     active_electrodes=len(features_df)/parameters['electrode amount']
     # If none of the electrodes have enough activity, make sure we retain the well value

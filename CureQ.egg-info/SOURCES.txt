@@ -1,6 +1,7 @@
 LICENSE
 README.md
 setup.py
+CureQ/MEAlytics_logo.ico
 CureQ/__init__.py
 CureQ/_bandpass.py
 CureQ/_burst_detection.py

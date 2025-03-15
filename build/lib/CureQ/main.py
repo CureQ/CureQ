@@ -19,7 +19,7 @@ def create_shortcut():
         
         make_shortcut(script_path, 
                       name="MEAlytics",
-                      icon=os.path.join(os.path.dirname(__file__), "cureq_icon.ico"),
+                      icon=os.path.join(os.path.dirname(__file__), "MEAlytics_logo.ico"),
                       desktop=True,
                       startmenu=True)
         
