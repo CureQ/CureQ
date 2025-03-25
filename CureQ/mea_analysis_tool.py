@@ -12,7 +12,6 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 from importlib.metadata import version
-import subprocess
 import traceback
 
 # External libraries

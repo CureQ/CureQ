@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/CureQ/assets/css/style.css">
+    <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Installation | MEAlytics</title>
+<meta name="generator" content="Jekyll v3.9.5" />
+<meta property="og:title" content="Installation" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Comprehensive user guide and documentation" />
+<meta property="og:description" content="Comprehensive user guide and documentation" />
+<link rel="canonical" href="http://localhost:4000/CureQ/installation" />
+<meta property="og:url" content="http://localhost:4000/CureQ/installation" />
+<meta property="og:site_name" content="MEAlytics" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Installation" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebPage","description":"Comprehensive user guide and documentation","headline":"Installation","url":"http://localhost:4000/CureQ/installation"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <style>
+      .wrapper {
+        display: flex;
+        min-height: 100vh;
+      }
+      .sidebar {
+        width: 250px;
+        padding: 20px;
+        background-color: #f5f5f5;
+        border-right: 1px solid #ddd;
+      }
+      .content {
+        flex: 1;
+        padding: 20px;
+        max-width: 800px; /* Limits the width of the content */
+        margin-left: 0; /* Aligned to the left */
+        width: 100%; /* Ensures responsiveness */
+      }
+      .sidebar ul {
+        list-style-type: none;
+        padding: 0;
+      }
+      .sidebar li {
+        margin-bottom: 10px;
+      }
+      .sidebar a {
+        text-decoration: none;
+      }
+      .sidebar a:hover {
+        text-decoration: underline;
+      }
+      @media screen and (max-width: 600px) {
+        .wrapper {
+          flex-direction: column;
+        }
+        .sidebar {
+          width: 100%;
+          border-right: none;
+          border-bottom: 1px solid #ddd;
+        }
+        .content {
+          max-width: 100%; /* Full width on small screens */
+          padding: 10px;
+          margin-left: 0; /* Ensure left alignment on small screens */
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <nav class="sidebar">
+        <img src="/CureQ/assets/images/MEAlytics_logo.png " width="200" height="200">
+        <h2>MEAlytics</h2>
+        <ul>
+          <li><a href="/CureQ/">Home</a></li>
+          <li><a href="/CureQ/installation">Installation</a></li>
+          <li><a href="/CureQ/python_package">MEAlytics as Python package</a></li>
+        </ul>
+      </nav>
+      
+      <main class="content">
+        <h1>Installation</h1>
+        <h1 id="installing-python">Installing Python</h1>
+
+<p>Since the tool is programmed in python, it is necessary to have python installed in order to run the application. Here, we demonstrate one method to install python on a Windows machine. However there are many (more elaborate) guides available online that should suffice.<br />
+<br />
+The python interpreter can be installed using the official python installer. All python versions can be found on https://www.python.org/downloads/. The MEA analysis tool has been developed and tested on python 3.11, but will most likely also work on other python 3.* versions.<br /></p>
+
+<p>Download the desired python version, and execute the file you have just downloaded. You will be presented with the following window:<br />
+<img src="../assets/images/python_installer.png" width="302" height="189" /><br /></p>
+
+<p>Select the option <strong>Add python.exe to PATH</strong>. This will allow your operating system to recognise the python installation. Then, press <strong>Install Now</strong>. Finally, let’s confirm that both python and pip are successfully installed by running the following commands in the command prompt.<br /></p>
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gp">C:\&gt;</span>python <span class="nt">--version</span>
+<span class="go">Python 3.11.9
+
+</span><span class="gp">C:\&gt;</span>pip <span class="nt">--version</span>
+<span class="go">pip 23.3.1
+</span></code></pre></div></div>
+<p>If both outputs look like this (it can be different versions) both python and pip have been successfully installed and are recognised by the system.<br />
+<br /></p>
+<h1 id="installing-mealytics">Installing MEAlytics</h1>
+<p>Once both python and pip have been installed, acquiring the MEA analysis tool should be simple. For the next step we will use pip to install the tool.<br />
+First, open the command prompt, then enter:</p>
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">pip install cureq
+</span></code></pre></div></div>
+<p>Pip will now collect the MEAlytics package from the internet, collect and install dependencies and the library. The last few lines should look like this:</p>
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">Installing collected packages: cureq
+Successfully installed cureq-1.1.1
+</span></code></pre></div></div>
+<p>The MEA analysis tool is now successfully installed on your machine and can be executed from a python script.</p>
+
+<h2 id="add-to-path">Add to path</h2>
+<p>When downloading the MEA analysis tool, the following warning might appear:</p>
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">WARNING: The script cureq.exe is installed in 'C:\Users\User\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\Scripts' which is not on PATH.
+Consider adding this directory to PATH or, if you prefer to supress this warning, use --now-warn-script-location.
+</span></code></pre></div></div>
+<p>This usually occurs when python is installed using the Microsoft store. It means that the directory containing python scripts is not added to the PATH environment variable yet. This will mean that the MEAlytics CLI commands will not be able to be executed from the command line. To fix this, the file path will have to be manually added to the environment variables. This can be done using one of the following guides:</p>
+
+<ul>
+  <li>https://stackoverflow.com/questions/44272416/how-to-add-a-folder-to-path-environment-variable-in-windows-10-with-screensho</li>
+  <li>https://www.eukhost.com/kb/how-to-add-to-the-path-on-windows-10-and-windows-11/ 
+In this example, the folder that should be added to PATH is:</li>
+</ul>
+
+      </main>
+    </div>
+  </body>
+</html>

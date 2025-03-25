@@ -1,0 +1,20 @@
+title: MEAlytics
+description: Comprehensive user guide and documentation
+baseurl: "/CureQ"
+url: "https://yourusername.github.io"
+
+# Build settings
+markdown: kramdown
+remote_theme: pages-themes/cayman@v0.2.0
+plugins:
+  - jekyll-seo-tag
+include:
+  - docs
+
+# Just the Docs specific settings
+color_scheme: light
+search_enabled: true
+heading_anchors: true
+aux_links:
+  "CureQ on GitHub":
+    - "//github.com/CureQ/CureQ"
