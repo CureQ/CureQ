@@ -18,7 +18,7 @@ The output should look like this, and the GUI should appear on your screen.
 
 <img src="./assets/images/mealytics_homescreen.png" width="429" height="254">
 
-Create shortcuts
+## Create shortcuts
 This process can be simplified by creating shortcuts that in essence perform the same process. In the command prompt, enter “cureq --create-shortcut”.
 
 ```console
