@@ -46,4 +46,26 @@ This usually occurs when python is installed using the Microsoft store. It means
 
 - https://stackoverflow.com/questions/44272416/how-to-add-a-folder-to-path-environment-variable-in-windows-10-with-screensho
 - https://www.eukhost.com/kb/how-to-add-to-the-path-on-windows-10-and-windows-11/ 
+
 In this example, the folder that should be added to PATH is:
+```console
+C:\Users\User\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\Scripts
+```
+
+## Upgrade Library
+MEAlytics might receive further updates to enhance the analysis, or fix problems. To check the current version of the library, open the command prompt, and enter:
+```console
+C:\> cureq --version    
+CureQ MEA analysis tool - Version: 1.2.7
+```
+
+The most recent available version of the library can be found on the [pypi page](https://pypi.org/project/CureQ/). The library can be upgraded using the command:
+```console
+pip install cureq –upgrade
+```
+This will upgrade the library to the newest available version.
+
+```console
+C:\ > pip install cureq --upgrade
+Successfully installed cureq-1.2.7
+```

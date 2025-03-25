@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="/CureQ/assets/css/style.css">
+
+    <link rel="icon" type="image/png" href="/CureQ/assets/images/MEAlytics_logo.ico">
+
     <!-- Begin Jekyll SEO tag v2.8.0 -->
 <title>Installation | MEAlytics</title>
 <meta name="generator" content="Jekyll v3.9.5" />
@@ -77,6 +80,7 @@
         <ul>
           <li><a href="/CureQ/">Home</a></li>
           <li><a href="/CureQ/installation">Installation</a></li>
+          <li><a href="/CureQ/gui">Launching the Graphical User Interface</a></li>
           <li><a href="/CureQ/python_package">MEAlytics as Python package</a></li>
         </ul>
       </nav>
@@ -121,9 +125,27 @@ Consider adding this directory to PATH or, if you prefer to supress this warning
 
 <ul>
   <li>https://stackoverflow.com/questions/44272416/how-to-add-a-folder-to-path-environment-variable-in-windows-10-with-screensho</li>
-  <li>https://www.eukhost.com/kb/how-to-add-to-the-path-on-windows-10-and-windows-11/ 
-In this example, the folder that should be added to PATH is:</li>
+  <li>https://www.eukhost.com/kb/how-to-add-to-the-path-on-windows-10-and-windows-11/</li>
 </ul>
+
+<p>In this example, the folder that should be added to PATH is:</p>
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">C:\Users\User\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.12_qbz5n2kfra8p0\LocalCache\local-packages\Python312\Scripts
+</span></code></pre></div></div>
+
+<h2 id="upgrade-library">Upgrade Library</h2>
+<p>MEAlytics might receive further updates to enhance the analysis, or fix problems. To check the current version of the library, open the command prompt, and enter:</p>
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gp">C:\&gt;</span><span class="w"> </span>cureq <span class="nt">--version</span>    
+<span class="go">CureQ MEA analysis tool - Version: 1.2.7
+</span></code></pre></div></div>
+
+<p>The most recent available version of the library can be found on the <a href="https://pypi.org/project/CureQ/">pypi page</a>. The library can be upgraded using the command:</p>
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="go">pip install cureq –upgrade
+</span></code></pre></div></div>
+<p>This will upgrade the library to the newest available version.</p>
+
+<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gp">C:\ &gt;</span><span class="w"> </span>pip <span class="nb">install </span>cureq <span class="nt">--upgrade</span>
+<span class="go">Successfully installed cureq-1.2.7
+</span></code></pre></div></div>
 
       </main>
     </div>

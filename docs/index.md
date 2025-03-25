@@ -16,3 +16,4 @@ MEAlytics is a python packaged developed for analysing multiwell Micro-electrode
 
 - [Installation](installation.html)
 - [MEAlytics as Python package](python_package.html)
+- [Launching the Graphical User Interface](gui.html)
