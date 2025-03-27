@@ -279,7 +279,6 @@ DEPENDENCIES
   jekyll (~> 3.9.3)
   jekyll-remote-theme
   jekyll-seo-tag
-  minima
   sassc
   webrick (~> 1.8)
 

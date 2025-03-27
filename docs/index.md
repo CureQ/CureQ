@@ -1,10 +1,7 @@
 ---
 layout: default
-title: <img src="./assets/images/MEAlytics_logo.png" width="30" height="30"> MEAlytics 
+title: Home
 ---
-
-
-# MEAlytics
 
 Welcome to the documentation of MEAlytics. Here you can find information about installation and usage of the MEAlytics package.
 
@@ -15,5 +12,9 @@ MEAlytics is a python packaged developed for analysing multiwell Micro-electrode
 ## Table of contents
 
 - [Installation](installation.html)
-- [MEAlytics as Python package](python_package.html)
 - [Launching the Graphical User Interface](gui.html)
+- [Analyse Single FIle](analyse_file.html)
+- [Parameters](parameters.html)
+- [Convert Axion data](axion.html)
+- [Compress/Rechunk files](compress_rechunk.html)
+- [MEAlytics as Python package](python_package.html)

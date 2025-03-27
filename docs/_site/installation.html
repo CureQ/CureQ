@@ -25,9 +25,26 @@
 <!-- End Jekyll SEO tag -->
 
     <style>
+      body {
+        background-color: #f0f0f0;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+      }
+      .header {
+        background: linear-gradient(to right, #d8325b, #3025b3);
+        color: white;
+        padding: 15px 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .header-title {
+        font-size: 1.2em;
+        font-weight: bold;
+      }
       .wrapper {
         display: flex;
-        min-height: 100vh;
+        min-height: calc(100vh - 60px); /* Subtract header height */
+        background-color: #f0f0f0;
       }
       .sidebar {
         width: 250px;
@@ -38,9 +55,16 @@
       .content {
         flex: 1;
         padding: 20px;
-        max-width: 800px; /* Limits the width of the content */
-        margin-left: 0; /* Aligned to the left */
-        width: 100%; /* Ensures responsiveness */
+        max-width: 800px;
+        margin-left: 0;
+        width: 100%;
+        background-color: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      }
+      .content-wrapper {
+        background-color: #f0f0f0;
+        display: flex;
+        flex: 1;
       }
       .sidebar ul {
         list-style-type: none;
@@ -65,36 +89,46 @@
           border-bottom: 1px solid #ddd;
         }
         .content {
-          max-width: 100%; /* Full width on small screens */
+          max-width: 100%;
           padding: 10px;
-          margin-left: 0; /* Ensure left alignment on small screens */
+          margin-left: 0;
+        }
+        .content-wrapper {
+          background-color: white;
         }
       }
     </style>
   </head>
   <body>
+    <div class="header">
+      <div class="header-title">MEAlytics</div>
+    </div>
     <div class="wrapper">
       <nav class="sidebar">
         <img src="/CureQ/assets/images/MEAlytics_logo.png " width="200" height="200">
-        <h2>MEAlytics</h2>
         <ul>
           <li><a href="/CureQ/">Home</a></li>
           <li><a href="/CureQ/installation">Installation</a></li>
           <li><a href="/CureQ/gui">Launching the Graphical User Interface</a></li>
+          <li><a href="/CureQ/analyse_file">Analyse Single File</a></li>
+          <li><a href="/CureQ/parameters">Parameters</a></li>
+          <li><a href="/CureQ/axion">Convert Axion data</a></li>
+          <li><a href="/CureQ/compress_rechunk">Compress/Rechunk files</a></li>
           <li><a href="/CureQ/python_package">MEAlytics as Python package</a></li>
         </ul>
       </nav>
       
-      <main class="content">
-        <h1>Installation</h1>
-        <h1 id="installing-python">Installing Python</h1>
+      <div class="content-wrapper">
+        <main class="content">
+          <h1>Installation</h1>
+          <h1 id="installing-python">Installing Python</h1>
 
 <p>Since the tool is programmed in python, it is necessary to have python installed in order to run the application. Here, we demonstrate one method to install python on a Windows machine. However there are many (more elaborate) guides available online that should suffice.<br />
 <br />
 The python interpreter can be installed using the official python installer. All python versions can be found on https://www.python.org/downloads/. The MEA analysis tool has been developed and tested on python 3.11, but will most likely also work on other python 3.* versions.<br /></p>
 
 <p>Download the desired python version, and execute the file you have just downloaded. You will be presented with the following window:<br />
-<img src="../assets/images/python_installer.png" width="302" height="189" /><br /></p>
+<img src="./assets/images/python_installer.png" width="302" height="189" /><br /></p>
 
 <p>Select the option <strong>Add python.exe to PATH</strong>. This will allow your operating system to recognise the python installation. Then, press <strong>Install Now</strong>. Finally, let’s confirm that both python and pip are successfully installed by running the following commands in the command prompt.<br /></p>
 <div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gp">C:\&gt;</span>python <span class="nt">--version</span>
@@ -147,7 +181,8 @@ Consider adding this directory to PATH or, if you prefer to supress this warning
 <span class="go">Successfully installed cureq-1.2.7
 </span></code></pre></div></div>
 
-      </main>
+        </main>
+      </div>
     </div>
   </body>
 </html>

@@ -8,9 +8,9 @@
     <link rel="icon" type="image/png" href="/CureQ/assets/images/MEAlytics_logo.ico">
 
     <!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>MEAlytics | Comprehensive user guide and documentation</title>
+<title>Home | MEAlytics</title>
 <meta name="generator" content="Jekyll v3.9.5" />
-<meta property="og:title" content="MEAlytics" />
+<meta property="og:title" content="Home" />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Comprehensive user guide and documentation" />
 <meta property="og:description" content="Comprehensive user guide and documentation" />
@@ -19,15 +19,32 @@
 <meta property="og:site_name" content="MEAlytics" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="MEAlytics" />
+<meta property="twitter:title" content="Home" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebSite","description":"Comprehensive user guide and documentation","headline":"MEAlytics","name":"MEAlytics","url":"http://localhost:4000/CureQ/"}</script>
+{"@context":"https://schema.org","@type":"WebSite","description":"Comprehensive user guide and documentation","headline":"Home","name":"MEAlytics","url":"http://localhost:4000/CureQ/"}</script>
 <!-- End Jekyll SEO tag -->
 
     <style>
+      body {
+        background-color: #f0f0f0;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+      }
+      .header {
+        background: linear-gradient(to right, #d8325b, #3025b3);
+        color: white;
+        padding: 15px 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .header-title {
+        font-size: 1.2em;
+        font-weight: bold;
+      }
       .wrapper {
         display: flex;
-        min-height: 100vh;
+        min-height: calc(100vh - 60px); /* Subtract header height */
+        background-color: #f0f0f0;
       }
       .sidebar {
         width: 250px;
@@ -38,9 +55,16 @@
       .content {
         flex: 1;
         padding: 20px;
-        max-width: 800px; /* Limits the width of the content */
-        margin-left: 0; /* Aligned to the left */
-        width: 100%; /* Ensures responsiveness */
+        max-width: 800px;
+        margin-left: 0;
+        width: 100%;
+        background-color: white;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      }
+      .content-wrapper {
+        background-color: #f0f0f0;
+        display: flex;
+        flex: 1;
       }
       .sidebar ul {
         list-style-type: none;
@@ -65,31 +89,39 @@
           border-bottom: 1px solid #ddd;
         }
         .content {
-          max-width: 100%; /* Full width on small screens */
+          max-width: 100%;
           padding: 10px;
-          margin-left: 0; /* Ensure left alignment on small screens */
+          margin-left: 0;
+        }
+        .content-wrapper {
+          background-color: white;
         }
       }
     </style>
   </head>
   <body>
+    <div class="header">
+      <div class="header-title">MEAlytics</div>
+    </div>
     <div class="wrapper">
       <nav class="sidebar">
         <img src="/CureQ/assets/images/MEAlytics_logo.png " width="200" height="200">
-        <h2>MEAlytics</h2>
         <ul>
           <li><a href="/CureQ/">Home</a></li>
           <li><a href="/CureQ/installation">Installation</a></li>
           <li><a href="/CureQ/gui">Launching the Graphical User Interface</a></li>
+          <li><a href="/CureQ/analyse_file">Analyse Single File</a></li>
+          <li><a href="/CureQ/parameters">Parameters</a></li>
+          <li><a href="/CureQ/axion">Convert Axion data</a></li>
+          <li><a href="/CureQ/compress_rechunk">Compress/Rechunk files</a></li>
           <li><a href="/CureQ/python_package">MEAlytics as Python package</a></li>
         </ul>
       </nav>
       
-      <main class="content">
-        <h1><img src="./assets/images/MEAlytics_logo.png" width="30" height="30"> MEAlytics</h1>
-        <h1 id="mealytics">MEAlytics</h1>
-
-<p>Welcome to the documentation of MEAlytics. Here you can find information about installation and usage of the MEAlytics package.</p>
+      <div class="content-wrapper">
+        <main class="content">
+          <h1>Home</h1>
+          <p>Welcome to the documentation of MEAlytics. Here you can find information about installation and usage of the MEAlytics package.</p>
 
 <h2 id="overview">Overview</h2>
 
@@ -99,11 +131,16 @@
 
 <ul>
   <li><a href="installation.html">Installation</a></li>
-  <li><a href="python_package.html">MEAlytics as Python package</a></li>
   <li><a href="gui.html">Launching the Graphical User Interface</a></li>
+  <li><a href="analyse_file.html">Analyse Single FIle</a></li>
+  <li><a href="parameters.html">Parameters</a></li>
+  <li><a href="axion.html">Convert Axion data</a></li>
+  <li><a href="compress_rechunk.html">Compress/Rechunk files</a></li>
+  <li><a href="python_package.html">MEAlytics as Python package</a></li>
 </ul>
 
-      </main>
+        </main>
+      </div>
     </div>
   </body>
 </html>

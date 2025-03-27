@@ -8,20 +8,20 @@
     <link rel="icon" type="image/png" href="/CureQ/assets/images/MEAlytics_logo.ico">
 
     <!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>Launching the Graphical User Interface | MEAlytics</title>
+<title>Compress/Rechunk files | MEAlytics</title>
 <meta name="generator" content="Jekyll v3.9.5" />
-<meta property="og:title" content="Launching the Graphical User Interface" />
+<meta property="og:title" content="Compress/Rechunk files" />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Comprehensive user guide and documentation" />
 <meta property="og:description" content="Comprehensive user guide and documentation" />
-<link rel="canonical" href="http://localhost:4000/CureQ/gui" />
-<meta property="og:url" content="http://localhost:4000/CureQ/gui" />
+<link rel="canonical" href="http://localhost:4000/CureQ/compress_rechunk" />
+<meta property="og:url" content="http://localhost:4000/CureQ/compress_rechunk" />
 <meta property="og:site_name" content="MEAlytics" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Launching the Graphical User Interface" />
+<meta property="twitter:title" content="Compress/Rechunk files" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","description":"Comprehensive user guide and documentation","headline":"Launching the Graphical User Interface","url":"http://localhost:4000/CureQ/gui"}</script>
+{"@context":"https://schema.org","@type":"WebPage","description":"Comprehensive user guide and documentation","headline":"Compress/Rechunk files","url":"http://localhost:4000/CureQ/compress_rechunk"}</script>
 <!-- End Jekyll SEO tag -->
 
     <style>
@@ -120,42 +120,13 @@
       
       <div class="content-wrapper">
         <main class="content">
-          <h1>Launching the Graphical User Interface</h1>
-          <p>The graphical user interface is the simplest way to communicate with the library. The GUI can be launched in multiple ways:</p>
+          <h1>Compress/Rechunk files</h1>
+          <p>Files that originate from Multichannel Systems MEAs, or files that have been converted from the Axion .raw format are inefficiently chunked. This means that if the application wants to read the data of a single electrode, it must read the data of all electrodes at the same time. If the files are rechunked, this means that single electrode data can be loaded faster, and the analysis can be completed with less use of RAM. The application will automatically rechunk files if they are inefficiently chunked, and create a copy. Additionally, compression/rechunking can be performed manually in the GUI.</p>
 
-<h2 id="launch-from-command-prompt">Launch from command prompt</h2>
-<p>Firstly, the GUI can be launched from the command prompt. Simply open the command prompt, and enter “cureq”.</p>
+<p>In the main menu, navigate to Compress/Rechunk files.</p>
 
-<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gp">C:\Users&gt;</span>cureq
-<span class="go">Successfully launched MEA GUI
-</span></code></pre></div></div>
-
-<p>The output should look like this, and the GUI should appear on your screen.</p>
-
-<p><img src="./assets/images/mealytics_homescreen.png" width="429" height="254" /></p>
-
-<h2 id="create-shortcuts">Create shortcuts</h2>
-<p>This process can be simplified by creating shortcuts that in essence perform the same process. In the command prompt, enter “cureq –create-shortcut”.</p>
-
-<div class="language-console highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="gp">C:\Users&gt;</span>cureq <span class="nt">--create-shortcut</span>
-<span class="go">Desktop shortcut created at C:\Users\Desktop\CureQ.lnk
-</span></code></pre></div></div>
-
-<p>The output should look like this, and a shortcut should appear on your desktop:</p>
-
-<p><img src="./assets/images/mealytics_on_desktop.png" /></p>
-
-<p>If you are on a Windows machine, the shortcut will also be added to the start menu.
-The shortcut can also be added to the taskbar by pressing “Pin to taskbar”.</p>
-
-<h2 id="launch-from-python-script">Launch from python script</h2>
-<p>Lastly, the GUI can be launched from a python script. Create a python file and execute the following code:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">CureQ.mea_analysis_tool</span> <span class="kn">import</span> <span class="n">MEA_GUI</span>
-
-<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
-    <span class="n">MEA_GUI</span><span class="p">()</span>
-</code></pre></div></div>
-<p>The GUI should always be opened inside the <code class="language-plaintext highlighter-rouge">if __name__ == '__main__'</code> guard. Otherwise, when using multiprocessing, the application will slowly create an infinite amount of processes and crash the application.</p>
+<p>Besides rechunking the data, a compression algorithm will be applied as well. The default is LZF compression, which is not as efficient as GZIP, but achieves the compression in a much faster time. When GZIP is selected, the user can select different compression levels, where higher values will lead to smaller files, but an increased processing time.
+By ticking Compress all files in folder the application will loop through all files in the parent directory and apply the rechunking and compression.</p>
 
         </main>
       </div>

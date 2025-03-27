@@ -6,7 +6,7 @@ This repository contains a python package for analyzing Microelectrode Array (ME
 This repository is maintained by the Amsterdam University of Applied Sciences (AUMC).<br>
 MEAlytics offers high speed spike, burst and network burst detection followed by feature extraction.<br>
 
-#### For more information about the analysis or how to use the library, check out the [MEAlytics Github pages](https://cureq.github.io/CureQ/).
+#### [For more information about the analysis or how to use the library, check out the MEAlytics Github pages](https://cureq.github.io/CureQ/).
 
 ## Cureq
 This tool was created for the CureQ consortium.<br>

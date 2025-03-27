@@ -11,7 +11,7 @@ Since the tool is programmed in python, it is necessary to have python installed
 The python interpreter can be installed using the official python installer. All python versions can be found on https://www.python.org/downloads/. The MEA analysis tool has been developed and tested on python 3.11, but will most likely also work on other python 3.* versions.<br>
 
 Download the desired python version, and execute the file you have just downloaded. You will be presented with the following window:<br>
-<img src="../assets/images/python_installer.png" width="302" height="189"><br>
+<img src="./assets/images/python_installer.png" width="302" height="189"><br>
 
 Select the option **Add python.exe to PATH**. This will allow your operating system to recognise the python installation. Then, press **Install Now**. Finally, let’s confirm that both python and pip are successfully installed by running the following commands in the command prompt.<br>
 ```console
