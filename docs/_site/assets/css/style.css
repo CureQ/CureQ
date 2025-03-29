@@ -323,23 +323,23 @@ a:hover { text-decoration: underline; }
 .site-footer-credits { color: #819198; }
 
 /* Base table styles (light mode) */
-table { width: 100%; border-collapse: collapse; margin: 25px 0; font-size: 0.9em; font-family: sans-serif; box-shadow: 0 0 20px rgba(0, 0, 0, 0.15); }
+table { width: 100% !important; border-collapse: collapse !important; margin: 25px 0 !important; font-size: 0.9em !important; font-family: sans-serif !important; box-shadow: 0 0 20px rgba(0, 0, 0, 0.15) !important; }
 
-thead tr { background-color: #009879; color: #ffffff; text-align: left; }
+thead tr { background-color: #009879 !important; color: #ffffff !important; text-align: left !important; }
 
-th, td { padding: 12px 15px; border-bottom: 1px solid #dddddd; }
+th, td { padding: 12px 15px !important; border-bottom: 1px solid #dddddd !important; }
 
-tbody tr:nth-of-type(even) { background-color: #f3f3f3; }
+tbody tr:nth-of-type(even) { background-color: #f3f3f3 !important; }
 
-tbody tr:last-of-type { border-bottom: 2px solid #009879; }
+tbody tr:last-of-type { border-bottom: 2px solid #009879 !important; }
 
-tbody tr:hover { background-color: #f1fff8; }
+tbody tr:hover { background-color: #f1fff8 !important; }
 
 /* Dark mode styles - will override the above when in dark mode */
-@media (prefers-color-scheme: dark) { table { box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); }
-  thead tr { background-color: #00796b; /* Darker shade of green */ color: #ffffff; }
-  th, td { border-bottom: 1px solid #444444; }
-  tbody tr { background-color: #2d2d2d; /* Dark background for odd rows */ color: #e0e0e0; /* Light text color */ }
-  tbody tr:nth-of-type(even) { background-color: #3d3d3d; /* Slightly lighter dark for even rows */ }
-  tbody tr:last-of-type { border-bottom: 2px solid #00796b; }
-  tbody tr:hover { background-color: #1e3e3a; /* Dark green tint that works in dark mode */ } }
+@media (prefers-color-scheme: dark) { table { box-shadow: 0 0 20px rgba(0, 0, 0, 0.3) !important; }
+  thead tr { background-color: #00796b !important; /* Darker shade of green */ color: #ffffff !important; }
+  th, td { border-bottom: 1px solid #444444 !important; }
+  tbody tr { background-color: #2d2d2d !important; /* Dark background for odd rows */ color: #e0e0e0 !important; /* Light text color */ }
+  tbody tr:nth-of-type(even) { background-color: #3d3d3d !important; /* Slightly lighter dark for even rows */ }
+  tbody tr:last-of-type { border-bottom: 2px solid #00796b !important; }
+  tbody tr:hover { background-color: #1e3e3a !important; /* Dark green tint that works in dark mode */ } }
