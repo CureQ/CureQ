@@ -321,3 +321,25 @@ a:hover { text-decoration: underline; }
 .site-footer-owner { display: block; font-weight: bold; }
 
 .site-footer-credits { color: #819198; }
+
+/* Base table styles (light mode) */
+table { width: 100%; border-collapse: collapse; margin: 25px 0; font-size: 0.9em; font-family: sans-serif; box-shadow: 0 0 20px rgba(0, 0, 0, 0.15); }
+
+thead tr { background-color: #009879; color: #ffffff; text-align: left; }
+
+th, td { padding: 12px 15px; border-bottom: 1px solid #dddddd; }
+
+tbody tr:nth-of-type(even) { background-color: #f3f3f3; }
+
+tbody tr:last-of-type { border-bottom: 2px solid #009879; }
+
+tbody tr:hover { background-color: #f1fff8; }
+
+/* Dark mode styles - will override the above when in dark mode */
+@media (prefers-color-scheme: dark) { table { box-shadow: 0 0 20px rgba(0, 0, 0, 0.3); }
+  thead tr { background-color: #00796b; /* Darker shade of green */ color: #ffffff; }
+  th, td { border-bottom: 1px solid #444444; }
+  tbody tr { background-color: #2d2d2d; /* Dark background for odd rows */ color: #e0e0e0; /* Light text color */ }
+  tbody tr:nth-of-type(even) { background-color: #3d3d3d; /* Slightly lighter dark for even rows */ }
+  tbody tr:last-of-type { border-bottom: 2px solid #00796b; }
+  tbody tr:hover { background-color: #1e3e3a; /* Dark green tint that works in dark mode */ } }

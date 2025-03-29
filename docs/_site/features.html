@@ -8,20 +8,20 @@
     <link rel="icon" type="image/png" href="/CureQ/assets/images/MEAlytics_logo.ico">
 
     <!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>Parameters | MEAlytics</title>
+<title>Features Output | MEAlytics</title>
 <meta name="generator" content="Jekyll v3.9.5" />
-<meta property="og:title" content="Parameters" />
+<meta property="og:title" content="Features Output" />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Comprehensive user guide and documentation" />
 <meta property="og:description" content="Comprehensive user guide and documentation" />
-<link rel="canonical" href="http://localhost:4000/CureQ/parameters" />
-<meta property="og:url" content="http://localhost:4000/CureQ/parameters" />
+<link rel="canonical" href="http://localhost:4000/CureQ/features" />
+<meta property="og:url" content="http://localhost:4000/CureQ/features" />
 <meta property="og:site_name" content="MEAlytics" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Parameters" />
+<meta property="twitter:title" content="Features Output" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","description":"Comprehensive user guide and documentation","headline":"Parameters","url":"http://localhost:4000/CureQ/parameters"}</script>
+{"@context":"https://schema.org","@type":"WebPage","description":"Comprehensive user guide and documentation","headline":"Features Output","url":"http://localhost:4000/CureQ/features"}</script>
 <!-- End Jekyll SEO tag -->
 
     <style>
@@ -296,98 +296,219 @@
       
       <div class="content-wrapper">
         <main class="content">
-          <h1>Parameters</h1>
-          <p>The MEAlytics package contains a wide range of parameters that can be used to alter the analysis pipeline. Described below are all the parameters, and how they affect the analysis pipeline.</p>
+          <h1>Features Output</h1>
+          <p>MEAlytics calculates a large variety of features. Electrode features are first calculated seperately, and then averaged over the well. Below you can find an overview of all the features the package calculates.</p>
 
-<p>The default parameter values are stored as a dictionary in the library, and can be accessed as follows:</p>
+<p>It is possible to add your own custom features if you have knowledge of Python programming. Instructions for this can be found in <code class="language-plaintext highlighter-rouge">_features.py</code> in the package files.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">CureQ.mea</span> <span class="kn">import</span> <span class="n">get_default_parameters</span>
-<span class="k">print</span><span class="p">(</span><span class="n">get_default_parameters</span><span class="p">())</span>
-</code></pre></div></div>
+<p>Have a specific feature in mind that has not been added yet, and might benefit others? Please do not hesitate to contact us.</p>
 
-<p>Default parameters are automatically loaded into the MEAlytics GUI</p>
+<h2 id="spike-features">Spike features</h2>
 
-<h3 id="bandpass-filter">Bandpass filter</h3>
-<h4 id="low-cutoff">Low cutoff</h4>
-<p>Low cutoff frequency for the Butterworth bandpass filter.<br />
-Default value: 200 Hz</p>
+<table>
+  <thead>
+    <tr>
+      <th>Feature name</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Spikes</td>
+      <td>The total amount of spikes recorded in a single electrode (spikes)</td>
+    </tr>
+    <tr>
+      <td>Mean Firing Rate</td>
+      <td>The average activity of the electrode, calculated as the average amount of spikes per second. (spikes/s)</td>
+    </tr>
+    <tr>
+      <td>Mean Inter-Spike interval</td>
+      <td>Mean inter-spike interval. The average amount of time between two successive spikes. (s)</td>
+    </tr>
+    <tr>
+      <td>Median Inter-Spike interval</td>
+      <td>The median of the inter-spike intervals. (s)</td>
+    </tr>
+    <tr>
+      <td>Ratio median ISI over mean ISI</td>
+      <td>The ratio of the median ISI over mean ISI. Calculated by dividing the median by the mean.</td>
+    </tr>
+    <tr>
+      <td>Inter-spike interval variance</td>
+      <td>The average of the square deviations from the mean from the inter-spike intervals. (s)</td>
+    </tr>
+    <tr>
+      <td>Coefficient of variation ISI</td>
+      <td>The coefficient of variation of the inter-spike interval. (s)</td>
+    </tr>
+    <tr>
+      <td>Partial Autocorrelaction Function ISI</td>
+      <td>The partial autocorrelation of lag 1 of the ISIs. This value is calculated using the “statsmodels” python library (Seabold &amp; Perktold, 2010)</td>
+    </tr>
+    <tr>
+      <td>Mean Absolute Spike Amplitude</td>
+      <td>The average absolute amplitude of the spikes. Spike amplitude is measured from 0 to the absolute top of the spike</td>
+    </tr>
+    <tr>
+      <td>Median Absolute Spike Amplitude</td>
+      <td>The median absolute amplitude of the spikes</td>
+    </tr>
+    <tr>
+      <td>Coefficient of Variation Absolute Spike Amplitude</td>
+      <td>The coefficient of variation of the absolute spike amplitude</td>
+    </tr>
+  </tbody>
+</table>
 
-<h4 id="high-cutoff">High cutoff</h4>
-<p>High cutoff frequency for the Butterworth bandpass filter.<br />
-Default value: 3500 Hz</p>
+<h2 id="burst-features">Burst features</h2>
 
-<h4 id="order">Order</h4>
-<p>The filter order used for the Butterworth bandpass filter.<br />
-Default value: 2</p>
+<table>
+  <thead>
+    <tr>
+      <th>Feature name</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Bursts</td>
+      <td>The amount of burst that are detected in a single electrode. (bursts)</td>
+    </tr>
+    <tr>
+      <td>Mean Burst Length</td>
+      <td>The average length of a burst in a single electrode. (s)</td>
+    </tr>
+    <tr>
+      <td>Burst Length Variance</td>
+      <td>The variance in the length of the bursts. (s)</td>
+    </tr>
+    <tr>
+      <td>Burst Length Coefficient of Variation</td>
+      <td>The coefficient of variation of the burst length. (s)</td>
+    </tr>
+    <tr>
+      <td>Mean Inter-Burst Interval</td>
+      <td>The average amount of time between two bursts. (s)</td>
+    </tr>
+    <tr>
+      <td>Variance Inter-Burst Interval</td>
+      <td>The variance of the inter-burst interval. (s)</td>
+    </tr>
+    <tr>
+      <td>Coefficient of Variation IBI</td>
+      <td>The coefficient of variation of the inter-burst interval. (s)</td>
+    </tr>
+    <tr>
+      <td>Partial Autocorrelation Function IBI</td>
+      <td>The partial autocorrelation of lag 1 of the inter burst interval.</td>
+    </tr>
+    <tr>
+      <td>Mean Intra-Burst Firing Rate</td>
+      <td>The average firing rate in a burst. (spikes/s)</td>
+    </tr>
+    <tr>
+      <td>Mean Spikes per Burst</td>
+      <td>The average amount of spikes per burst. (spikes)</td>
+    </tr>
+    <tr>
+      <td>Mean Absolute Deviation Spikes per Burst</td>
+      <td>The mean absolute deviation of the amount of spikes per burst. (spikes)</td>
+    </tr>
+    <tr>
+      <td>Isolated Spikes</td>
+      <td>The portion of spikes that are isolated (not part of a burst). (value from 0 to 1)</td>
+    </tr>
+    <tr>
+      <td>Mean Burst Rate</td>
+      <td>The average amount of bursts per second. (bursts/s)</td>
+    </tr>
+  </tbody>
+</table>
 
-<h3 id="threshold">Threshold</h3>
-<h4 id="threshold-portion">Threshold portion</h4>
-<p>Portion of the data that is used to calculate the threshold value. Higher values can give a more accurate estimate of the background noise level, but takes longer to compute. <br />
-Default value: 0.1</p>
+<h2 id="network-burst-features">Network Burst Features</h2>
 
-<h4 id="standard-deviation-multiplier">Standard deviation multiplier</h4>
-<p>Value that is multiplied with the standard deviation of a portion of the data to create a threshold that determines whether this portion of the data contains purely noise or potential spikes.<br />
-Default value: 5</p>
-
-<h4 id="rms-multiplier">RMS multiplier</h4>
-<p>Value that is multiplied with the root mean square (RMS) of the background noise to determine the threshold for the spike detection.<br />
-Default value: 5</p>
-
-<h3 id="spike-detection">Spike detection</h3>
-<h4 id="refractory-period">Refractory period</h4>
-<p>The refractory period of the spike. The time in which only one spike can be detected. Value should be given in seconds.<br />
-Default value: 0.001</p>
-
-<h3 id="spike-validation">Spike validation</h3>
-<h4 id="spike-validation-method">Spike validation method</h4>
-<p>The spike validation method used to determine whether a threshold crossing should be considered a neuronal signal or discarded.<br />
-Possible options: Noisebased, none.<br />
-Default value: Noisebased</p>
-
-<h4 id="exit-time">Exit time</h4>
-<p>The time the signal must drop/rise below a certain amplitude before/after it has reached its absolute peak.
-Value should be given in seconds. <br />
-Default value: 0.001</p>
-
-<h4 id="drop-amplitude">Drop amplitude</h4>
-<p>Multiplied with the surrounding background noise of the spike to determine the amplitude the signal must drop.<br />
-Default value: 5</p>
-
-<h4 id="max-drop">Max drop</h4>
-<p>Value multiplied with the threshold value of the electrode to determine the maximum amplitude the signal can be required to drop.<br />
-Default value: 2</p>
-
-<h3 id="burst-detection">Burst detection</h3>
-<h4 id="minimal-amount-of-spikes">Minimal amount of spikes</h4>
-<p>The smallest amount of spikes that can form a single channel burst.<br />
-Default value: 5</p>
-
-<h4 id="default-interval-threshold">Default interval threshold</h4>
-<p>The default inter-spike interval (ISI) threshold used for burst detection. Value should be given in milliseconds. <br />
-Default value: 100</p>
-
-<h4 id="max-interval-threshold">Max interval threshold</h4>
-<p>The maximum ISI threshold that can be used for burst detection. Values should be given in milliseconds.<br />
-Default value: 1000</p>
-
-<h4 id="kde-bandwidth">KDE bandwidth</h4>
-<p>The bandwidth of the Kernel Density Estimate (KDE) used for determining the burst detection parameters.<br />
-Default value: 1</p>
-
-<h3 id="network-burst-detection">Network burst detection</h3>
-<h4 id="min-channels">Min channels</h4>
-<p>The minimal amount of channels that should be participating in a network burst to consider it as one. Value should be given as a percentage.<br />
-Default value: 0.5</p>
-
-<h4 id="thresholding-method">Thresholding method</h4>
-<p>The method used to automatically calculate the threshold used for determining high-activity periods.<br />
-Possible values: Yen, Otsu, Li, Isodata, Mean, Minimum, Triangle. See <a href="https://scikit-image.org/docs/0.24.x/api/skimage.filters.html#">scikit-image filters</a>.
-<br />
-Default value: Yen</p>
-
-<h4 id="kde-bandwidth-1">KDE bandwidth</h4>
-<p>The bandwidth used for the kernel density estimate representing spike activity.<br />
-Default value: 0.05</p>
+<table>
+  <thead>
+    <tr>
+      <th>Feature name</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Network Bursts</td>
+      <td>The total amount of network bursts in a well (network bursts)</td>
+    </tr>
+    <tr>
+      <td>Mean Network Burst Duration</td>
+      <td>The average duration of a network bursts. Calculated as the distance between the outer edges of the network burst. (s)</td>
+    </tr>
+    <tr>
+      <td>Mean Network Burst Core Duration</td>
+      <td>The average duration of the network burst core. (s)</td>
+    </tr>
+    <tr>
+      <td>Coefficient of Variation Network Burst Core Duration</td>
+      <td>The coefficient of variation of the network burst core durations. (s)</td>
+    </tr>
+    <tr>
+      <td>Network Inter-Burst Interval</td>
+      <td>The average time between the network bursts (s)</td>
+    </tr>
+    <tr>
+      <td>Partial Autocorrelation Function NIBI</td>
+      <td>The partial autocorrelation of lag 1 of the network inter burst intervals</td>
+    </tr>
+    <tr>
+      <td>Network Burst to Network Burst Core ratio</td>
+      <td>The average ratio between the length of the network burst and network burst core.</td>
+    </tr>
+    <tr>
+      <td>NIBI Variance</td>
+      <td>The variation between the network interburst intervals (s)</td>
+    </tr>
+    <tr>
+      <td>Coefficient of Variation NIBI</td>
+      <td>The coefficient of variation between the network interburst intervals (s)</td>
+    </tr>
+    <tr>
+      <td>Mean Spikes per Network Burst</td>
+      <td>The average amount of spikes in a network burst</td>
+    </tr>
+    <tr>
+      <td>Network Burst Firing Rate</td>
+      <td>The average firing rate in the network bursts (spikes/s)</td>
+    </tr>
+    <tr>
+      <td>Network Burst ISI</td>
+      <td>The average inter spike interval in the network bursts (s)</td>
+    </tr>
+    <tr>
+      <td>Portion of Spikes in Network Bursts</td>
+      <td>The portion of spikes that are participating in network bursts.</td>
+    </tr>
+    <tr>
+      <td>Portion of Bursts in Network Bursts</td>
+      <td>The portion of bursts that are participating in network bursts.</td>
+    </tr>
+    <tr>
+      <td>Ratio Left Outer NB over NB Core</td>
+      <td>The average ratio of the left outer burst compared to the burst core</td>
+    </tr>
+    <tr>
+      <td>Ratio Right Outer NB over NB Core</td>
+      <td>The average ratio of the left outer burst compared to the burst core</td>
+    </tr>
+    <tr>
+      <td>Ratio Left Outer over Right Outer NB</td>
+      <td>The ratio of the left outer burst compared to the right outer burst</td>
+    </tr>
+    <tr>
+      <td>Participating Electrodes</td>
+      <td>The average amount of channels that are actively bursting during network bursts</td>
+    </tr>
+  </tbody>
+</table>
 
         </main>
         

@@ -66,19 +66,34 @@
         display: flex;
         flex: 1;
       }
+
+      /* Enhanced styles for sidebar links */
       .sidebar ul {
-        list-style-type: none;
-        padding: 0;
-      }
-      .sidebar li {
-        margin-bottom: 10px;
-      }
-      .sidebar a {
-        text-decoration: none;
-      }
-      .sidebar a:hover {
-        text-decoration: underline;
-      }
+          list-style-type: none;
+          padding: 0;
+          margin: 0;
+        }
+        .sidebar li {
+          margin-bottom: 8px;
+          font-size: 0.9em;
+        }
+        .sidebar a {
+          text-decoration: none;
+          color: #333;
+          display: block;
+          padding: 3px 5px;
+          border-left: 2px solid transparent;
+        }
+        .sidebar a:hover {
+          background-color: #e5e5e5;
+          border-left: 2px solid #3025b3;
+          text-decoration: none;
+        }
+        .sidebar a.active {
+          border-left: 2px solid #d8325b;
+          background-color: #e8e8e8;
+          font-weight: bold;
+        }
       
       .page-index {
         width: 200px;
@@ -213,11 +228,15 @@
         }
 
         .sidebar a {
-          color: #4da6ff;
+          color: #e0e0e0;
         }
-
         .sidebar a:hover {
-          color: #6bb6ff;
+          background-color: #333;
+          border-left-color: #6bb6ff;
+        }
+        .sidebar a.active {
+          background-color: #333;
+          border-left-color: #d8325b;
         }
 
         h1, h2, h3, h4, h5, h6 {
@@ -265,7 +284,9 @@
           <li><a href="/CureQ/analyse_file">Analyse Single File</a></li>
           <li><a href="/CureQ/batch_processing">Batch Processing</a></li>
           <li><a href="/CureQ/output">Analysis Output</a></li>
+          <li><a href="/CureQ/features">Features Output</a></li>
           <li><a href="/CureQ/view_results">View Results</a></li>
+          <li><a href="/CureQ/compare_groups">Compare Groups</a></li>
           <li><a href="/CureQ/parameters">Parameters</a></li>
           <li><a href="/CureQ/axion">Convert Axion data</a></li>
           <li><a href="/CureQ/compress_rechunk">Compress/Rechunk files</a></li>

@@ -16,6 +16,6 @@ The file ending with **Features.csv** will contain the output features that are 
 
 The file ending with **Electrode_Features.csv** will contain the single electrode features, such as spike and single channel burst metrics, calculated per individual electrode.
 
-For more information about the features the MEA analysis tool calculates, see Features.
+For more information about the features the MEA analysis tool calculates, see [Features Output](features.html).
 
 Lastly, the **parameters.json** file contains information about the analysis such as which parameters were used, some information about the dataset, and which version of the tool was used. This file can be used to copy settings from a previous analysis. For more information on how to do this, see [Analyse Single File](analyse_file.html)

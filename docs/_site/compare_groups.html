@@ -8,20 +8,20 @@
     <link rel="icon" type="image/png" href="/CureQ/assets/images/MEAlytics_logo.ico">
 
     <!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>Parameters | MEAlytics</title>
+<title>Compare Groups | MEAlytics</title>
 <meta name="generator" content="Jekyll v3.9.5" />
-<meta property="og:title" content="Parameters" />
+<meta property="og:title" content="Compare Groups" />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Comprehensive user guide and documentation" />
 <meta property="og:description" content="Comprehensive user guide and documentation" />
-<link rel="canonical" href="http://localhost:4000/CureQ/parameters" />
-<meta property="og:url" content="http://localhost:4000/CureQ/parameters" />
+<link rel="canonical" href="http://localhost:4000/CureQ/compare_groups" />
+<meta property="og:url" content="http://localhost:4000/CureQ/compare_groups" />
 <meta property="og:site_name" content="MEAlytics" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Parameters" />
+<meta property="twitter:title" content="Compare Groups" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","description":"Comprehensive user guide and documentation","headline":"Parameters","url":"http://localhost:4000/CureQ/parameters"}</script>
+{"@context":"https://schema.org","@type":"WebPage","description":"Comprehensive user guide and documentation","headline":"Compare Groups","url":"http://localhost:4000/CureQ/compare_groups"}</script>
 <!-- End Jekyll SEO tag -->
 
     <style>
@@ -296,98 +296,62 @@
       
       <div class="content-wrapper">
         <main class="content">
-          <h1>Parameters</h1>
-          <p>The MEAlytics package contains a wide range of parameters that can be used to alter the analysis pipeline. Described below are all the parameters, and how they affect the analysis pipeline.</p>
+          <h1>Compare Groups</h1>
+          <p>Besides functionality for analysing raw data files, this tool also provides methods to compare the outcomes of the analysis with each other.</p>
 
-<p>The default parameter values are stored as a dictionary in the library, and can be accessed as follows:</p>
+<p>In the main menu, navigate to <strong>Plotting</strong>.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">CureQ.mea</span> <span class="kn">import</span> <span class="n">get_default_parameters</span>
-<span class="k">print</span><span class="p">(</span><span class="n">get_default_parameters</span><span class="p">())</span>
-</code></pre></div></div>
+<p>At the top of the window, press Select a folder, and select the folder that contains the outputfolder(s) of your experiment(s). The application will recursively loop through all the files/folder in the directory, and look for files that end width “Features.csv”. These files will be collected for visualisation and can be seen in the second column.</p>
 
-<p>Default parameters are automatically loaded into the MEAlytics GUI</p>
+<p><img src="./assets/images/plotting_module.png" width="100%" height="100%" /></p>
 
-<h3 id="bandpass-filter">Bandpass filter</h3>
-<h4 id="low-cutoff">Low cutoff</h4>
-<p>Low cutoff frequency for the Butterworth bandpass filter.<br />
-Default value: 200 Hz</p>
+<p>In the fourth column, the user can create new labels, e.g. “Control” or “Mutated”, and assign these labels to a specific well by first selecting the label followed by the desired well.</p>
 
-<h4 id="high-cutoff">High cutoff</h4>
-<p>High cutoff frequency for the Butterworth bandpass filter.<br />
-Default value: 3500 Hz</p>
+<p><img src="./assets/images/assign_groups.png" width="100%" height="100%" /></p>
 
-<h4 id="order">Order</h4>
-<p>The filter order used for the Butterworth bandpass filter.<br />
-Default value: 2</p>
+<p>These labels can be saved, imported or reset using the buttons on the right side of the window.</p>
 
-<h3 id="threshold">Threshold</h3>
-<h4 id="threshold-portion">Threshold portion</h4>
-<p>Portion of the data that is used to calculate the threshold value. Higher values can give a more accurate estimate of the background noise level, but takes longer to compute. <br />
-Default value: 0.1</p>
+<p>After the labels have been successfully assigned to their respective wells, there are two visualisation options, Features over time and Boxplots.</p>
 
-<h4 id="standard-deviation-multiplier">Standard deviation multiplier</h4>
-<p>Value that is multiplied with the standard deviation of a portion of the data to create a threshold that determines whether this portion of the data contains purely noise or potential spikes.<br />
-Default value: 5</p>
+<h2 id="features-over-time">Features over time</h2>
 
-<h4 id="rms-multiplier">RMS multiplier</h4>
-<p>Value that is multiplied with the root mean square (RMS) of the background noise to determine the threshold for the spike detection.<br />
-Default value: 5</p>
+<p>The Features over time function allows the user to select multiple measurements at once and visualise how the different features develop over multiple days.</p>
 
-<h3 id="spike-detection">Spike detection</h3>
-<h4 id="refractory-period">Refractory period</h4>
-<p>The refractory period of the spike. The time in which only one spike can be detected. Value should be given in seconds.<br />
-Default value: 0.001</p>
+<p>This functionality requires the selected files to follow a certain naming convention, where the relative date of the measurement is present in the name of the output Features.csv file, and is preceded by a certain prefix such as ‘DIV’ or ‘t’. This can be seen in the following example:</p>
 
-<h3 id="spike-validation">Spike validation</h3>
-<h4 id="spike-validation-method">Spike validation method</h4>
-<p>The spike validation method used to determine whether a threshold crossing should be considered a neuronal signal or discarded.<br />
-Possible options: Noisebased, none.<br />
-Default value: Noisebased</p>
+<p><img src="./assets/images/plotting_files.png" width="100%" height="100%" /></p>
 
-<h4 id="exit-time">Exit time</h4>
-<p>The time the signal must drop/rise below a certain amplitude before/after it has reached its absolute peak.
-Value should be given in seconds. <br />
-Default value: 0.001</p>
+<p>This prefix should be supplied to the application using the DIV Prefix entry. As an extra option, the user can choose whether to show the individual datapoints on the final figures. Lastly, press <strong>Plot Features over time</strong> to generate the visualisations, this might take a little bit.</p>
 
-<h4 id="drop-amplitude">Drop amplitude</h4>
-<p>Multiplied with the surrounding background noise of the spike to determine the amplitude the signal must drop.<br />
-Default value: 5</p>
+<p><img src="./assets/images/plotting_settings.png" width="30%" height="30%" /></p>
 
-<h4 id="max-drop">Max drop</h4>
-<p>Value multiplied with the threshold value of the electrode to determine the maximum amplitude the signal can be required to drop.<br />
-Default value: 2</p>
+<h4 id="results">Results:</h4>
+<p><img src="./assets/images/features_over_time.png" width="100%" height="100%" /></p>
 
-<h3 id="burst-detection">Burst detection</h3>
-<h4 id="minimal-amount-of-spikes">Minimal amount of spikes</h4>
-<p>The smallest amount of spikes that can form a single channel burst.<br />
-Default value: 5</p>
+<p>The error bars represent the <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.sem.html">standard error of the mean</a>.</p>
 
-<h4 id="default-interval-threshold">Default interval threshold</h4>
-<p>The default inter-spike interval (ISI) threshold used for burst detection. Value should be given in milliseconds. <br />
-Default value: 100</p>
+<h2 id="boxplots">Boxplots</h2>
 
-<h4 id="max-interval-threshold">Max interval threshold</h4>
-<p>The maximum ISI threshold that can be used for burst detection. Values should be given in milliseconds.<br />
-Default value: 1000</p>
+<p>The boxplot functions will compare multiple groups against each other using boxplots.</p>
 
-<h4 id="kde-bandwidth">KDE bandwidth</h4>
-<p>The bandwidth of the Kernel Density Estimate (KDE) used for determining the burst detection parameters.<br />
-Default value: 1</p>
+<p>The function has multiple options;</p>
+<ul>
+  <li>Show datapoints:
+    <ul>
+      <li>Whether to show the individual datapoints in the figures.</li>
+    </ul>
+  </li>
+  <li>Colour Wells:
+    <ul>
+      <li>Whether to assign a specific colour to each well. Can be used to discern the results of different wells when combining multiple measurements.</li>
+    </ul>
+  </li>
+</ul>
 
-<h3 id="network-burst-detection">Network burst detection</h3>
-<h4 id="min-channels">Min channels</h4>
-<p>The minimal amount of channels that should be participating in a network burst to consider it as one. Value should be given as a percentage.<br />
-Default value: 0.5</p>
-
-<h4 id="thresholding-method">Thresholding method</h4>
-<p>The method used to automatically calculate the threshold used for determining high-activity periods.<br />
-Possible values: Yen, Otsu, Li, Isodata, Mean, Minimum, Triangle. See <a href="https://scikit-image.org/docs/0.24.x/api/skimage.filters.html#">scikit-image filters</a>.
-<br />
-Default value: Yen</p>
-
-<h4 id="kde-bandwidth-1">KDE bandwidth</h4>
-<p>The bandwidth used for the kernel density estimate representing spike activity.<br />
-Default value: 0.05</p>
+<p>Lastly, press <strong>Create Boxplots</strong> to generate the figures. Depending on the amount of data, this might take a little bit.
+  </p>
+<h4 id="results-1">Results:</h4>
+<p><img src="./assets/images/boxplots.png" width="70%" height="70%" /></p>
 
         </main>
         

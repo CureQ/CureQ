@@ -241,7 +241,7 @@ def electrode_features(well, parameters):
         "Median Inter-Spike interval": median_ISI,
         "Ratio median ISI over mean ISI": ratio_median_over_mean,
         "Inter-spike interval variance": IIV,
-        "Coefficient of variation_ISI": CVI,
+        "Coefficient of variation ISI": CVI,
         "Partial Autocorrelaction Function ISI": ISIPACF,
         "Bursts": burst_amnt,
         "Mean Burst Rate": SCB_rate,
@@ -529,8 +529,8 @@ def well_features(well, parameters):
         "Network Burst ISI": NB_ISI,
         "Portion of Spikes in Network Bursts": portion_spikes_in_nbs,
         "Portion of Bursts in Network Bursts": portion_bursts_in_nbs,
-        "Ration Left Outer NB over NB Core": NB_NBC_ratio_left,
-        "Ration Right Outer NB over NB Core": NB_NBC_ratio_right,
+        "Ratio Left Outer NB over NB Core": NB_NBC_ratio_left,
+        "Ratio Right Outer NB over NB Core": NB_NBC_ratio_right,
         "Ratio Left Outer over Right Outer NB": lr_NB_ratio,
         "Participating Electrodes": participating_electrodes
     })

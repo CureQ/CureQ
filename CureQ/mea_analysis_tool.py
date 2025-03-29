@@ -871,6 +871,7 @@ class single_electrode_view(ctk.CTkToplevel):
 
         self.parameters=open(f"{folder}/parameters.json")
         self.parameters=json.load(self.parameters)
+        self.parameters["output hdf file"] = os.path.join(folder, "output_values.h5")
         self.electrode_nr=(well-1)*self.parameters["electrode amount"]+electrode-1
 
         self.rawfile=rawfile
@@ -1233,6 +1234,7 @@ class whole_well_view(ctk.CTkToplevel):
 
         self.parameters=open(f"{folder}/parameters.json")
         self.parameters=json.load(self.parameters)
+        self.parameters["output hdf file"] = os.path.join(folder, "output_values.h5")
 
         self.folder=folder
         self.well=well
