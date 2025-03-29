@@ -8,20 +8,20 @@
     <link rel="icon" type="image/png" href="/CureQ/assets/images/MEAlytics_logo.ico">
 
     <!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>MEAlytics as Python package | MEAlytics</title>
+<title>Analysis output | MEAlytics</title>
 <meta name="generator" content="Jekyll v3.9.5" />
-<meta property="og:title" content="MEAlytics as Python package" />
+<meta property="og:title" content="Analysis output" />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Comprehensive user guide and documentation" />
 <meta property="og:description" content="Comprehensive user guide and documentation" />
-<link rel="canonical" href="http://localhost:4000/CureQ/python_package" />
-<meta property="og:url" content="http://localhost:4000/CureQ/python_package" />
+<link rel="canonical" href="http://localhost:4000/CureQ/output" />
+<meta property="og:url" content="http://localhost:4000/CureQ/output" />
 <meta property="og:site_name" content="MEAlytics" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="MEAlytics as Python package" />
+<meta property="twitter:title" content="Analysis output" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","description":"Comprehensive user guide and documentation","headline":"MEAlytics as Python package","url":"http://localhost:4000/CureQ/python_package"}</script>
+{"@context":"https://schema.org","@type":"WebPage","description":"Comprehensive user guide and documentation","headline":"Analysis output","url":"http://localhost:4000/CureQ/output"}</script>
 <!-- End Jekyll SEO tag -->
 
     <style>
@@ -275,57 +275,22 @@
       
       <div class="content-wrapper">
         <main class="content">
-          <h1>MEAlytics as Python package</h1>
-          <p>Besides the GUI, the MEA analysis tool can also be called as a python library, and has a few functions that can be of use to the user. Let’s walk through an example to fully analyse a MEA file.</p>
+          <h1>Analysis output</h1>
+          <p>During the analysis, the application will create an “outputfolder” where it stores all results and details from the analysis. This outputfolder can be found in the same location as the raw data file. The outputfolder will share the same name as the raw data file, with the date and time of the analysis attached at the end. The outputfolder contains several files:</p>
 
-<h3 id="analysing-mea-file">Analysing MEA file</h3>
+<p><img src="./assets/images/output.png" width="90%" height="90%" /></p>
 
-<p>Firstly, import the necessary functions:</p>
+<p><strong>output_values.h5</strong> contain files that are used to save the intermediate results of the spike, burst and network burst detection process. These files are used to calculate the output features and visualise the process in the GUI. These files are generally not important for the end user.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">CureQ.mea</span> <span class="kn">import</span> <span class="n">analyse_wells</span><span class="p">,</span> <span class="n">get_default_parameters</span>
-</code></pre></div></div>
+<p>The <strong>Figures</strong> folder contains visualisations for the network burst detection process, and can be used to get a quick overview of network/well activity without having to load in the results in the GUI.</p>
 
-<p>Next, we define some variables that we later need to pass to the function.</p>
+<p>The file ending with <strong>Features.csv</strong> will contain the output features that are calculated by the analysis tool. Here, every column is a feature, and every row is a well. Here all electrode features are averaged out over the well.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">fileadress</span><span class="o">=</span><span class="s">'C:/mea_data/mea_experiment.h5'</span>
-<span class="n">sampling_rate</span><span class="o">=</span><span class="mi">20000</span>
-<span class="n">electrode_amount</span><span class="o">=</span><span class="mi">12</span>
-</code></pre></div></div>
+<p>The file ending with <strong>Electrode_Features.csv</strong> will contain the single electrode features, such as spike and single channel burst metrics, calculated per individual electrode.</p>
 
-<p>Then, we retrieve the dictionary containing the default parameters so we can alter the analysis. In this case we turn on multiprocessing to speed up the analysis.</p>
+<p>For more information about the features the MEA analysis tool calculates, see Features.</p>
 
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">parameters</span> <span class="o">=</span> <span class="n">get_default_parameters</span><span class="p">()</span>
-<span class="n">parameters</span><span class="p">[</span><span class="s">'use multiprocessing'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
-</code></pre></div></div>
-
-<p>Finally, pass all the arguments to the analyse_wells function to initiate the analysis. Because we turned on multiprocessing, we must use and <code class="language-plaintext highlighter-rouge">“if __name__ == ‘__main__’: “</code> guard here. Otherwise, the application will eventually create an infinite number of processes and eventually crash.</p>
-
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
-    <span class="n">analyse_wells</span><span class="p">(</span><span class="n">fileadress</span><span class="o">=</span><span class="n">fileadress</span><span class="p">,</span>
-                  <span class="n">sampling_rate</span><span class="o">=</span><span class="n">sampling_rate</span><span class="p">,</span>
-                  <span class="n">electrode_amnt</span><span class="o">=</span><span class="n">electrode_amount</span><span class="p">,</span>
-                  <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span>
-                  <span class="p">)</span>
-</code></pre></div></div>
-
-<p>In the end, it should look like this:</p>
-
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">CureQ.mea</span> <span class="kn">import</span> <span class="n">analyse_wells</span><span class="p">,</span> <span class="n">get_default_parameters</span>
-
-<span class="n">fileadress</span><span class="o">=</span><span class="s">'C:/mea_data/mea_experiment.h5'</span>
-<span class="n">sampling_rate</span><span class="o">=</span><span class="mi">20000</span>
-<span class="n">electrode_amount</span><span class="o">=</span><span class="mi">12</span>
-
-<span class="n">parameters</span> <span class="o">=</span> <span class="n">get_default_parameters</span><span class="p">()</span>
-<span class="n">parameters</span><span class="p">[</span><span class="s">'use multiprocessing'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
-
-<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
-    <span class="n">analyse_wells</span><span class="p">(</span><span class="n">fileadress</span><span class="o">=</span><span class="n">fileadress</span><span class="p">,</span>
-                  <span class="n">sampling_rate</span><span class="o">=</span><span class="n">sampling_rate</span><span class="p">,</span>
-                  <span class="n">electrode_amnt</span><span class="o">=</span><span class="n">electrode_amount</span><span class="p">,</span>
-                  <span class="n">parameters</span><span class="o">=</span><span class="n">parameters</span>
-                  <span class="p">)</span>
-</code></pre></div></div>
+<p>Lastly, the <strong>parameters.json</strong> file contains information about the analysis such as which parameters were used, some information about the dataset, and which version of the tool was used. This file can be used to copy settings from a previous analysis. For more information on how to do this, see <a href="analyse_file.html">Analyse Single File</a></p>
 
         </main>
         
