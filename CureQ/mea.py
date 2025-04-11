@@ -25,6 +25,7 @@ try:
     from ._spike_validation import *
     from ._threshold import *
     from ._utilities import *
+    from ._heatmap import *
 except:
     from _bandpass import *
     from _burst_detection import *
@@ -34,6 +35,7 @@ except:
     from _spike_validation import *
     from _threshold import *
     from _utilities import *
+    from _heatmap import *
 
 
 def get_default_parameters():

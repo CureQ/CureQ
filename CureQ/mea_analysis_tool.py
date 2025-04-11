@@ -24,6 +24,7 @@ from CTkToolTip import *
 from CTkMessagebox import CTkMessagebox
 from CTkColorPicker import *
 import requests
+from _heatmap import *
 
 # Import the MEA library
 try:
@@ -743,6 +744,34 @@ class view_results(ctk.CTkFrame):
         self.folder=folder
         self.rawfile=rawfile
         self.parent=parent
+        
+        # Dicts for HM
+        Vars = {
+            "fps": 10,
+            "Num frames": None,
+            "df": None,
+            "n_Wells": None,
+            "n_Electrodes": None,
+            "v_max": None,
+            "Size": None,
+            "Precomputed Max": None,
+            "Rows": None,
+            "Cols": None,
+            "cmap": None,
+            "max_df": None
+        }
+        Classes = {
+            "125-6 SCA1 54 repeats": [0,1,8,9,16,17,24,25,32,33,40,41],
+            "125-6 Control": [2,3,10,11,18,19,26,27,34,35,42,43],
+            "113-6 SCA1 46 repeats": [4,5,12,13,20,21,28,29,36,37,44,45],
+            "114-2 Control": [6,7,14,15,22,23,30,31,38,39,46,47]
+        }
+        Colour_classes = {
+            "125-6 SCA1 54 repeats": 'green',
+            "125-6 Control": 'violet',
+            "113-6 SCA1 46 repeats": 'gold',
+            "114-2 Control": 'red'
+        }
 
         self.parent.title(f"MEAlytics - Version: {version('CureQ')} - {self.folder}")
 
@@ -759,10 +788,15 @@ class view_results(ctk.CTkFrame):
         self.tab_frame.tab("Whole Well View").grid_columnconfigure(0, weight=1)
         self.tab_frame.tab("Whole Well View").grid_rowconfigure(0, weight=1)
 
+        self.tab_frame.add("Heatmap")
+        self.tab_frame.tab("Heatmap").grid_columnconfigure(0, weight=1)
+        self.tab_frame.tab("Heatmap").grid_rowconfigure(0, weight=1)
+
         # sev = single electrode view
         # wwv = whole well view
 
         # Load files
+        h5_file=f"{folder}/output_values.h5"
         parameters=open(f"{folder}/parameters.json")
         parameters=json.load(parameters)
         with h5py.File(rawfile, 'r') as hdf_file:
@@ -824,10 +858,50 @@ class view_results(ctk.CTkFrame):
                 wwv_wellbuttons.append(well_btn)
                 i+=1
 
+        """Heatmap"""
+        
+        Vars["Rows"] = ywells
+        Vars["Cols"] = xwells
+        Vars["Num frames"] = int(parameters['measurements'] / parameters['sampling rate'] * Vars["fps"])
+        self.current_tab = self.tab_frame.get()
+        self.check_tab_change()
+        heatmap_button_frame = ctk.CTkFrame(master=self.tab_frame.tab("Heatmap"))
+        heatmap_button_frame.grid(row=0, column=1, padx=20, pady=20, sticky="n")
+
+        hm_data_generator = ctk.CTkButton(heatmap_button_frame, text="Process data", command=lambda: self.generate_data(display_hm, display_hm_full, display_hm_max, h5_file, parameters, Vars))
+        hm_data_generator.pack(pady=20)
+
+        display_hm = ctk.CTkButton(heatmap_button_frame, text="Generate Heatmap", state="disabled", command=lambda: self.start_animation(Vars, Classes))
+        display_hm.pack(pady=20)  # Add padding to the button
+
+        display_hm_full = ctk.CTkButton(heatmap_button_frame, text="Show total activity", state="disabled", command=lambda: self.show_full_heatmap(Vars, Classes))
+        display_hm_full.pack(pady=20)  # Add padding to the button
+
+        display_hm_max = ctk.CTkButton(heatmap_button_frame, text="Show max activity", state="disabled", command=lambda: self.show_max_activity(Vars, Classes))
+        display_hm_max.pack(pady=20)  # Add padding to the button
+
+        self.add_legend_to_frame(heatmap_button_frame, Colour_classes)
+        Vars["cmap"] = cmap_creation()
+
+        placeholder_fig = create_placeholder_figure(Vars)
+        placeholder_canvas = FigureCanvasTkAgg(placeholder_fig, master=self.tab_frame.tab("Heatmap"))
+        placeholder_canvas.draw()
+        placeholder_canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
+        Vars["canvas"] = placeholder_canvas
+
+        self.slider = ctk.CTkSlider(master=self.tab_frame.tab("Heatmap"), from_=0, to=(Vars["Num frames"]/10), height=30)
+        self.slider.grid(row=1, column=0, padx=10, pady=10, sticky = "ew")
+
+        self.from_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="0")
+        self.from_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+        self.to_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text=(Vars["Num frames"]/10))
+        self.to_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
         # Button to return to main menu
         return_to_main = ctk.CTkButton(master=self, text="Return to main menu", command=lambda: self.parent.show_frame(main_window), fg_color=parent.gray_1)
         return_to_main.grid(row=1, column=0, pady=10, padx=10)
     
+        
+
     def set_selected_well(self, i):
         self.selected_well=i
         for j in range(len(self.sev_wellbuttons)):
@@ -840,8 +914,97 @@ class view_results(ctk.CTkFrame):
 
     def open_wwv_tab(self, well):
         whole_well_view(self.parent, self.folder, well)
+    
 
+    ####### HEATMAP FUNCTIONS
+    def generate_data(self, display_hm, display_hm_full, display_hm_max, h5_data, parameters, Vars):
+        Vars["df"], Vars["n_Wells"], Vars["n_Electrodes"], Vars["v_max"], Vars["Size"], Vars["Precomputed Max"], Vars["max_df"] = data_prepper(h5_data, parameters, Vars)
+        display_hm.configure(state="normal")  
+        display_hm_full.configure(state="normal")  
+        display_hm_max.configure(state="normal")  
 
+    def start_animation(self, Vars, Classes):
+        # Create the animation and figure only when the button is clicked
+        Vars["canvas"].get_tk_widget().destroy()
+
+        ani, fig = make_hm(Vars, Classes)
+
+        canvas = FigureCanvasTkAgg(fig, master=self.tab_frame.tab("Heatmap"))
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
+        
+        # Set up the slider to control the animation frame
+        # self.slider.configure(command=self.update_frame)
+        # Start the animation
+        ani.event_source.start()
+
+        self.animation = ani
+        self.canvas = canvas
+
+    def show_full_heatmap(self, Vars, Classes):
+        # Create the animation and figure only when the button is clicked
+        Vars["canvas"].get_tk_widget().destroy()
+
+        fig = make_hm_img(Vars, Classes)
+
+        canvas = FigureCanvasTkAgg(fig, master=self.tab_frame.tab("Heatmap"))
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
+        self.canvas = canvas
+        
+    def show_max_activity(self, Vars, Classes):
+        # Create the animation and figure only when the button is clicked
+        Vars["canvas"].get_tk_widget().destroy()
+
+        fig = make_hm_max_activity(Vars, Classes)
+
+        canvas = FigureCanvasTkAgg(fig, master=self.tab_frame.tab("Heatmap"))
+        canvas.draw()
+        canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
+        self.canvas = canvas
+
+    # def update_frame(self, value):
+    #     # Stop the animation to set the new frame manually
+    #     self.animation.event_source.stop()
+
+    #     # Convert the slider value to the appropriate frame
+    #     frame = int(float(value))  # Cast to an integer for the frame number
+
+    #     # Update the frame manually
+    #     self.animation.event_source.frame_seq = self.animation.new_frame_seq()  # Reset the frame sequence
+    #     self.animation.event_source.frame_seq._start = frame  # Set the frame number based on the slider
+
+    #     # Redraw the canvas to update the frame
+    #     self.canvas.draw()
+
+    #     # Restart the animation event source at the new frame
+    #     self.animation.event_source.start()
+
+    def add_legend_to_frame(self, frame, colour_dict):
+        legend_label = ctk.CTkLabel(frame, text="Legend", font=("Arial", 14, "bold"))
+        legend_label.pack(pady=(20, 5))  # Padding: top 20, bottom 5
+
+        for class_name, color in colour_dict.items():
+            legend_row = ctk.CTkFrame(frame, fg_color="transparent")  # Transparent bg for clean look
+            legend_row.pack(anchor="w", padx=10, pady=2, fill="x")
+
+            color_box = ctk.CTkLabel(legend_row, text="", width=20, height=20, corner_radius=3)
+            color_box.configure(fg_color=color)
+            color_box.pack(side="left")
+
+            text_label = ctk.CTkLabel(legend_row, text=class_name, anchor="w")
+            text_label.pack(side="left", padx=10)
+
+    def check_tab_change(self):
+        selected_tab = self.tab_frame.get()
+
+        if selected_tab != self.current_tab:
+            self.current_tab = selected_tab
+            if selected_tab == "Heatmap":
+                self.parent.geometry("1060x767")
+
+        self.after(200, self.check_tab_change)
+        
 class single_electrode_view(ctk.CTkToplevel):
     """
     Allows the user to inpect the spike and burst detection on a single electrode.
@@ -1203,7 +1366,6 @@ class single_electrode_view(ctk.CTkToplevel):
         self.default_values_burst()
         self.update_burst_plot(parent)
 
-
 class whole_well_view(ctk.CTkToplevel):
     """
     Allows the user to inspect the network burst detection of a single well.
@@ -1396,7 +1558,6 @@ class whole_well_view(ctk.CTkToplevel):
         self.el_act_bw_entry.insert(0, self.def_bw_value)
         self.well_activity_update_plot()
 
-
 class process_file_frame(ctk.CTkFrame):
     """
     Allows the user to perform analysis on a single MEA experiment.
@@ -1553,7 +1714,6 @@ class process_file_frame(ctk.CTkFrame):
         popup.protocol("WM_DELETE_WINDOW", popup.destroy)
         self.start_button.configure(state='normal')
         self.return_button.configure(state='normal')
-
 
 class batch_processing(ctk.CTkFrame):
     """
@@ -1867,8 +2027,6 @@ class batch_processing(ctk.CTkFrame):
         self.abort_analysis_button.configure(text="Aborting analysis after current file")
         self.abort_analysis_button.configure(state="disabled")
 
-
-
 class compress_files(ctk.CTkFrame):
     """
     Allows the user to compress/rechunk multiple files.
@@ -2010,7 +2168,6 @@ class compress_files(ctk.CTkFrame):
         abort_button.configure(state='disabled')
         info.configure(text="Finished compression")
         popup.protocol("WM_DELETE_WINDOW", popup.destroy)
-
 
 class plotting_window(ctk.CTkFrame):
     """
