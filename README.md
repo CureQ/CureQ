@@ -37,7 +37,7 @@ Import the function you need, call this function and watch how the pipeline anal
 
 #### Example for analyzing all MEA wells
 ```python
-from CureQ.mea import analyse_wells, get_default_parameters
+from CureQ.core.mea import analyse_wells, get_default_parameters
 
 fileadress='C:/mea_data/mea_experiment.h5'
 sampling_rate=20000
@@ -64,7 +64,7 @@ The GUI can be opened as follows:
 
 #### Opening the GUI
 ```python
-from CureQ.mea_analysis_tool import MEA_GUI
+from CureQ.GUI.mea_analysis_tool import MEA_GUI
 
 if __name__=="__main__":
     MEA_GUI()
