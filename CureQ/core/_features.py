@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import h5py
 from statsmodels.tsa.stattools import pacf
+import warnings
 
 def electrode_features(well, parameters):
     """
@@ -79,157 +80,158 @@ def electrode_features(well, parameters):
            Now if you run the analysis again, you should see your own feature in the "Features.csv" output file
 -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
         '''
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)  # Silence division warnings
+            # Calculate the total amount of spikes
+            spike=spikedata.shape[0]
+            spikes.append(spike)
 
-        # Calculate the total amount of spikes
-        spike=spikedata.shape[0]
-        spikes.append(spike)
+            # Calculate the average firing frequency frequency
+            firing_frequency=spike/(parameters['measurements']/parameters['sampling rate'])
+            mean_firingrate.append(firing_frequency)
 
-        # Calculate the average firing frequency frequency
-        firing_frequency=spike/(parameters['measurements']/parameters['sampling rate'])
-        mean_firingrate.append(firing_frequency)
+            # Calculate mean inter spike interval
+            spikeintervals = []
+            # Iterate over every registered spike
+            if spikedata.shape[0]<2:
+                mean_ISI.append(float("NaN"))
+                median_ISI.append(float("NaN"))
+                ratio_median_over_mean.append(float("NaN"))
+            else:
+                spikeintervals=spikedata[1:-1, 0]-spikedata[0:-2, 0]
+                mean_ISI_electrode=np.mean(spikeintervals)
+                mean_ISI.append(mean_ISI_electrode)
+            
+                # Calculate the median of the ISIs
+                median_ISI_electrode=np.median(spikeintervals)
+                median_ISI.append(median_ISI_electrode)
 
-        # Calculate mean inter spike interval
-        spikeintervals = []
-        # Iterate over every registered spike
-        if spikedata.shape[0]<2:
-            mean_ISI.append(float("NaN"))
-            median_ISI.append(float("NaN"))
-            ratio_median_over_mean.append(float("NaN"))
-        else:
-            spikeintervals=spikedata[1:-1, 0]-spikedata[0:-2, 0]
-            mean_ISI_electrode=np.mean(spikeintervals)
-            mean_ISI.append(mean_ISI_electrode)
-        
-            # Calculate the median of the ISIs
-            median_ISI_electrode=np.median(spikeintervals)
-            median_ISI.append(median_ISI_electrode)
+                # Calculate the ratio of median ISI over mean ISI
+                ratio_median_over_mean.append(median_ISI_electrode/mean_ISI_electrode)
 
-            # Calculate the ratio of median ISI over mean ISI
-            ratio_median_over_mean.append(median_ISI_electrode/mean_ISI_electrode)
+            # Calculate Interspike interval variance
+            if spikedata.shape[0]<3:
+                IIV.append(float("NaN"))
+            else:
+                IIV.append(np.var(spikeintervals))
 
-        # Calculate Interspike interval variance
-        if spikedata.shape[0]<3:
-            IIV.append(float("NaN"))
-        else:
-            IIV.append(np.var(spikeintervals))
+            # Calculate the coeficient of variation of the interspike intervals
+            if spikedata.shape[0]<3:
+                CVI.append(float("NaN"))
+            else:
+                CVI.append(np.std(spikeintervals)/np.mean(spikeintervals))
 
-        # Calculate the coeficient of variation of the interspike intervals
-        if spikedata.shape[0]<3:
-            CVI.append(float("NaN"))
-        else:
-            CVI.append(np.std(spikeintervals)/np.mean(spikeintervals))
+            # Calculate the partial autocorrelation function
+            if len(spikeintervals)<4:
+                ISIPACF.append(float("NaN"))
+            else:
+                ISIPACF.append(pacf(spikeintervals, nlags=1, method='yw')[1])
 
-        # Calculate the partial autocorrelation function
-        if len(spikeintervals)<4:
-            ISIPACF.append(float("NaN"))
-        else:
-            ISIPACF.append(pacf(spikeintervals, nlags=1, method='yw')[1])
+            # Calculate the total amount of bursts
+            burst_amnt.append(len(burst_cores))
 
-        # Calculate the total amount of bursts
-        burst_amnt.append(len(burst_cores))
+            # Calculate the average length of the bursts
+            burst_lens=[]
+            for k in burst_cores:
+                burst_lens.append(k[1]-k[0])
+            if len(burst_lens)==0:
+                avg=float("NaN")
+            else:
+                avg=np.mean(burst_lens)
+            avg_burst_len.append(avg)
 
-        # Calculate the average length of the bursts
-        burst_lens=[]
-        for k in burst_cores:
-            burst_lens.append(k[1]-k[0])
-        if len(burst_lens)==0:
-            avg=float("NaN")
-        else:
-            avg=np.mean(burst_lens)
-        avg_burst_len.append(avg)
+            # Calculate the variance of the burst length
+            if len(burst_lens)<2:
+                burst_var.append(float("NaN"))
+            else:
+                burst_var.append(np.var(burst_lens))
 
-        # Calculate the variance of the burst length
-        if len(burst_lens)<2:
-            burst_var.append(float("NaN"))
-        else:
-            burst_var.append(np.var(burst_lens))
+            # Calculate the coefficient of variation of the burst lengths
+            if len(burst_lens)<2:
+                burst_CV.append(float("NaN"))
+            else:
+                burst_CV.append(np.std(burst_lens)/np.mean(burst_lens))
 
-        # Calculate the coefficient of variation of the burst lengths
-        if len(burst_lens)<2:
-            burst_CV.append(float("NaN"))
-        else:
-            burst_CV.append(np.std(burst_lens)/np.mean(burst_lens))
+            # Calculate the average time between bursts
+            IBIs=[]
+            for i in range(len(burst_cores)-1):
+                time_to_next_burst=burst_cores[i+1][0]-burst_cores[i][1]
+                IBIs.append(time_to_next_burst)
+            if len(IBIs)==0:
+                mean_IBI.append(float("NaN"))
+            else:
+                mean_IBI.append(np.mean(IBIs))
 
-        # Calculate the average time between bursts
-        IBIs=[]
-        for i in range(len(burst_cores)-1):
-            time_to_next_burst=burst_cores[i+1][0]-burst_cores[i][1]
-            IBIs.append(time_to_next_burst)
-        if len(IBIs)==0:
-            mean_IBI.append(float("NaN"))
-        else:
-            mean_IBI.append(np.mean(IBIs))
+            # Calculate the variance of interburst intervals
+            if len(IBIs)<2:
+                IBI_var.append(float("NaN"))
+            else:
+                IBI_var.append(np.var(IBIs))
 
-        # Calculate the variance of interburst intervals
-        if len(IBIs)<2:
-            IBI_var.append(float("NaN"))
-        else:
-            IBI_var.append(np.var(IBIs))
+            # Calculate the coefficient of variation of the interburst intervals
+            if len(IBIs)<2:
+                IBI_CV.append(float("NaN"))
+            else:
+                IBI_CV.append(np.std(IBIs)/np.mean(IBIs))
 
-        # Calculate the coefficient of variation of the interburst intervals
-        if len(IBIs)<2:
-            IBI_CV.append(float("NaN"))
-        else:
-            IBI_CV.append(np.std(IBIs)/np.mean(IBIs))
+            # Calculate the partial autocorrelation function of the interburst intervals
+            if len(IBIs)<4:
+                IBIPACF.append(float("NaN"))
+            else:
+                IBIPACF.append(pacf(IBIs, nlags=1, method='yw')[1])
 
-        # Calculate the partial autocorrelation function of the interburst intervals
-        if len(IBIs)<4:
-            IBIPACF.append(float("NaN"))
-        else:
-            IBIPACF.append(pacf(IBIs, nlags=1, method='yw')[1])
+            # Calculate the mean intraburst firing rate and average amount of spikes per burst
+            IBFRs=[]
+            spikes_per_burst=[]
+            # Iterate over all the bursts
+            if len(burst_cores)>0:
+                for i in range(len(burst_cores)):
+                    locs=np.where(burst_spikes[:,3]==i)
+                    total_burst_spikes = len(locs[0])
+                    spikes_per_burst.append(total_burst_spikes)
+                    firingrate=total_burst_spikes/burst_lens[i]
+                    IBFRs.append(firingrate)
+                intraBFR.append(np.mean(IBFRs))
+                mean_spikes_per_burst.append(np.mean(spikes_per_burst))
+            else:
+                intraBFR.append(float("NaN"))
+                mean_spikes_per_burst.append(float("NaN"))
 
-        # Calculate the mean intraburst firing rate and average amount of spikes per burst
-        IBFRs=[]
-        spikes_per_burst=[]
-        # Iterate over all the bursts
-        if len(burst_cores)>0:
-            for i in range(len(burst_cores)):
-                locs=np.where(burst_spikes[:,3]==i)
-                total_burst_spikes = len(locs[0])
-                spikes_per_burst.append(total_burst_spikes)
-                firingrate=total_burst_spikes/burst_lens[i]
-                IBFRs.append(firingrate)
-            intraBFR.append(np.mean(IBFRs))
-            mean_spikes_per_burst.append(np.mean(spikes_per_burst))
-        else:
-            intraBFR.append(float("NaN"))
-            mean_spikes_per_burst.append(float("NaN"))
+            # Calculate the mean absolute deviation of the amount of spikes per burst
+            if len(burst_cores)>0:
+                MAD_spikes_per_burst.append(np.mean(np.absolute(spikes_per_burst - np.mean(spikes_per_burst))))
+            else:
+                MAD_spikes_per_burst.append(float("NaN"))
 
-        # Calculate the mean absolute deviation of the amount of spikes per burst
-        if len(burst_cores)>0:
-            MAD_spikes_per_burst.append(np.mean(np.absolute(spikes_per_burst - np.mean(spikes_per_burst))))
-        else:
-            MAD_spikes_per_burst.append(float("NaN"))
+            # Calculte the % of spikes that are isolated (not in a burst)
+            if burst_spikes.shape[0]>0 and spike>0:
+                isolated_spikes.append(1-(burst_spikes.shape[0]/spike))
+            else:
+                isolated_spikes.append(float("NaN"))
 
-        # Calculte the % of spikes that are isolated (not in a burst)
-        if burst_spikes.shape[0]>0 and spike>0:
-            isolated_spikes.append(1-(burst_spikes.shape[0]/spike))
-        else:
-            isolated_spikes.append(float("NaN"))
+            # Calculate the single channel burst rate (bursts/s)
+            if len(burst_cores)>0:
+                SCB_rate.append(len(burst_cores)/(parameters['measurements']/parameters['sampling rate']))
+            else:
+                SCB_rate.append(float(0))
 
-        # Calculate the single channel burst rate (bursts/s)
-        if len(burst_cores)>0:
-            SCB_rate.append(len(burst_cores)/(parameters['measurements']/parameters['sampling rate']))
-        else:
-            SCB_rate.append(float(0))
+            # Calculate average spike amplitude
+            if spikedata.shape[0]==0:
+                mean_spike_amplitude.append(float("NaN"))
+            else:
+                mean_spike_amplitude.append(np.mean(np.abs(spikedata[:, 1])))
 
-        # Calculate average spike amplitude
-        if spikedata.shape[0]==0:
-            mean_spike_amplitude.append(float("NaN"))
-        else:
-            mean_spike_amplitude.append(np.mean(np.abs(spikedata[:, 1])))
+            # Calculate median spike amplitude
+            if spikedata.shape[0]==0:
+                median_spike_amplitude.append(float("NaN"))
+            else:
+                median_spike_amplitude.append(np.median(np.abs(spikedata[:, 1])))
 
-        # Calculate median spike amplitude
-        if spikedata.shape[0]==0:
-            median_spike_amplitude.append(float("NaN"))
-        else:
-            median_spike_amplitude.append(np.median(np.abs(spikedata[:, 1])))
-
-        # Calculate spike amplitude coefficient of variation
-        if spikedata.shape[0]<2:
-            cv_spike_amplitude.append(float("NaN"))
-        else:
-            cv_spike_amplitude.append(np.std(np.abs(spikedata[:, 1]))/np.mean(np.abs(spikedata[:, 1])))
+            # Calculate spike amplitude coefficient of variation
+            if spikedata.shape[0]<2:
+                cv_spike_amplitude.append(float("NaN"))
+            else:
+                cv_spike_amplitude.append(np.std(np.abs(spikedata[:, 1]))/np.mean(np.abs(spikedata[:, 1])))
         
     # Create pandas dataframe with all features as columns 
     features_df = pd.DataFrame({
@@ -380,137 +382,139 @@ def well_features(well, parameters):
         portion_bursts_in_nbs.append(float("NaN"))
         participating_electrodes.append(float("NaN"))
     else:
-        # Calculate the average length of a network burst
-        NB_duration=[]
-        for i in range(len(network_cores)):
-            NB_duration.append(network_cores[i,3]-network_cores[i,2])
-        network_burst_duration.append(np.mean(NB_duration))
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=RuntimeWarning)  # Silence division warnings
+            # Calculate the average length of a network burst
+            NB_duration=[]
+            for i in range(len(network_cores)):
+                NB_duration.append(network_cores[i,3]-network_cores[i,2])
+            network_burst_duration.append(np.mean(NB_duration))
 
-        # Calculate the average length of a network burst core
-        NBC_duration=[]
-        for i in range(len(network_cores)):
-            NBC_duration.append(network_cores[i,1]-network_cores[i,0])
-        network_burst_core_duration.append(np.mean(NBC_duration))
-        
-        # Calculate the coefficient of variation of the network burst cores duration
-        if len(NBC_duration)<2:
-            NBC_duration_CV.append(float("NaN"))
-        else:
-            NBC_duration_CV.append(np.std(NBC_duration)/np.mean(NBC_duration))
-        
-        network_IBIs=[]
-        if len(network_cores)<2:
-            network_IBI.append(float("NaN"))
-        else:
-            # Calculate the network interburst interval
-            # Iterate over the network bursts
-            for i in range(len(network_cores)-1):
-                # Calculate the distance to the next NB
-                dist=network_cores[i+1, 2] - network_cores[i,3]
-                network_IBIs.append(dist)
-
-            # Calculate the mean
-            network_IBI.append(np.mean(network_IBIs))
-
-        if len(network_IBIs)<2:
-            nIBI_var.append(float("NaN"))
-            nIBI_CV.append(float("NaN"))
-        else:
-            # Calculate the variance of the network IBI
-            nIBI_var.append(np.var(network_IBIs))
-            # Calculate the coefficient of variation of the network IBI
-            nIBI_CV.append(np.std(network_IBIs)/np.mean(network_IBIs))
-
-        # Calculate the partial autocorrelation function of the network interburst intervals
-        if len(network_IBIs)<4:     # At least 4 values are needed for this calculation
-            NIBIPACF.append(float("NaN"))
-        else:
-            NIBIPACF.append(pacf(network_IBIs, nlags=1, method='yw')[1])
-
-        # Calculate the intra-network burst firing rate and network burst inter spike interval
-        single_nb_firingrate=[]
-        single_nb_ISI=[]
-        spikes_per_network_burst=[]
-        total_spikes_in_nbs=0
-
-        for network_burst in range(len(network_cores)):
-            nb_spikes=[]
-            # Identify all spikes that happened during the network burst
-            for channel in range(len(spikedata_list)):
-                for spike in range(len(spikedata_list[channel])):
-                    # Check whether this spike occured during the network burst
-                    if network_cores[network_burst, 2] <= spikedata_list[channel][spike][0] <= network_cores[network_burst, 3]:
-                        nb_spikes.append(spikedata_list[channel][spike][0])
-            # Calculate the NB firing rate
-            single_nb_firingrate.append((len(nb_spikes))/(network_cores[network_burst, 3]-network_cores[network_burst, 2]))
-            total_spikes_in_nbs+=len(nb_spikes)
-            # Calculate the network burst inter spike interval
-            # First sort the spike so they are on chronological order again
-            nb_spikes=np.sort(nb_spikes)
-            # Calculate the intervals
-            nb_spikes_intervals=nb_spikes[1:-1]-nb_spikes[0:-2]
-            # Take the average
-            single_nb_ISI.append(np.mean(nb_spikes_intervals))
+            # Calculate the average length of a network burst core
+            NBC_duration=[]
+            for i in range(len(network_cores)):
+                NBC_duration.append(network_cores[i,1]-network_cores[i,0])
+            network_burst_core_duration.append(np.mean(NBC_duration))
             
-            spikes_per_network_burst.append(len(nb_spikes))
-        NB_firingrate.append(np.mean(single_nb_firingrate))
-        NB_ISI.append(np.mean(single_nb_ISI))
-        mean_spikes_per_network_burst=np.mean(spikes_per_network_burst)
-
-        # Calculate the portion of spikes that participate in network bursts
-        total_spikes=0
-        for channel in range(len(spikedata_list)):
-            total_spikes+=len(spikedata_list[channel])
-        if total_spikes_in_nbs==0 or total_spikes==0:
-            portion_spikes_in_nbs.append(float("NaN"))
-        else:
-            portion_spikes_in_nbs.append(total_spikes_in_nbs/total_spikes)
-
-        # Calculate the portion of bursts that participate in network bursts
-        burst_participating_in_nbs = len(participating_bursts)
-        total_bursts=0
-        for channel in range(len(burstcores_list)):
-            total_bursts+=len(burstcores_list[channel])
-        if burst_participating_in_nbs==0 or total_bursts==0:
-            portion_bursts_in_nbs.append(float("NaN"))
-        else:
-            portion_bursts_in_nbs.append(burst_participating_in_nbs/total_bursts)
-        
-        # Calculate average the network burst to network burst core ratio
-        ratios=[]
-        for i in range(len(network_cores)):
-            ratio=(network_cores[i,3]-network_cores[i,2])/(network_cores[i,1]-network_cores[i,0])
-            ratios.append(ratio)
-        NB_NBc_ratio.append(np.mean(ratios))
-
-        # Calculate the ratio of the length of the left/right outer part of the network burst compared to the core
-        left_ratios=[]
-        right_ratios=[]
-        lr_ratios=[]
-        for i in range(len(network_cores)):
-            burst_core_length=network_cores[i,1]-network_cores[i,0]
-            left_outer_burst=network_cores[i,0]-network_cores[i,2]
-            right_outer_burst=network_cores[i,3]-network_cores[i,1]
-            # Sometimes the burst has no outer edges, so we get a division by 0, check for that here
-            if np.min([left_outer_burst, right_outer_burst])==0:
-                # In that case append 0
-                lr_ratios.append(0)
+            # Calculate the coefficient of variation of the network burst cores duration
+            if len(NBC_duration)<2:
+                NBC_duration_CV.append(float("NaN"))
             else:
-                lr_ratios.append(left_outer_burst/right_outer_burst)
-            left_ratios.append(left_outer_burst/burst_core_length)
-            right_ratios.append(right_outer_burst/burst_core_length)
-        NB_NBC_ratio_left.append(np.mean(left_ratios))
-        NB_NBC_ratio_right.append(np.mean(right_ratios))
-        lr_NB_ratio.append(np.mean(lr_ratios))
+                NBC_duration_CV.append(np.std(NBC_duration)/np.mean(NBC_duration))
+            
+            network_IBIs=[]
+            if len(network_cores)<2:
+                network_IBI.append(float("NaN"))
+            else:
+                # Calculate the network interburst interval
+                # Iterate over the network bursts
+                for i in range(len(network_cores)-1):
+                    # Calculate the distance to the next NB
+                    dist=network_cores[i+1, 2] - network_cores[i,3]
+                    network_IBIs.append(dist)
 
-        # Calculate the average amount of electrodes that contribute to a network burst
-        single_participating_channels=[]
-        # Loop through the network bursts
-        for network_burst in np.unique(participating_bursts[:,0]):
-            # Calculate the amount of electrodes that participated
-            electrodes_participated=len(np.unique(participating_bursts[participating_bursts[:,0]==network_burst][:,1]))
-            single_participating_channels.append(electrodes_participated)
-        participating_electrodes.append(np.mean(single_participating_channels))
+                # Calculate the mean
+                network_IBI.append(np.mean(network_IBIs))
+
+            if len(network_IBIs)<2:
+                nIBI_var.append(float("NaN"))
+                nIBI_CV.append(float("NaN"))
+            else:
+                # Calculate the variance of the network IBI
+                nIBI_var.append(np.var(network_IBIs))
+                # Calculate the coefficient of variation of the network IBI
+                nIBI_CV.append(np.std(network_IBIs)/np.mean(network_IBIs))
+
+            # Calculate the partial autocorrelation function of the network interburst intervals
+            if len(network_IBIs)<4:     # At least 4 values are needed for this calculation
+                NIBIPACF.append(float("NaN"))
+            else:
+                NIBIPACF.append(pacf(network_IBIs, nlags=1, method='yw')[1])
+
+            # Calculate the intra-network burst firing rate and network burst inter spike interval
+            single_nb_firingrate=[]
+            single_nb_ISI=[]
+            spikes_per_network_burst=[]
+            total_spikes_in_nbs=0
+
+            for network_burst in range(len(network_cores)):
+                nb_spikes=[]
+                # Identify all spikes that happened during the network burst
+                for channel in range(len(spikedata_list)):
+                    for spike in range(len(spikedata_list[channel])):
+                        # Check whether this spike occured during the network burst
+                        if network_cores[network_burst, 2] <= spikedata_list[channel][spike][0] <= network_cores[network_burst, 3]:
+                            nb_spikes.append(spikedata_list[channel][spike][0])
+                # Calculate the NB firing rate
+                single_nb_firingrate.append((len(nb_spikes))/(network_cores[network_burst, 3]-network_cores[network_burst, 2]))
+                total_spikes_in_nbs+=len(nb_spikes)
+                # Calculate the network burst inter spike interval
+                # First sort the spike so they are on chronological order again
+                nb_spikes=np.sort(nb_spikes)
+                # Calculate the intervals
+                nb_spikes_intervals=nb_spikes[1:-1]-nb_spikes[0:-2]
+                # Take the average
+                single_nb_ISI.append(np.mean(nb_spikes_intervals))
+                
+                spikes_per_network_burst.append(len(nb_spikes))
+            NB_firingrate.append(np.mean(single_nb_firingrate))
+            NB_ISI.append(np.mean(single_nb_ISI))
+            mean_spikes_per_network_burst=np.mean(spikes_per_network_burst)
+
+            # Calculate the portion of spikes that participate in network bursts
+            total_spikes=0
+            for channel in range(len(spikedata_list)):
+                total_spikes+=len(spikedata_list[channel])
+            if total_spikes_in_nbs==0 or total_spikes==0:
+                portion_spikes_in_nbs.append(float("NaN"))
+            else:
+                portion_spikes_in_nbs.append(total_spikes_in_nbs/total_spikes)
+
+            # Calculate the portion of bursts that participate in network bursts
+            burst_participating_in_nbs = len(participating_bursts)
+            total_bursts=0
+            for channel in range(len(burstcores_list)):
+                total_bursts+=len(burstcores_list[channel])
+            if burst_participating_in_nbs==0 or total_bursts==0:
+                portion_bursts_in_nbs.append(float("NaN"))
+            else:
+                portion_bursts_in_nbs.append(burst_participating_in_nbs/total_bursts)
+            
+            # Calculate average the network burst to network burst core ratio
+            ratios=[]
+            for i in range(len(network_cores)):
+                ratio=(network_cores[i,3]-network_cores[i,2])/(network_cores[i,1]-network_cores[i,0])
+                ratios.append(ratio)
+            NB_NBc_ratio.append(np.mean(ratios))
+
+            # Calculate the ratio of the length of the left/right outer part of the network burst compared to the core
+            left_ratios=[]
+            right_ratios=[]
+            lr_ratios=[]
+            for i in range(len(network_cores)):
+                burst_core_length=network_cores[i,1]-network_cores[i,0]
+                left_outer_burst=network_cores[i,0]-network_cores[i,2]
+                right_outer_burst=network_cores[i,3]-network_cores[i,1]
+                # Sometimes the burst has no outer edges, so we get a division by 0, check for that here
+                if np.min([left_outer_burst, right_outer_burst])==0:
+                    # In that case append 0
+                    lr_ratios.append(0)
+                else:
+                    lr_ratios.append(left_outer_burst/right_outer_burst)
+                left_ratios.append(left_outer_burst/burst_core_length)
+                right_ratios.append(right_outer_burst/burst_core_length)
+            NB_NBC_ratio_left.append(np.mean(left_ratios))
+            NB_NBC_ratio_right.append(np.mean(right_ratios))
+            lr_NB_ratio.append(np.mean(lr_ratios))
+
+            # Calculate the average amount of electrodes that contribute to a network burst
+            single_participating_channels=[]
+            # Loop through the network bursts
+            for network_burst in np.unique(participating_bursts[:,0]):
+                # Calculate the amount of electrodes that participated
+                electrodes_participated=len(np.unique(participating_bursts[participating_bursts[:,0]==network_burst][:,1]))
+                single_participating_channels.append(electrodes_participated)
+            participating_electrodes.append(np.mean(single_participating_channels))
 
     # Create pandas dataframe with all features as columns 
     well_features_df = pd.DataFrame({
@@ -597,20 +601,16 @@ def recalculate_features(outputfolder, well_amnt, electrode_amnt, electrodes, sa
         "remove inactive electrodes" : False
     }
 
+    dataframes = []
+
     # Loop over all wells
     for well in range(well_amnt):
         # Calculate electrode features
-        electrode_features_df = electrode_features(well=well+1, parameters=parameters)
-
-        well_electrodes_bool = electrodes[well*well_amnt, (well+1)*well_amnt]
-        drop_electrodes = np.where(False, well_electrodes_bool)
-
-        # Drop electrodes
-        electrode_features_df.drop(electrode_features_df.index[drop_electrodes])
-
-        # Calculate well features
-        well_features_df = well_features(well+1, parameters)
+        electrode_features_df = electrode_features(well=well, parameters=parameters)
+        well_features_df = well_features(well=well, parameters=parameters)
+ 
+        # Multiply well features
+        well_features_df = pd.concat([well_features_df] * len(electrode_features_df), ignore_index=True)
 
         # Just replace features.csv
-        # Insert other file that specifies which electrodes have been excluded (probably csv)
-
+        # Insert other file that specifies which electrodes have been excluded

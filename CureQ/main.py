@@ -3,10 +3,7 @@ import os
 from pyshortcuts import make_shortcut
 from importlib.metadata import version
 
-try:
-    from .mea_analysis_tool import MEA_GUI
-except:
-    from mea_analysis_tool import MEA_GUI
+from CureQ.GUI.mea_analysis_tool import MEA_GUI
 
 def launch_gui():
     """GUI launch function"""
@@ -14,10 +11,10 @@ def launch_gui():
 
 def create_shortcut():
     try:
-        script_path = os.path.abspath(__file__)
+        script_path = str(os.path.abspath(__file__))
         from pyshortcuts import make_shortcut
         
-        make_shortcut(script_path, 
+        make_shortcut(script=script_path, 
                       name="MEAlytics",
                       icon=os.path.join(os.path.dirname(__file__), "MEAlytics_logo.ico"),
                       desktop=True,
@@ -28,7 +25,7 @@ def create_shortcut():
         print(f"Failed to create shortcut:\n{error}")
 
 def print_version():
-    print(f"CureQ MEA analysis tool - Version: {version('CureQ')}")
+    print(f"MEAlytics - Version: {version('CureQ')}")
 
 def main():
     parser = argparse.ArgumentParser(description='Launch CureQ GUI')
@@ -44,4 +41,7 @@ def main():
         launch_gui()
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as error:
+        print(error)

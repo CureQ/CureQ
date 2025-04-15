@@ -36,9 +36,9 @@ The shortcut can also be added to the taskbar by pressing “Pin to taskbar”.
 ## Launch from python script
 Lastly, the GUI can be launched from a python script. Create a python file and execute the following code:
 ```python 
-from CureQ.mea_analysis_tool import MEA_GUI
+from CureQ.GUI.mea_analysis_tool import MEA_GUI
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     MEA_GUI()
 ```
 The GUI should always be opened inside the ```if __name__ == '__main__'``` guard. Otherwise, when using multiprocessing, the application will slowly create an infinite amount of processes and crash the application.

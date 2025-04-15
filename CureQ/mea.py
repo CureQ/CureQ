@@ -15,25 +15,15 @@ import numpy as np
 import pandas as pd
 import h5py
 
-# Import MEA functions
-try:
-    from ._bandpass import *
-    from ._burst_detection import *
-    from ._features import *
-    from ._network_burst_detection import *
-    from ._plotting import *
-    from ._spike_validation import *
-    from ._threshold import *
-    from ._utilities import *
-except:
-    from _bandpass import *
-    from _burst_detection import *
-    from _features import *
-    from _network_burst_detection import *
-    from _plotting import *
-    from _spike_validation import *
-    from _threshold import *
-    from _utilities import *
+# MEAlytics package
+from .core._bandpass import *
+from .core._burst_detection import *
+from .core._features import *
+from .core._network_burst_detection import *
+from .core._plotting import *
+from .core._spike_validation import *
+from .core._threshold import *
+from .core._utilities import *
 
 
 def get_default_parameters():
@@ -271,7 +261,6 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
         memory_id=sharedmemory.name
         # Clear up memory
         data=None
-
 
         # Start up a process for every single electrode
         print("Initializing processes")
