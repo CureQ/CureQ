@@ -44,6 +44,7 @@ Have a specific feature in mind that has not been added yet, and might benefit o
 | Mean Burst Rate | The average amount of bursts per second. (bursts/s) |
 
 ## Network Burst Features
+Here, "Network Burst" means the entire network burst, including the outer edges. If a calculation is made using the network burst core, it will be explicitly stated.
 
 | Feature name | Description |
 |-------------|------------|
@@ -51,7 +52,7 @@ Have a specific feature in mind that has not been added yet, and might benefit o
 | Mean Network Burst Duration | The average duration of a network bursts. Calculated as the distance between the outer edges of the network burst. (s) |
 | Mean Network Burst Core Duration | The average duration of the network burst core. (s) |
 | Coefficient of Variation Network Burst Core Duration | The coefficient of variation of the network burst core durations. (s) |
-| Network Inter-Burst Interval | The average time between the network bursts (s) |
+| Network Inter-Burst Interval | The average time between the network bursts (s). This values is calculated as the average time between the outer edges of the network bursts. |
 | Partial Autocorrelation Function NIBI | The partial autocorrelation of lag 1 of the network inter burst intervals |
 | Network Burst to Network Burst Core ratio | The average ratio between the length of the network burst and network burst core. |
 | NIBI Variance | The variation between the network interburst intervals (s) |

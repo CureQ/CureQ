@@ -180,6 +180,7 @@ class process_file_frame(ctk.CTkFrame):
                 progressbar.set(progress[0]/progress[1])
                 progress_info.configure(text=f"Analyzing data, channel: {progress[0]}/{progress[1]}, time elapsed: {elapsed} seconds")
             time.sleep(0.01)
+            
         currenttime=time.time()
         elapsed=round(currenttime-start,2)
         os.remove(self.progressfile)

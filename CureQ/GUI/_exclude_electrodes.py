@@ -1,17 +1,17 @@
 # Imports
-from tkinter import *
-from tkinter import ttk
 from tkinter import filedialog
 from functools import partial
 import os
 import json
+from pathlib import Path
+import threading
 
 # External imports
 import customtkinter as ctk
 import pandas as pd
 import numpy as np
 from CTkMessagebox import CTkMessagebox
-from PIL import ImageGrab, Image, ImageTk
+from PIL import ImageGrab
 
 # Imports from package
 from ..core._features import recalculate_features
@@ -43,7 +43,7 @@ class recalculate_features_class(ctk.CTkFrame):
         self.edit_config_button = ctk.CTkButton(master=self.control_frame, text='Edit/New configuration', command=self.edit_configuration_func)
         self.edit_config_button.grid(row=1, column=0, pady=(5, 5), padx=10, sticky='nesw')
 
-        self.recalculate_features_button = ctk.CTkButton(master=self.control_frame, text='Recalculate features', command=self.recalculate_features_func)
+        self.recalculate_features_button = ctk.CTkButton(master=self.control_frame, text='Recalculate features', command=self.recalculate_features_button_func)
         self.recalculate_features_button.grid(row=2, column=0, pady=(5, 10), padx=10, sticky='nesw')
 
         # Config image
@@ -57,6 +57,7 @@ class recalculate_features_class(ctk.CTkFrame):
         self.well_amnt = 0
         self.electrode_amnt = 0
         self.configuration = None
+        self.config_selected = False
 
     def load_folder(self):
         """
@@ -86,7 +87,7 @@ class recalculate_features_class(ctk.CTkFrame):
                         CTkMessagebox(title="Error",
                               message=f"Could not find a complementary 'parameters.json' file for '{file}'. Please make sure every feature file is accompanied by the original 'parameters.json' file.",
                               icon="cancel",
-                              wraplength=600)
+                              wraplength=400)
                         return
                     
         # Check if the well layout is the same for all experiments
@@ -109,9 +110,9 @@ class recalculate_features_class(ctk.CTkFrame):
         else:
             self.electrode_amnt = np.min(electrode_amnts)
 
-        
+
         self.display_selected_files(file_names)
-        
+
     def display_selected_files(self, files):
         """
         Display all selected featurefiles including tickbox
@@ -161,7 +162,79 @@ class recalculate_features_class(ctk.CTkFrame):
         edit_configuration(parent=self.parent, main_window=self, wells=self.well_amnt, electrodes=self.electrode_amnt, existing_config=self.configuration)
 
     def recalculate_features_func(self):
-        recalculate_features('test', [True])
+        """Function recalculating the features, called as a thread"""
+        failed = []
+        finished = []
+        errors = []
+        outputtext=""
+
+        for i, file in enumerate(self.selected_files):
+            filepath = Path(file)
+
+            try:
+                # Retrieve neccesary parameters
+                with open(os.path.join(filepath.parent, "parameters.json")) as json_file:
+                    parameters = json.load(json_file)
+
+                recalculate_features(outputfolder=filepath.parent, well_amnt=self.well_amnt, electrode_amnt=self.electrode_amnt, electrodes=self.configuration, sampling_rate=parameters["sampling rate"], measurements=parameters["measurements"])
+            
+                print(f"Recalculated features for: {filepath.parent}")
+                finished.append(filepath.stem)
+            except Exception as error:
+                failed.append(filepath.stem)
+                errors.append(error)
+            self.progressbar.set((i+1)/len(self.selected_files))
+    
+        outputtext += "Finished files:\n" if len(finished) > 0 else "Did not finish any files\n"
+        for file in finished:
+            outputtext += f"{file}\n"
+
+        outputtext += "Failed files:" if len(failed) > 0 else ""
+        for i, file in enumerate(failed):
+            outputtext += f"\n{file}:"
+            outputtext += f"\n\t{errors[i]}\n"
+
+        CTkMessagebox(message=outputtext, option_1="Ok", title="Recalculated features", width=800, wraplength=750)
+
+
+        self.popup.destroy()
+
+    def recalculate_features_button_func(self):
+        """Feature called by the button, performs checkes and start 'recalculate_features_func' as a thread"""
+        # Check if config has been selected
+        if not self.config_selected:
+            CTkMessagebox(title="Error", message="No configuration selected, please create a configuration using 'Edit/New configuration'", icon="cancel", wraplength=400)
+            return
+
+        # Retrieve all files that are selected
+        self.selected_files = []
+
+        for file in list(self.file_buttons.keys()):
+            if self.file_buttons[file]["state"]:
+                self.selected_files.append(file)
+        
+        # Check if any files are selected
+        if len(self.selected_files) == 0:
+            CTkMessagebox(title="Error", message='No files selected', icon="cancel")
+            return
+        
+        # Initialize popup and progressbar
+        self.popup=ctk.CTkToplevel(self)
+        self.popup.title('Recalculating features')
+        try:
+            self.popup.after(250, lambda: self.popup.iconbitmap(os.path.join(self.parent.icon_path)))
+        except Exception as error:
+            print(error)
+
+        self.progress_label = ctk.CTkLabel(master=self.popup, text="Recalculating features...")
+        self.progress_label.grid(row=0, column=0, pady=(10, 5), padx=10, sticky='nesw')
+
+        self.progressbar=ctk.CTkProgressBar(master=self.popup, orientation='horizontal', mode='determinate', progress_color="#239b56", width=400)
+        self.progressbar.grid(row=1, column=0, pady=(5, 10), padx=10, sticky='nesw')
+        self.progressbar.set(0)
+
+        process=threading.Thread(target=self.recalculate_features_func)
+        process.start()
 
 class edit_configuration(ctk.CTkToplevel):
     """
@@ -319,7 +392,7 @@ class edit_configuration(ctk.CTkToplevel):
 
         try:
             config_list = np.load(file_path)
-        except Exception as error:
+        except:
             CTkMessagebox(title="Error", message='Could not load in config file, please make sure you have selected the correct file.', icon="cancel")
             return
 
@@ -352,6 +425,7 @@ class edit_configuration(ctk.CTkToplevel):
         config_list = []
         for btn in self.electrode_buttons.values(): config_list.append(btn["state"])
         self.main_window.configuration = np.array(config_list)
+        self.main_window.config_selected = True
 
         # Destroy widget
         self.destroy()

@@ -8,20 +8,20 @@
     <link rel="icon" type="image/png" href="/CureQ/assets/images/MEAlytics_logo.ico">
 
     <!-- Begin Jekyll SEO tag v2.8.0 -->
-<title>Analysis output | MEAlytics</title>
+<title>Supported plate types | MEAlytics</title>
 <meta name="generator" content="Jekyll v3.9.5" />
-<meta property="og:title" content="Analysis output" />
+<meta property="og:title" content="Supported plate types" />
 <meta property="og:locale" content="en_US" />
 <meta name="description" content="Comprehensive user guide and documentation" />
 <meta property="og:description" content="Comprehensive user guide and documentation" />
-<link rel="canonical" href="http://localhost:4000/CureQ/output" />
-<meta property="og:url" content="http://localhost:4000/CureQ/output" />
+<link rel="canonical" href="http://localhost:4000/CureQ/supported_plates" />
+<meta property="og:url" content="http://localhost:4000/CureQ/supported_plates" />
 <meta property="og:site_name" content="MEAlytics" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary" />
-<meta property="twitter:title" content="Analysis output" />
+<meta property="twitter:title" content="Supported plate types" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"WebPage","description":"Comprehensive user guide and documentation","headline":"Analysis output","url":"http://localhost:4000/CureQ/output"}</script>
+{"@context":"https://schema.org","@type":"WebPage","description":"Comprehensive user guide and documentation","headline":"Supported plate types","url":"http://localhost:4000/CureQ/supported_plates"}</script>
 <!-- End Jekyll SEO tag -->
 
     <style>
@@ -297,24 +297,26 @@
       
       <div class="content-wrapper">
         <main class="content">
-          <h1>Analysis output</h1>
-          <p>During the analysis, the application will create an “outputfolder” where it stores all results and details from the analysis. This outputfolder can be found in the same location as the raw data file. The outputfolder will share the same name as the raw data file, with the date and time of the analysis attached at the end. The outputfolder contains several files:</p>
+          <h1>Supported plate types</h1>
+          <p>In theory, MEAlytics is able to support every plate type and layout, given that it can be converted to the right format. However, it is important to know how MEAlytics (automatically) handles different well and electrode layouts.</p>
 
-<p><img src="./assets/images/output.png" width="90%" height="90%" /></p>
+<h3 id="mealytics-input">MEAlytics input</h3>
+<p>MEAlytics receives the MEA data as a dataset containing a single array for each electrode. For a MEA dataset originating from a 24-well plate with 12 electrodes per well, this would results in a dataset with 288 (12*24) rows, and a column for every voltage readout. MEAlytics also receives the amount of electrode per well, it uses these to determine how many wells a given dataset has, and which electrode belongs to which well. MEAlytics does not receive any other input about the amount of wells.</p>
 
-<p><strong>output_values.h5</strong> contain files that are used to save the intermediate results of the spike, burst and network burst detection process. These files are used to calculate the output features and visualise the process in the GUI. These files are generally not important for the end user.</p>
+<h3 id="displaying-different-plate-types">Displaying different plate types</h3>
+<h4 id="displaying-wells">Displaying wells</h4>
+<p>When given a certain amount of wells, MEAlytics will automatically calculate the optimal number of rows and columns for this well amount to display the different wells. For example, for a measurement containing 24 wells, the wells will be displayed as follows:</p>
 
-<p>The <strong>Figures</strong> folder contains visualisations for the network burst detection process, and can be used to get a quick overview of network/well activity without having to load in the results in the GUI.</p>
+<p><img src="./assets/images/well_layout.png" width="50%" height="50%" /></p>
 
-<p>The file ending with <strong>Features.csv</strong> will contain the output features that are calculated by the analysis tool. Here, every column is a feature, and every row is a well. Here all electrode features are averaged out over the well.</p>
+<p>This means that the way that wells are displayed in MEAlytics does not always match how the wells are arranged in the actual plate. However, wells in MEAlytics (and in the output feature files) are always numbered from top left to bottom right (When converted from Axion using our conversion script).</p>
 
-<p>The file ending with <strong>Electrode_Features.csv</strong> will contain the single electrode features, such as spike and single channel burst metrics, calculated per individual electrode.</p>
+<h4 id="displaying-electrodes">Displaying electrodes</h4>
+<p>Displaying electrodes will follow a similar procedure, where the number of rows an columns to display are automatically determined. MEAlytics does however contain a default configuration for wells containing 12 electrodes. Those electrodes will be displayed as follows:</p>
 
-<p>For more information about the features the MEA analysis tool calculates, see <a href="features.html">Features Output</a>.</p>
+<p><img src="./assets/images/electrode_layout.png" width="30%" height="30%" /></p>
 
-<p>Lastly, the <strong>parameters.json</strong> file contains information about the analysis such as which parameters were used, some information about the dataset, and which version of the tool was used. This file can be used to copy settings from a previous analysis. For more information on how to do this, see <a href="analyse_file.html">Analyse Single File</a></p>
-
-<h4 id="it-is-recommended-to-not-alter-or-relocate-any-of-these-files-as-certain-functionality-of-the-package-such-as-plotting-excluding-electrodes-and-inspecting-results-rely-on-the-naming-and-location-of-these-files">It is recommended to not alter or relocate any of these files, as certain functionality of the package, such as plotting, excluding electrodes and inspecting results rely on the naming and location of these files.</h4>
+<p>Where again electrodes are numbered from top left to bottom right (When converted from Axion using our conversion script).</p>
 
         </main>
         

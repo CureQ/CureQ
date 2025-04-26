@@ -1,5 +1,8 @@
 import h5py
 import os
+import functools
+import datetime
+import builtins
 
 def rechunk_dataset(fileadress, compression_method='lzf', compression_level=1, always_compress_files=False):
     """
@@ -44,7 +47,7 @@ def rechunk_dataset(fileadress, compression_method='lzf', compression_level=1, a
             if not always_compress_files:
                 return
         
-        print(f"Rechunking dataset to shape: {new_chunks}, this will create a new file")
+        print(f"Rechunking and compressing dataset to shape: {new_chunks}, this will create a new file")
 
         def copy_attributes(src_obj, dst_obj):
             for key, value in src_obj.attrs.items():
@@ -101,6 +104,31 @@ def rechunk_dataset(fileadress, compression_method='lzf', compression_level=1, a
         src.visititems(copy_item)
         original_size=os.stat(fileadress).st_size/(1024**3)
         new_size=os.stat(outputfile).st_size/(1024**3)
-        print(f"Original size: {round(original_size, 2)} GB\nNew size: {round(new_size, 2)} GB")
+        print(f"Original size: {round(original_size, 2)} GB - New size: {round(new_size, 2)} GB")
         print(f"Rechunking and compression succesful")
         return outputfile
+
+def gui_logger():
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+        
+            original_print = builtins.print
+            
+            def custom_print(*args, **kwargs):
+                timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+                message = " ".join(str(arg) for arg in args)
+                
+                formatted_message = f"[{"MEAlytics"}] [{timestamp}] {message}"
+                original_print(formatted_message, **kwargs)
+            
+            try:
+                builtins.print = custom_print
+                return func(*args, **kwargs)
+            finally:
+                builtins.print = original_print
+        
+        return wrapper
+    
+    return decorator

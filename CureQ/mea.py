@@ -3,8 +3,7 @@ import time
 import multiprocessing
 import gc
 import json
-from datetime import date
-from datetime import datetime
+import datetime
 import os
 from importlib.metadata import version
 from multiprocessing.managers import SharedMemoryManager
@@ -108,7 +107,7 @@ def _electrode_subprocess(memory_id, shape, _type, electrode, parameters):
 
     data=None
     existing_shm.close()
-    print(f"Calculated electrode: {electrode}")
+    print(f"Processed electrode: {electrode}")
 
 def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
     """
@@ -168,8 +167,8 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
     # Create a directory which will contain the output
     output_folder=path_obj.stem
     output_folder+="_output"
-    output_folder+=f"_{date.today()}"
-    output_folder+=f"_{datetime.now().strftime('%H_%M_%S')}"
+    output_folder+=f"_{datetime.date.today()}"
+    output_folder+=f"_{datetime.datetime.now().strftime('%H-%M-%S')}"
 
     outputpath=os.path.join(parent_dir, output_folder)
     os.makedirs(outputpath)
@@ -370,7 +369,7 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
 
                 # Communicate with GUI
                 np.save(progressfile, [electrode+1, datashape[0]])
-                print(f"Calculated electrode: {electrode}")
+                print(f"Processed electrode: {electrode}")
             measurements=datashape[1]
 
             # Detect network bursts

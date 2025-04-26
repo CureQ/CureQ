@@ -290,6 +290,7 @@
           <li><a href="/CureQ/parameters">Parameters</a></li>
           <li><a href="/CureQ/axion">Convert Axion data</a></li>
           <li><a href="/CureQ/compress_rechunk">Compress/Rechunk files</a></li>
+          <li><a href="/CureQ/supported_plates">Supported Plate Types</a></li>
           <li><a href="/CureQ/python_package">MEAlytics as Python package</a></li>
         </ul>
       </nav>
@@ -326,9 +327,9 @@ The shortcut can also be added to the taskbar by pressing “Pin to taskbar”.<
 
 <h2 id="launch-from-python-script">Launch from python script</h2>
 <p>Lastly, the GUI can be launched from a python script. Create a python file and execute the following code:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">CureQ.mea_analysis_tool</span> <span class="kn">import</span> <span class="n">MEA_GUI</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">CureQ.GUI.mea_analysis_tool</span> <span class="kn">import</span> <span class="n">MEA_GUI</span>
 
-<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">'__main__'</span><span class="p">:</span>
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
     <span class="n">MEA_GUI</span><span class="p">()</span>
 </code></pre></div></div>
 <p>The GUI should always be opened inside the <code class="language-plaintext highlighter-rouge">if __name__ == '__main__'</code> guard. Otherwise, when using multiprocessing, the application will slowly create an infinite amount of processes and crash the application.</p>

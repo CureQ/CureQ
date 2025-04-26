@@ -1,37 +1,28 @@
 # Imports
 import os
-import threading
-from functools import partial
 import json
-import copy
 import math
 import webbrowser
 import sys
 from pathlib import Path
 from tkinter import *
-from tkinter import ttk
-from tkinter import filedialog
 from importlib.metadata import version
-import traceback
 
 # External libraries
-import pandas as pd
 import numpy as np
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  NavigationToolbar2Tk) 
-import h5py
 import customtkinter as ctk
 from CTkToolTip import *
-from CTkMessagebox import CTkMessagebox
 from CTkColorPicker import *
 import requests
 
 # Package imports
 from ..mea import get_default_parameters
+from ..core._utilities import gui_logger
 
 # Import GUI components
 from ._exclude_electrodes import recalculate_features_class
 from ._parameters import parameter_frame
-from ._view_results import select_folder_frame, view_results
+from ._view_results import select_folder_frame
 from ._process_file import process_file_frame
 from ._batch_processing import batch_processing
 from ._compress_files import compress_files
@@ -106,7 +97,7 @@ class MainApp(ctk.CTk):
 
     # Function to calculate the well grid
     def calculate_well_grid(self, num_items):
-        """Calculate grid shape for displaying wells, contains present for 24w plate"""
+        """Calculate grid shape for displaying wells, contains preset for 24w plate"""
         if num_items == 24:
             return 6, 4
 
@@ -121,7 +112,10 @@ class MainApp(ctk.CTk):
                     min_difference = difference
                     optimal_width = width
                     optimal_height = height
-        return int(optimal_width), int(optimal_height)
+
+        # Height should always be the lowest value of the two
+        # Width is returned first, then height
+        return int(max(optimal_width, optimal_height)), int(min(optimal_width, optimal_height))
 
         # Function to calculate the electrode grid
     def calculate_electrode_grid(self, num_items):
@@ -343,6 +337,7 @@ class main_window(ctk.CTkFrame):
         confirm_button=ctk.CTkButton(master=popup, text="Confirm", command=set_theme)
         confirm_button.grid(row=1, column=0, sticky='nesw', padx=5, pady=5)
 
+@gui_logger()
 def MEA_GUI():
     """
     Launches the graphical user interface (GUI) of MEAlytics.

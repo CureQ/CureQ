@@ -290,6 +290,7 @@
           <li><a href="/CureQ/parameters">Parameters</a></li>
           <li><a href="/CureQ/axion">Convert Axion data</a></li>
           <li><a href="/CureQ/compress_rechunk">Compress/Rechunk files</a></li>
+          <li><a href="/CureQ/supported_plates">Supported Plate Types</a></li>
           <li><a href="/CureQ/python_package">MEAlytics as Python package</a></li>
         </ul>
       </nav>
@@ -426,6 +427,7 @@
 </table>
 
 <h2 id="network-burst-features">Network Burst Features</h2>
+<p>Here, “Network Burst” means the entire network burst, including the outer edges. If a calculation is made using the network burst core, it will be explicitly stated.</p>
 
 <table>
   <thead>
@@ -453,7 +455,7 @@
     </tr>
     <tr>
       <td>Network Inter-Burst Interval</td>
-      <td>The average time between the network bursts (s)</td>
+      <td>The average time between the network bursts (s). This values is calculated as the average time between the outer edges of the network bursts.</td>
     </tr>
     <tr>
       <td>Partial Autocorrelation Function NIBI</td>
