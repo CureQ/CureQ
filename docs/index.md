@@ -20,6 +20,7 @@ MEAlytics is a python packaged developed for analysing multiwell Micro-electrode
 - [View Results](view_results.html)
 - [Compare Groups](compare_groups.html)
 - [Parameters](parameters.html)
+- [Remove Electrodes](exclude_electrodes.html)
 - [Convert Axion data](axion.html)
 - [Compress/Rechunk files](compress_rechunk.html)
 - [Supported Plate Types](supported_plates.html)
