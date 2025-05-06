@@ -312,7 +312,7 @@ def make_hm(Vars, Classes):
         cache_frame_data=False
     )
 
-    return ani, fig
+    return ani, fig, update
 
 def make_hm_img(Vars, Classes):  
     """

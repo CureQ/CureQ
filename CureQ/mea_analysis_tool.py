@@ -306,7 +306,6 @@ class main_window(ctk.CTkFrame):
         confirm_button=ctk.CTkButton(master=popup, text="Confirm", command=set_theme)
         confirm_button.grid(row=1, column=0, sticky='nesw', padx=5, pady=5)
     
-
 class parameter_frame(ctk.CTkFrame):
     """
     Allows the user to set the different parameters for the analysis.
@@ -660,7 +659,6 @@ class parameter_frame(ctk.CTkFrame):
         save_parameters_button=ctk.CTkButton(master=self, text="Save parameters and return", command=save_parameters)
         save_parameters_button.grid(row=3, column=0, padx=10, pady=10, sticky='nsew')
 
-
 class select_folder_frame(ctk.CTkFrame):
     """
     Allows the user to select a dataset and outputfile to inspect the results.
@@ -732,7 +730,6 @@ class select_folder_frame(ctk.CTkFrame):
 
         # If everything is good, go to the next frame
         parent.show_frame(view_results, folder=self.folder_path, rawfile=self.data_path)
-
 
 class view_results(ctk.CTkFrame):
     """
@@ -887,18 +884,13 @@ class view_results(ctk.CTkFrame):
         placeholder_canvas = FigureCanvasTkAgg(placeholder_fig, master=self.tab_frame.tab("Heatmap"))
         placeholder_canvas.draw()
         placeholder_canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
-        Vars["canvas"] = placeholder_canvas
 
-        self.slider = ctk.CTkSlider(master=self.tab_frame.tab("Heatmap"), from_=0, to=(Vars["Num frames"]/10), height=30)
-        self.slider.grid(row=1, column=0, padx=10, pady=10, sticky = "ew")
-
-        self.from_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="0")
+        self.from_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="")
         self.from_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
-        self.to_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text=(Vars["Num frames"]/10))
-        self.to_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
+
         # Button to return to main menu
         return_to_main = ctk.CTkButton(master=self, text="Return to main menu", command=lambda: self.parent.show_frame(main_window), fg_color=parent.gray_1)
-        return_to_main.grid(row=1, column=0, pady=10, padx=10)
+        return_to_main.grid(row=2, column=0, pady=10, padx=10)
     
         
 
@@ -908,14 +900,12 @@ class view_results(ctk.CTkFrame):
             self.sev_wellbuttons[j].configure(fg_color=self.parent.theme["CTkButton"]["fg_color"][1])
         self.sev_wellbuttons[i-1].configure(fg_color=self.parent.theme["CTkButton"]["hover_color"][1])
 
-
     def open_sev_tab(self, electrode):
         single_electrode_view(self.parent, self.folder, self.rawfile, self.selected_well, electrode)
 
     def open_wwv_tab(self, well):
         whole_well_view(self.parent, self.folder, well)
     
-
     ####### HEATMAP FUNCTIONS
     def generate_data(self, display_hm, display_hm_full, display_hm_max, h5_data, parameters, Vars):
         Vars["df"], Vars["n_Wells"], Vars["n_Electrodes"], Vars["v_max"], Vars["Size"], Vars["Precomputed Max"], Vars["max_df"] = data_prepper(h5_data, parameters, Vars)
@@ -925,25 +915,78 @@ class view_results(ctk.CTkFrame):
 
     def start_animation(self, Vars, Classes):
         # Create the animation and figure only when the button is clicked
-        Vars["canvas"].get_tk_widget().destroy()
 
-        ani, fig = make_hm(Vars, Classes)
+        ani, fig, update = make_hm(Vars, Classes)
 
         canvas = FigureCanvasTkAgg(fig, master=self.tab_frame.tab("Heatmap"))
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
-        
-        # Set up the slider to control the animation frame
-        # self.slider.configure(command=self.update_frame)
-        # Start the animation
-        ani.event_source.start()
 
         self.animation = ani
         self.canvas = canvas
 
+        slider = ctk.CTkSlider(
+            master=self.tab_frame.tab("Heatmap"),
+            from_=0,
+            to=(Vars["Num frames"]-1),
+            orientation="horizontal",
+            number_of_steps=(Vars["Num frames"]-1)
+        )
+
+        slider.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+        self.slider = slider
+        self.is_dragging = False
+
+        def wrapped_update(frame):
+            if not self.is_dragging:
+                slider.set(frame)
+            update(frame)
+            return []
+        
+        ani._func = wrapped_update
+
+        def on_slider_change(val):
+            frame = int(float(val))
+            update(frame)
+            canvas.draw_idle()
+
+        def on_slider_press(event):
+            self.is_dragging = True
+            ani.event_source.stop()
+
+        def on_slider_release(event):
+            self.is_dragging = False
+            current_frame = int(slider.get())
+
+            def new_frame_seq():
+                return iter(range(current_frame, Vars["Num frames"]))
+            
+            ani.frame_seq = new_frame_seq()
+            ani.event_source.start()
+
+        slider.configure(command=on_slider_change)
+        slider.bind("<ButtonPress-1>", on_slider_press)
+        slider.bind("<ButtonRelease-1>", on_slider_release)
+
+        self.from_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="0")
+        self.from_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+        self.to_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text=(Vars["Num frames"]/10))
+        self.to_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
+
+        # Start animation
+        ani.event_source.start()
+
     def show_full_heatmap(self, Vars, Classes):
-        # Create the animation and figure only when the button is clicked
-        Vars["canvas"].get_tk_widget().destroy()
+        # If the animation and slider are there, this will delete them to not waste computing power
+        if self.animation:
+            self.animation.event_source.stop()
+            self.animation = None
+        
+        if self.slider:
+            self.slider.destroy()
+        
+        self.from_label.destroy()
+        self.to_label.destroy()
 
         fig = make_hm_img(Vars, Classes)
 
@@ -951,10 +994,23 @@ class view_results(ctk.CTkFrame):
         canvas.draw()
         canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
         self.canvas = canvas
+
+        self.from_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="")
+        self.from_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+        self.to_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="")
+        self.to_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
         
     def show_max_activity(self, Vars, Classes):
-        # Create the animation and figure only when the button is clicked
-        Vars["canvas"].get_tk_widget().destroy()
+        # Create the figure only when the button is clicked
+        if self.animation:
+            self.animation.event_source.stop()
+            self.animation = None
+        
+        if self.slider:
+            self.slider.destroy()
+
+        self.from_label.destroy()
+        self.to_label.destroy()
 
         fig = make_hm_max_activity(Vars, Classes)
 
@@ -963,22 +1019,10 @@ class view_results(ctk.CTkFrame):
         canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
         self.canvas = canvas
 
-    # def update_frame(self, value):
-    #     # Stop the animation to set the new frame manually
-    #     self.animation.event_source.stop()
-
-    #     # Convert the slider value to the appropriate frame
-    #     frame = int(float(value))  # Cast to an integer for the frame number
-
-    #     # Update the frame manually
-    #     self.animation.event_source.frame_seq = self.animation.new_frame_seq()  # Reset the frame sequence
-    #     self.animation.event_source.frame_seq._start = frame  # Set the frame number based on the slider
-
-    #     # Redraw the canvas to update the frame
-    #     self.canvas.draw()
-
-    #     # Restart the animation event source at the new frame
-    #     self.animation.event_source.start()
+        self.from_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="")
+        self.from_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+        self.to_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="")
+        self.to_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
 
     def add_legend_to_frame(self, frame, colour_dict):
         legend_label = ctk.CTkLabel(frame, text="Legend", font=("Arial", 14, "bold"))
