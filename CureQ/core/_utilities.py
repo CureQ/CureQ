@@ -120,7 +120,7 @@ def gui_logger():
 
                 message = " ".join(str(arg) for arg in args)
                 
-                formatted_message = f"[{"MEAlytics"}] [{timestamp}] {message}"
+                formatted_message = f"[MEAlytics] [{timestamp}] {message}"
                 original_print(formatted_message, **kwargs)
             
             try:

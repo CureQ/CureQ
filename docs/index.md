@@ -7,7 +7,7 @@ Welcome to the documentation of MEAlytics. Here you can find information about i
 
 ## Overview
 
-MEAlytics is a python packaged developed for analysing multiwell Micro-electrode array data. It allows for fast, easy and accurate analysis and visualisation of MEA data.
+MEAlytics is a python package developed for analysing multiwell Micro-electrode array data. It allows for fast, easy and accurate analysis and visualisation of MEA data.
 
 ## Table of contents
 
