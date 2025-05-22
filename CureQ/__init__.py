@@ -8,3 +8,5 @@ from . import _spike_validation
 from . import _threshold
 from . import _utilities
 from . import _bandpass
+from . import _heatmap
+from . import _machine_learning

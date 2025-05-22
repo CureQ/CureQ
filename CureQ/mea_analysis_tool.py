@@ -24,7 +24,6 @@ from CTkToolTip import *
 from CTkMessagebox import CTkMessagebox
 from CTkColorPicker import *
 import requests
-from _heatmap import *
 
 # Import the MEA library
 try:
@@ -770,6 +769,14 @@ class view_results(ctk.CTkFrame):
             "114-2 Control": 'red'
         }
 
+        ML_dict = {
+            "model": None,
+            "data": None,
+            "wells": None,
+            "rows": None,
+            "cols": None
+        }
+
         self.parent.title(f"MEAlytics - Version: {version('CureQ')} - {self.folder}")
 
         self.tab_frame=ctk.CTkTabview(self, anchor='nw')
@@ -788,6 +795,10 @@ class view_results(ctk.CTkFrame):
         self.tab_frame.add("Heatmap")
         self.tab_frame.tab("Heatmap").grid_columnconfigure(0, weight=1)
         self.tab_frame.tab("Heatmap").grid_rowconfigure(0, weight=1)
+
+        self.tab_frame.add("Machine Learning")
+        self.tab_frame.tab("Machine Learning").grid_columnconfigure(0, weight=1)
+        self.tab_frame.tab("Machine Learning").grid_rowconfigure(0, weight=1)
 
         # sev = single electrode view
         # wwv = whole well view
@@ -869,13 +880,13 @@ class view_results(ctk.CTkFrame):
         hm_data_generator.pack(pady=20)
 
         display_hm = ctk.CTkButton(heatmap_button_frame, text="Generate Heatmap", state="disabled", command=lambda: self.start_animation(Vars, Classes))
-        display_hm.pack(pady=20)  # Add padding to the button
+        display_hm.pack(pady=20)  
 
         display_hm_full = ctk.CTkButton(heatmap_button_frame, text="Show total activity", state="disabled", command=lambda: self.show_full_heatmap(Vars, Classes))
-        display_hm_full.pack(pady=20)  # Add padding to the button
+        display_hm_full.pack(pady=20)  
 
         display_hm_max = ctk.CTkButton(heatmap_button_frame, text="Show max activity", state="disabled", command=lambda: self.show_max_activity(Vars, Classes))
-        display_hm_max.pack(pady=20)  # Add padding to the button
+        display_hm_max.pack(pady=20)
 
         self.add_legend_to_frame(heatmap_button_frame, Colour_classes)
         Vars["cmap"] = cmap_creation()
@@ -888,11 +899,54 @@ class view_results(ctk.CTkFrame):
         self.from_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="")
         self.from_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
 
+        """Machine Learning"""
+
+        ML_dict["wells"] = ywells*xwells
+        ML_dict["rows"] = ywells
+        ML_dict["cols"] = xwells
+
+        ML_well_frame=ctk.CTkFrame(self.tab_frame.tab("Machine Learning"))
+        ML_well_frame.grid(row=0, column=0, pady=10, padx=10, sticky='nesw')
+
+        ML_wellbuttons=[]
+        i=1
+
+        for y in range(ywells):
+            for x in range(xwells):
+                well_btn=ctk.CTkButton(master=ML_well_frame, text=i, command=lambda wn=i: self.well_predict(ML_prediction, ML_dict, wn), height=100, width=100, font=ctk.CTkFont(size=25))
+                well_btn.grid(row=y, column=x)
+                ML_wellbuttons.append(well_btn)
+                i+=1
+
+        ML_button_frame=ctk.CTkFrame(self.tab_frame.tab("Machine Learning"), width=300)
+        ML_button_frame.grid(row=0, column=1, pady=10, padx=10, sticky='n')
+
+        dropdown = ctk.CTkOptionMenu(
+            master=ML_button_frame,
+            values=["Random Forest", "XGBoost", "Support Vector Machine"],
+            command=lambda choice: self.dropdownmenu(ML_dict, choice)
+        )
+        dropdown.set("Choose the model")
+        dropdown.pack(pady=10)
+
+        ML_full_show = ctk.CTkButton(ML_button_frame, text="Show All Predictions", command=lambda: self.show_all_predictions(ML_dict))
+        ML_full_show.pack(pady=20)
+
+        ML_feature_show = ctk.CTkButton(ML_button_frame, text="Feature Importances", command=lambda: self.show_ML_features(ML_dict))
+        ML_feature_show.pack(pady=20)  
+
+        ML_performance_show = ctk.CTkButton(ML_button_frame, text="Model Performance", command=lambda: self.show_ML_performance(ML_dict))
+        ML_performance_show.pack(pady=20)
+        
+        ML_disclaimer = ctk.CTkLabel(ML_button_frame, text="This feature is not ready for actual research as the models still don't perform as required.", wraplength=250)
+        ML_disclaimer.pack(pady=20)
+
+        ML_prediction = ctk.CTkLabel(ML_button_frame, text="", wraplength=230)
+        ML_prediction.pack(pady=20)
+
         # Button to return to main menu
         return_to_main = ctk.CTkButton(master=self, text="Return to main menu", command=lambda: self.parent.show_frame(main_window), fg_color=parent.gray_1)
-        return_to_main.grid(row=2, column=0, pady=10, padx=10)
-    
-        
+        return_to_main.grid(row=2, column=0, pady=10, padx=10)  
 
     def set_selected_well(self, i):
         self.selected_well=i
@@ -906,7 +960,7 @@ class view_results(ctk.CTkFrame):
     def open_wwv_tab(self, well):
         whole_well_view(self.parent, self.folder, well)
     
-    ####### HEATMAP FUNCTIONS
+    ####### Heatmap button functions
     def generate_data(self, display_hm, display_hm_full, display_hm_max, h5_data, parameters, Vars):
         Vars["df"], Vars["n_Wells"], Vars["n_Electrodes"], Vars["v_max"], Vars["Size"], Vars["Precomputed Max"], Vars["max_df"] = data_prepper(h5_data, parameters, Vars)
         display_hm.configure(state="normal")  
@@ -914,8 +968,6 @@ class view_results(ctk.CTkFrame):
         display_hm_max.configure(state="normal")  
 
     def start_animation(self, Vars, Classes):
-        # Create the animation and figure only when the button is clicked
-
         ani, fig, update = make_hm(Vars, Classes)
 
         canvas = FigureCanvasTkAgg(fig, master=self.tab_frame.tab("Heatmap"))
@@ -973,11 +1025,9 @@ class view_results(ctk.CTkFrame):
         self.to_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text=(Vars["Num frames"]/10))
         self.to_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
 
-        # Start animation
         ani.event_source.start()
 
     def show_full_heatmap(self, Vars, Classes):
-        # If the animation and slider are there, this will delete them to not waste computing power
         if self.animation:
             self.animation.event_source.stop()
             self.animation = None
@@ -1001,7 +1051,6 @@ class view_results(ctk.CTkFrame):
         self.to_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
         
     def show_max_activity(self, Vars, Classes):
-        # Create the figure only when the button is clicked
         if self.animation:
             self.animation.event_source.stop()
             self.animation = None
@@ -1026,10 +1075,10 @@ class view_results(ctk.CTkFrame):
 
     def add_legend_to_frame(self, frame, colour_dict):
         legend_label = ctk.CTkLabel(frame, text="Legend", font=("Arial", 14, "bold"))
-        legend_label.pack(pady=(20, 5))  # Padding: top 20, bottom 5
+        legend_label.pack(pady=(20, 5))  
 
         for class_name, color in colour_dict.items():
-            legend_row = ctk.CTkFrame(frame, fg_color="transparent")  # Transparent bg for clean look
+            legend_row = ctk.CTkFrame(frame, fg_color="transparent")
             legend_row.pack(anchor="w", padx=10, pady=2, fill="x")
 
             color_box = ctk.CTkLabel(legend_row, text="", width=20, height=20, corner_radius=3)
@@ -1049,6 +1098,76 @@ class view_results(ctk.CTkFrame):
 
         self.after(200, self.check_tab_change)
         
+    ####### Machine Learning button functions
+    def well_predict(self, ML_prediction, ML_dict, Well):
+        if ML_dict["model"] is None:
+            CTkMessagebox(title="Error", message="Please select a Machine Learning model first", icon="cancel")
+        else:
+            new_text = ML_predict(ML_dict["data"], ML_dict["model"], Well)
+            ML_prediction.configure(text=new_text)
+
+    def dropdownmenu(self, ML_dict, choice):
+        ML_dict["model"] = choice
+        if ML_dict["data"] is None:
+            ML_dict["data"] = ML_data_prep(self.folder)
+
+    def show_ML_features(self, ML_dict):
+        if ML_dict["model"] is None:
+            CTkMessagebox(title="Error", message="Please select a Machine Learning model first", icon="cancel")
+        else:
+            feature_plot = Feature_importance(ML_dict["model"], ML_dict["data"])
+            feature_plot.show()
+
+    def show_ML_performance(self, ML_dict):
+        if ML_dict["model"] is None:
+            CTkMessagebox(title="Error", message="Please select a Machine Learning model first", icon="cancel")
+        else:
+            ml_performance_window = ctk.CTkToplevel(self)
+            ml_performance_window.title(f"Performance {ML_dict["model"]}")
+            columns = ["Precision", "Recall", "F1-score", "Accuracy"]
+            ml_performance_window.grid_columnconfigure(len(columns), weight=1)
+            Precision, Recall, F1_score, Accuracy = ML_performance(ML_dict["model"])
+            data = [[Precision, Recall, F1_score, Accuracy]]
+
+            for col_index, col_name in enumerate(columns):
+                header = ctk.CTkLabel(ml_performance_window, text=col_name, font=ctk.CTkFont(weight="bold"))
+                header.grid(row=0, column=col_index, padx=10, pady=5, sticky="nsew")
+
+            for row_index, row_data in enumerate(data, start=1):  
+                for col_index, value in enumerate(row_data):
+                    cell = ctk.CTkLabel(ml_performance_window, text=value)
+                    cell.grid(row=row_index, column=col_index, padx=10, pady=5, sticky="nsew")
+            
+            def show_help():
+                CTkMessagebox(
+                    title="Metric Explanations",
+                    message=(
+                        "• Precision: How often predicted positives are correct.\n"
+                        "• Recall: How many actual positives are correctly found.\n"
+                        "• F1-score: Balance between precision and recall.\n"
+                        "• Accuracy: Overall correctness of the model."
+                    ),
+                    icon="info"
+                )     
+
+            help_button = ctk.CTkButton(
+                ml_performance_window,
+                text="?",
+                width=30,
+                height=30,
+                font=ctk.CTkFont(size=14, weight="bold"),
+                command=show_help
+            )
+            help_button.grid(row=0, column=len(columns), padx=10, pady=5, sticky="ne")
+
+    def show_all_predictions(self, ML_dict):
+        if ML_dict["model"] is None:
+            CTkMessagebox(title="Error", message="Please select a Machine Learning model first", icon="cancel")
+        else:
+            full_predict = ML_predict_full(ML_dict["data"], ML_dict["model"], ML_dict["wells"], ML_dict["rows"], ML_dict["cols"])
+            full_predict.show()
+
+
 class single_electrode_view(ctk.CTkToplevel):
     """
     Allows the user to inpect the spike and burst detection on a single electrode.

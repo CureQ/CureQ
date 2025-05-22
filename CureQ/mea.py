@@ -26,6 +26,7 @@ try:
     from ._threshold import *
     from ._utilities import *
     from ._heatmap import *
+    from ._machine_learning import *
 except:
     from _bandpass import *
     from _burst_detection import *
@@ -36,7 +37,7 @@ except:
     from _threshold import *
     from _utilities import *
     from _heatmap import *
-
+    from _machine_learning import *
 
 def get_default_parameters():
     """
