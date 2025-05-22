@@ -197,6 +197,7 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
                 rechunk_data=True
             else:
                 print("Data is already correctly chunked")
+                print('oke')
                 rechunk_data=False
         else:
             rechunk_data=True
@@ -215,6 +216,7 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
         f.create_group("spike_values")
         f.create_group("burst_values")
         f.create_group("network_values")
+        f.create_group("synchronicity_values")
 
     # Load default parameters if none were given
     if parameters=={}:
@@ -393,6 +395,8 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
             end=time.time()
             print(f"It took {end-start} seconds to analyse well: {well}")
         
+        electrode_pair_features(wells, parameters)
+
         # Free up RAM
         data=None
         del data

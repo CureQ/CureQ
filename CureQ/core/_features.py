@@ -6,7 +6,9 @@ import functools
 import numpy as np
 import pandas as pd
 import h5py
+import itertools
 from statsmodels.tsa.stattools import pacf
+from _ISI_distance import *
 
 def silence_runtime_warnings(func):
 
@@ -296,6 +298,106 @@ def electrode_features(well, parameters):
     if parameters['remove inactive electrodes']:
         features_df.insert(2, "Active_electrodes", [active_electrodes]*len(features_df))
     return features_df
+
+
+def electrode_pair_features( parameters, save_data=True):
+    """"
+    Calculates electrode pair features for unique pairs of one well.
+
+    Paramters
+    --------
+    Well: int
+        The well for wich the features are to be calculated.
+    Paramters : dict
+        Dictionary containing global paramaters. The function will extract the values needed.
+
+    Returns
+    ---------
+    features_df : pandas Dataframe
+        Dataframe containing electrodes pairs for rows and features for columns.
+    """
+    print('start calculating synchrony')
+    output_hdf_file=parameters['output hdf file']
+
+     #To Do:
+        #anders maken voor als we met intervallen willen werken (Burst etc)
+    time_df = np.arange(0,int(parameters['measurements'])/int(parameters['sampling rate']))
+    start_time = np.min(time_df)
+    end_time = np.max(time_df)
+                  
+    # Wells in parameters zetten.
+    wells = np.arange(1, parameters['wells amount']+1)
+    electrodes=np.arange(1, parameters['electrode amount']+1)
+    unique_pairs_electrodes = list(itertools.combinations(electrodes, 2))
+    
+    ISI_distances = []
+    pairs_skipped = []
+    ISI_distance_df = []
+    spiketimes_dict = {}
+    ISI_distance_dict = {}
+
+    with h5py.File(output_hdf_file, 'r') as f:
+           
+        for well in wells:
+            # Load spiketrain of each electrode
+            for electrode in electrodes:
+                dataset_path = f"/spike_values/well_{well}_electrode_{electrode}_spikes"
+                
+                if dataset_path in f:
+                    # Load spike data
+                    spike_values = f[dataset_path][()]
+
+                    # Get correct columns: Time (column 0), amplitude (column 2), index (column 2)
+                    spiketimes = spike_values[:, 0]
+                    spiketimes_dict[(well, electrode)] = spiketimes
+
+
+            for electrode_x, electrode_y in unique_pairs_electrodes:
+                
+                electrode_pair = (electrode_x,electrode_y)
+
+                # Retrieve spike trains for both electrodes from the dictionary
+                spiketrain_x = spiketimes_dict.get((well, electrode_x), None)
+                spiketrain_y = spiketimes_dict.get((well, electrode_y), None)
+                
+                
+                if (spiketrain_x is None or spiketrain_x.size == 0) or \
+                    (spiketrain_y is None or spiketrain_y.size == 0):
+                    electrode_pair_well = (well, electrode_pair)
+                    pairs_skipped.append(electrode_pair_well)
+                    ISI_distance = 1
+                else:
+
+                    if parameters['adaptive_ISI'] == True:
+                        spiketrains = [np.asarray(spiketrain_x), np.asarray(spiketrain_y)]
+        
+                        MRTS = default_thresh(spiketrains, start_time, end_time)
+            
+                            
+                    else:
+                            MRTS == 0
+                                
+                    # To Do:
+                    ISI_distance, _ = isi_distance(spiketrain_x, spiketrain_y, start_time, end_time, MRTS)
+                            
+                ISI_distance_dict[(well, electrode_pair)] = ISI_distance
+                ISI_distances.append(ISI_distance)
+                
+            print('isi')
+            ISI_distance_mean = np.mean(ISI_distances)
+        ISI_distance_df.append(ISI_distance_mean)
+
+    # Save the network burst data to a file
+    if save_data:
+        with h5py.File(output_hdf_file, 'a') as f:
+            print('saving')
+            f.create_dataset(f'synchronicity_values/ISI_distance', data=ISI_distance_df)
+
+           
+    return  ISI_distance_dict
+
+
+
 
 '''Calculate the features per well'''
 @silence_runtime_warnings
