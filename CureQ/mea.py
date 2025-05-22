@@ -196,8 +196,8 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
             if dataset_chunks[0] != 1:
                 rechunk_data=True
             else:
-                print("Data is already correctly chunked")
-                print('oke')
+                print("Data is already correctly chunked :)")
+                print('print statement prints')
                 rechunk_data=False
         else:
             rechunk_data=True

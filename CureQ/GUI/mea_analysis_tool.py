@@ -86,7 +86,7 @@ class MainApp(ctk.CTk):
         self.parameters = get_default_parameters()
         self.default_parameters = get_default_parameters()
 
-        print("Successfully launched MEAlytics GUI")
+        print("Successfully launched MEAlytics GUI :)")
 
     # Handle frame switching
     def show_frame(self, frame_class, *args, **kwargs):
