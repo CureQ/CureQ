@@ -9,6 +9,7 @@ import h5py
 import itertools
 from statsmodels.tsa.stattools import pacf
 from CureQ.core.ISI_distance import *
+from CureQ.core._SPIKE_distance import *
 
 def silence_runtime_warnings(func):
 
@@ -302,7 +303,7 @@ def electrode_features(well, parameters):
 
 def electrode_pair_features(parameters, save_data=True):
     """"
-    Calculates electrode pair features for unique pairs of one well.
+    Calculates electrode pair features for unique pairs of each well.
 
     Paramters
     --------
@@ -316,40 +317,57 @@ def electrode_pair_features(parameters, save_data=True):
     features_df : pandas Dataframe
         Dataframe containing electrodes pairs for rows and features for columns.
     """
-    print('start calculating synchrony')
-    output_hdf_file=parameters['output hdf file']
 
-     #To Do:
-        #anders maken voor als we met intervallen willen werken (Burst etc)
-    time_df = np.arange(0,int(parameters['measurements'])/int(parameters['sampling rate']))
+    # Initialize empty structures for storing results
+    pairs_skipped = []
+    distance_df = []
+    spiketimes_dict = {}
+    distance_dict = {}
+    matrices = {}
+
+    # Get the path/name of the output HDF5 file from parameters
+    output_hdf_file = parameters['output hdf file']
+
+    # Generate time values based on the number of measurements and sampling rate
+    time_df = np.arange(0, int(parameters['measurements']) / int(parameters['sampling rate']))
     start_time = np.min(time_df)
     end_time = np.max(time_df)
-                  
-    # Wells in parameters zetten.
-    wells = parameters['well amount']
-    electrodes=np.arange(1, parameters['electrode amount']+1)
-    unique_pairs_electrodes = list(itertools.combinations(electrodes, 2))
-    
-    
-    pairs_skipped = []
-    ISI_distance_df = []
-    spiketimes_dict = {}
-    ISI_distance_dict = {}
-    ISI_matrices = {}
 
-    # Create labels for matrix
+    # Get the number of wells from parameters
+    wells = parameters['well amount']
+
+    # Create an array of electrode IDs (starting from 1)
+    electrodes = np.arange(1, parameters['electrode amount'] + 1)
+
+    # Generate all unique electrode pairs (combinations of 2)
+    unique_pairs_electrodes = list(itertools.combinations(electrodes, 2))
+
+    # Create labels for matrix axes using electrode numbers
     labels = [f'electrode_{i}' for i in electrodes]
-    well_labels = [f'well{i}' for i in electrodes]
+
+    # Optional: well labels if needed, based on electrode count
+    well_labels = [f'wel_l{i}' for i in wells]
+
+    # Define mapping between synchronicity method names and internal method codes
+    method_map = {
+        'Adaptive ISI-distance': 'adaptive_ISI',
+        'ISI-distance': 'ISI',
+        'SPIKE-distance': 'SPIKE',
+        'Adaptive SPIKE-distance': 'adaptive_SPIKE'
+    }
+
+    # Getting correct method gives auto 'adaptive_SPIKE' back if nothing is filled.
+    method = method_map.get(parameters['synchronicity method'], 'adaptive_SPIKE')
  
     with h5py.File(output_hdf_file, 'r') as f:
            
         for well in wells:
             # Reset for each well
-            ISI_distance_matrix = np.full((len(electrodes), len(electrodes)), np.nan)  # standaard lege waarden
-            ISI_distances = []
+            distance_matrix = np.full((len(electrodes), len(electrodes)), np.nan)  # standaard lege waarden
+            distances = []
 
             # Set diagonal to one
-            np.fill_diagonal(ISI_distance_matrix, 1)
+            np.fill_diagonal(distance_matrix, 1)
 
             # Load spiketrain of each electrode
             for electrode in electrodes:
@@ -377,47 +395,50 @@ def electrode_pair_features(parameters, save_data=True):
                     (spiketrain_y is None or spiketrain_y.size == 0):
                     electrode_pair_well = (well, electrode_pair)
                     pairs_skipped.append(electrode_pair_well)
-                    ISI_distance = 1
+                    distance_value = 1
                 else:
 
-                    if parameters['synchronicity method'] == 'Adaptive ISI-distance':
-                        print('adaptive')
-                        spiketrains = [np.asarray(spiketrain_x), np.asarray(spiketrain_y)]
-        
-                        threshold = default_thresh(spiketrains, start_time, end_time)
+                    if parameters['synchronicity method'] == 'Adaptive ISI-distance' or parameters['synchronicity method'] == 'Adaptive SPIKE-distance':
+                        # Calculate automatic threshold
 
-            
+                        spiketrains = [np.asarray(spiketrain_x), np.asarray(spiketrain_y)]
+                        threshold = default_thresh(spiketrains, start_time, end_time)
                             
                     else:
                         threshold = 0
                                 
-                    # To Do:
-                    ISI_distance, _ = isi_distance(spiketrain_x, spiketrain_y, start_time, end_time, threshold)
-                
-                    if ISI_distance is not None:
-                        i, j = electrode_x - 1, electrode_y - 1
-                        ISI_distance_matrix[i, j] = ISI_distance
-                        ISI_distance_matrix[j, i] = ISI_distance
+                    if parameters['synchronicity method'] == 'Adaptive ISI-distance' or parameters['synchronicity method'] == 'ISI-distance':
+                        distance_value, _ = isi_distance(spiketrain_x, spiketrain_y, start_time, end_time, threshold)
 
-                ISI_matrices[well] = pd.DataFrame(ISI_distance_matrix, index=labels, columns=labels) 
+                    else:
+                        print('SPIKE-distance')
+                        distance_value, _ = spike_distance(spiketrain_x, spiketrain_y, start_time, end_time, threshold, RI=0)
+
+                    if distance_value is not None:
+                        i, j = electrode_x - 1, electrode_y - 1
+                        distance_matrix[i, j] = distance_value
+                        distance_matrix[j, i] = distance_value
+
+                matrices[well] = pd.DataFrame(distance_matrix, index=labels, columns=labels) 
                 
-                ISI_distance_dict[(well, (electrode_x, electrode_y))] = ISI_distance
-                ISI_distances.append(ISI_distance)
+                distance_dict[(well, (electrode_x, electrode_y))] = distance_value
+                distances.append(distance_value)
                 
-            ISI_distance_mean = np.mean(ISI_distances)
-            ISI_distance_df.append(ISI_distance_mean)
-        ISI_distance_df = pd.DataFrame(ISI_distance_df, index= well_labels, columns = ['ISI-distance'] )
+            distance_mean = np.mean(distances)
+            distance_df.append(distance_mean)
+        mean_distance_df = pd.DataFrame(distance_df, index= well_labels, columns = [method] )
+        print(mean_distance_df)
 
     # Opslaan per well
     if save_data:
         with h5py.File(output_hdf_file, 'a') as f:
-            f.create_dataset(f'synchronicity_values/ISI_distance_well', data=ISI_distance_df)
-            for well, matrix in ISI_matrices.items():
-                f.create_dataset(f'synchronicity_values/ISI_distance_electrodes_pair/matrix_well_{well}', data=matrix)
+            f.create_dataset(f'synchronicity_values/{method}_distance_well', data=mean_distance_df)
+            for well, matrix in matrices.items():
+                f.create_dataset(f'synchronicity_values/{method}_distance_electrodes_pair/matrix_well_{well}', data=matrix)
 
 
            
-    return  ISI_distance_dict
+    return  distance_dict
 
 
 
