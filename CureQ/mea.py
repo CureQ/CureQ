@@ -56,7 +56,8 @@ def get_default_parameters():
         'nbd kde bandwidth' : 0.05,
         'remove inactive electrodes' : True,
         'activity threshold' : 0.1,
-        'use multiprocessing' : False
+        'use multiprocessing' : False,
+        'synchronicity method': 'Adaptive SPIKE-distance'
     }
 
     return parameters
@@ -216,12 +217,19 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
         f.create_group("spike_values")
         f.create_group("burst_values")
         f.create_group("network_values")
-        f.create_group("synchronicity_values")
+        sync_group = f.create_group("synchronicity_values")
+    
+        # Subgroep binnen synchronicity_values
+        sync_group.create_group("ISI_distance_electrodes_pair")
+
 
     # Load default parameters if none were given
     if parameters=={}:
         parameters=get_default_parameters()
         
+    # Create a list of all wells
+    wells=list(range(1,int(datashape[0]/electrode_amnt)+1))
+
     # Save the parameters that have been given in a JSON file 
     new_values={'output path' : outputpath,
                 'output hdf file' : output_hdf_file,
@@ -229,14 +237,15 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
                 'sampling rate' : sampling_rate,
                 'electrode amount' : electrode_amnt,
                 'measurements' : datashape[1],
-                'library version' : lib_version}
+                'library version' : lib_version,
+                # to do dit hoort niet hier
+                'well amount': wells,
+                }
     parameters.update(new_values)
 
     with open(f"{outputpath}/parameters.json", 'w') as outfile:
         json.dump(parameters, outfile, indent=4)
 
-    # Create a list of all wells
-    wells=list(range(1,int(datashape[0]/electrode_amnt)+1))
 
     # Flag for the first iteration
     first_iteration=True
@@ -395,7 +404,7 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
             end=time.time()
             print(f"It took {end-start} seconds to analyse well: {well}")
         
-        electrode_pair_features(wells, parameters)
+        electrode_pair_features(parameters)
 
         # Free up RAM
         data=None

@@ -244,20 +244,30 @@ class parameter_frame(ctk.CTkFrame):
         multiprocessinginput=ctk.CTkCheckBox(otherparameters, onvalue=True, offvalue=False, variable=multiprocessingvar, text='')
         multiprocessinginput.grid(row=1, column=1, padx=10, pady=10, sticky='w')
 
+        # Select synchronicity method
+        sync_method_label = ctk.CTkLabel(master=otherparameters, text="Synchronicity method:")
+        sync_method_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+        sync_method_tooltip = CTkToolTip(sync_method_label, message="Choose the method to compute synchronicity between spike trains.", wraplength=self.tooltipwraplength)
+
+        sync_options = ["Adaptive ISI-distance", "ISI-distance", "Adaptive SPIKE-distance", "SPIKE-distance"]
+        sync_method_var = ctk.StringVar(value="Adaptive ISI-distance") # Adaptive SPIKE-distance
+        sync_method_dropdown = ctk.CTkComboBox(master=otherparameters, variable=sync_method_var, values=sync_options)
+        sync_method_dropdown.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+
         # Remove inactive electrodes
         removeinactivelabel=ctk.CTkLabel(otherparameters, text="Remove inactive electrodes:")
-        removeinactivelabel.grid(row=2, column=0, padx=10, pady=10, sticky='w')
+        removeinactivelabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
         removeinactivetooltip = CTkToolTip(removeinactivelabel, message='Remove inactive electrodes from the spike, burst and network burst feature calculations.', wraplength=self.tooltipwraplength)
         removeinactivevar=ctk.IntVar()
         removeinactiveinput=ctk.CTkCheckBox(otherparameters, onvalue=True, offvalue=False, variable=removeinactivevar, command=removeinactivefunc, text='')
-        removeinactiveinput.grid(row=2, column=1, padx=10, pady=10, sticky='w')
+        removeinactiveinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
 
         # Setup the activity threshold
         activitythlabel=ctk.CTkLabel(master=otherparameters, text="Activity threshold:")
-        activitythlabel.grid(row=3, column=0, padx=10, pady=10, sticky='w')
+        activitythlabel.grid(row=4, column=0, padx=10, pady=10, sticky='w')
         activitythtooltip = CTkToolTip(activitythlabel, message='Define the minimal activity a channel must have, to be used in calculating features. Value should be given in hertz, so a value of 0.1 would mean any channel with less that 1 spike per 10 seconds will be removed', wraplength=self.tooltipwraplength)
         activitythinput=ctk.CTkEntry(otherparameters)
-        activitythinput.grid(row=3, column=1, padx=10, pady=10, sticky='w')
+        activitythinput.grid(row=4, column=1, padx=10, pady=10, sticky='w')
 
         """Buttons and functions for saving, resetting and importing parameters"""
         def set_parameters(parameters):
@@ -304,6 +314,7 @@ class parameter_frame(ctk.CTkFrame):
             activitythinput.delete(0, END)
             activitythinput.insert(0, parameters["activity threshold"])
             multiprocessingvar.set(bool(parameters["use multiprocessing"]))
+            sync_method_var.set(parameters.get("synchronicity method", "Adaptive ISI-distance")) #SPIKE-distance adaptive
             nbd_kde_bandwidth_input.delete(0, END)
             nbd_kde_bandwidth_input.insert(0, parameters["nbd kde bandwidth"])
 
@@ -342,6 +353,7 @@ class parameter_frame(ctk.CTkFrame):
                 self.parent.parameters['threshold portion']=float(thresholdportioninput.get())
                 self.parent.parameters['spike validation method']=str(dropdown_var.get())
                 self.parent.parameters['use multiprocessing']=bool(multiprocessingvar.get())
+                self.parent.parameters['synchronicity method'] = str(sync_method_var.get())
                 self.parent.show_frame(self.parent.home_frame)
 
             except Exception as error:
