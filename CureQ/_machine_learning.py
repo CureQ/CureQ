@@ -180,7 +180,7 @@ def ML_predict_full(data, given_model, wells, rows, cols):
     ax.set_yticks(np.arange(-0.5, rows, 1), minor=True)
     ax.grid(which="minor", color="black", linestyle='-', linewidth=0.5)
     ax.tick_params(which="minor", bottom=False, left=False)
-    ax.set_title(f'Feature Importance for {given_model}')
+    ax.set_title(f'All predictions of the {given_model} model')
 
     plt.tight_layout()
     return fig

@@ -876,17 +876,23 @@ class view_results(ctk.CTkFrame):
         heatmap_button_frame = ctk.CTkFrame(master=self.tab_frame.tab("Heatmap"))
         heatmap_button_frame.grid(row=0, column=1, padx=20, pady=20, sticky="n")
 
-        hm_data_generator = ctk.CTkButton(heatmap_button_frame, text="Process data", command=lambda: self.generate_data(display_hm, display_hm_full, display_hm_max, h5_file, parameters, Vars))
-        hm_data_generator.pack(pady=20)
+        hm_data_generator = ctk.CTkButton(heatmap_button_frame, text="Process data", command=lambda: self.generate_data(add_hm_labels, display_hm, display_hm_full, display_hm_max, download_hm, h5_file, parameters, Vars))
+        hm_data_generator.pack(pady=15)
 
-        display_hm = ctk.CTkButton(heatmap_button_frame, text="Generate Heatmap", state="disabled", command=lambda: self.start_animation(Vars, Classes))
-        display_hm.pack(pady=20)  
+        add_hm_labels = ctk.CTkButton(heatmap_button_frame, text="Add labels", state ="disabled", command=lambda: self.add_labels())
+        add_hm_labels.pack(pady=15)
+
+        display_hm = ctk.CTkButton(heatmap_button_frame, text="Generate heatmap", state="disabled", command=lambda: self.start_animation(Vars, Classes))
+        display_hm.pack(pady=15)  
 
         display_hm_full = ctk.CTkButton(heatmap_button_frame, text="Show total activity", state="disabled", command=lambda: self.show_full_heatmap(Vars, Classes))
-        display_hm_full.pack(pady=20)  
+        display_hm_full.pack(pady=15)  
 
         display_hm_max = ctk.CTkButton(heatmap_button_frame, text="Show max activity", state="disabled", command=lambda: self.show_max_activity(Vars, Classes))
-        display_hm_max.pack(pady=20)
+        display_hm_max.pack(pady=15)
+
+        download_hm = ctk.CTkButton(heatmap_button_frame, text="Download", state="disabled", command=lambda: self.download_heatmap())
+        download_hm.pack(pady=15)
 
         self.add_legend_to_frame(heatmap_button_frame, Colour_classes)
         Vars["cmap"] = cmap_creation()
@@ -929,20 +935,33 @@ class view_results(ctk.CTkFrame):
         dropdown.set("Choose the model")
         dropdown.pack(pady=10)
 
-        ML_full_show = ctk.CTkButton(ML_button_frame, text="Show All Predictions", command=lambda: self.show_all_predictions(ML_dict))
-        ML_full_show.pack(pady=20)
+        ML_full_show = ctk.CTkButton(ML_button_frame, text="Show all predictions", command=lambda: self.show_all_predictions(ML_dict))
+        ML_full_show.pack(pady=15)
 
-        ML_feature_show = ctk.CTkButton(ML_button_frame, text="Feature Importances", command=lambda: self.show_ML_features(ML_dict))
-        ML_feature_show.pack(pady=20)  
+        ML_feature_show = ctk.CTkButton(ML_button_frame, text="Feature importances", command=lambda: self.show_ML_features(ML_dict))
+        ML_feature_show.pack(pady=15)  
 
-        ML_performance_show = ctk.CTkButton(ML_button_frame, text="Model Performance", command=lambda: self.show_ML_performance(ML_dict))
-        ML_performance_show.pack(pady=20)
+        ML_performance_show = ctk.CTkButton(ML_button_frame, text="Model performance", command=lambda: self.show_ML_performance(ML_dict))
+        ML_performance_show.pack(pady=15)
+        
+        ML_upload = ctk.CTkButton(ML_button_frame, text="Upload data")
+        ML_upload.pack(pady=15)
+
+        ML_batch_upload = ctk.CTkButton(ML_button_frame, text="Batch upload data")
+        ML_batch_upload.pack(pady=15)
+
+        ML_parameter_optimise = ctk.CTkButton(ML_button_frame, text="Optimise parameters")
+        ML_parameter_optimise.pack(pady=15)
+
+        ML_train_model = ctk.CTkButton(ML_button_frame, text="Train new model")
+        ML_train_model.pack(pady=15)
         
         ML_disclaimer = ctk.CTkLabel(ML_button_frame, text="This feature is not ready for actual research as the models still don't perform as required.", wraplength=250)
-        ML_disclaimer.pack(pady=20)
+        ML_disclaimer.pack(pady=15)
 
         ML_prediction = ctk.CTkLabel(ML_button_frame, text="", wraplength=230)
-        ML_prediction.pack(pady=20)
+        ML_prediction.pack(pady=15)
+
 
         # Button to return to main menu
         return_to_main = ctk.CTkButton(master=self, text="Return to main menu", command=lambda: self.parent.show_frame(main_window), fg_color=parent.gray_1)
@@ -961,11 +980,20 @@ class view_results(ctk.CTkFrame):
         whole_well_view(self.parent, self.folder, well)
     
     ####### Heatmap button functions
-    def generate_data(self, display_hm, display_hm_full, display_hm_max, h5_data, parameters, Vars):
+    def generate_data(self, add_hm_labels, display_hm, display_hm_full, display_hm_max, download_hm, h5_data, parameters, Vars):
         Vars["df"], Vars["n_Wells"], Vars["n_Electrodes"], Vars["v_max"], Vars["Size"], Vars["Precomputed Max"], Vars["max_df"] = data_prepper(h5_data, parameters, Vars)
+        add_hm_labels.configure(state="normal")
         display_hm.configure(state="normal")  
         display_hm_full.configure(state="normal")  
         display_hm_max.configure(state="normal")  
+        download_hm.configure(state="normal")  
+
+    def add_labels():
+        print("yes")
+
+    def download_heatmap():
+        print("yes")
+
 
     def start_animation(self, Vars, Classes):
         ani, fig, update = make_hm(Vars, Classes)
@@ -1025,6 +1053,19 @@ class view_results(ctk.CTkFrame):
         self.to_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text=(Vars["Num frames"]/10))
         self.to_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
 
+        # def toggle_pause():
+        #     global is_paused
+        #     is_paused = not is_paused
+        #     if is_paused:
+        #         pause_button.configure(text="▶")  # Play icon
+        #         print("Slider Paused")
+        #     else:
+        #         pause_button.configure(text="⏸")  # Pause icon
+        #         print("Slider Resumed")
+        
+        # pause_button = ctk.CTkButton(master=self.tab_frame.tab("Heatmap"), text="⏸", command=toggle_pause, width=40)
+        # pause_button.grid(row=1, column=1, padx=(5, 10), pady=10, sticky="w)
+
         ani.event_source.start()
 
     def show_full_heatmap(self, Vars, Classes):
@@ -1075,7 +1116,7 @@ class view_results(ctk.CTkFrame):
 
     def add_legend_to_frame(self, frame, colour_dict):
         legend_label = ctk.CTkLabel(frame, text="Legend", font=("Arial", 14, "bold"))
-        legend_label.pack(pady=(20, 5))  
+        legend_label.pack(pady=(15, 5))  
 
         for class_name, color in colour_dict.items():
             legend_row = ctk.CTkFrame(frame, fg_color="transparent")
