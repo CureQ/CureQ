@@ -1,61 +1,32 @@
 ---
 layout: default
 title: Heatmap of MEAlytics
-permalink: /python_package
 ---
 
-Besides the GUI, the MEA analysis tool can also be called as a python library, and has a few functions that can be of use to the user. Let’s walk through an example to fully analyse a MEA file.
+Within the 'View Results' section of the MEAlytics GUI, the third tab is 'Heatmap'.
 
-### Analysing MEA file
+<img src="./assets/images/hm_tab.png" width="600" height="400"><br>
 
-Firstly, import the necessary functions:
+## Buttons
 
-```python
-from CureQ.mea import analyse_wells, get_default_parameters
-```
+The heatmap contains the following buttons with these functions:
 
-Next, we define some variables that we later need to pass to the function.
 
-```python
-fileadress='C:/mea_data/mea_experiment.h5'
-sampling_rate=20000
-electrode_amount=12
-```
+-	Process data: This preprocesses the data and enables all other buttons.
+-	Add labels: This button allows the user to add labels to all wells so the user can see easily see which well has which cell culture.
+-	Generate Heatmap: This button generates the regular heatmap.
+-	Show total activity: This button generates the heatmap showing the total activity of each electrode.
+-	Show max activity: This button generates the heatmap showing the maximum per second activity of each electrode.
+-	Download: This button downloads the last pressed heatmap. 
+-	Back to main menu: This button sends the user back to the main menu of the app.
 
-Then, we retrieve the dictionary containing the default parameters so we can alter the analysis. In this case we turn on multiprocessing to speed up the analysis.
+## Different heatmap examples
 
-```python
-parameters = get_default_parameters()
-parameters['use multiprocessing'] = True
-```
+The 'regular' heatmap makes an animation, a still frame from it is shown here:
+<img src="./assets/images/normal_hm.png" width="600" height="400"><br>
 
-Finally, pass all the arguments to the analyse_wells function to initiate the analysis. Because we turned on multiprocessing, we must use and `“if __name__ == ‘__main__’: “` guard here. Otherwise, the application will eventually create an infinite number of processes and eventually crash.
+The 'total activity' heatmap makes a still image, and an example can be seen here:
+<img src="./assets/images/total_hm.png" width="600" height="400"><br>
 
-```python
-if __name__ == '__main__':
-    analyse_wells(fileadress=fileadress,
-                  sampling_rate=sampling_rate,
-                  electrode_amnt=electrode_amount,
-                  parameters=parameters
-                  )
-```
-
-In the end, it should look like this:
-
-```python
-from CureQ.mea import analyse_wells, get_default_parameters
-
-fileadress='C:/mea_data/mea_experiment.h5'
-sampling_rate=20000
-electrode_amount=12
-
-parameters = get_default_parameters()
-parameters['use multiprocessing'] = True
-
-if __name__ == '__main__':
-    analyse_wells(fileadress=fileadress,
-                  sampling_rate=sampling_rate,
-                  electrode_amnt=electrode_amount,
-                  parameters=parameters
-                  )
-```
+The 'max activity' heatmap makes a still image, and an example can be seen here:
+<img src="./assets/images/max_hm.png" width="600" height="400"><br>
