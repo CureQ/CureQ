@@ -15,6 +15,7 @@ from importlib.metadata import version
 import traceback
 import time
 
+
 # External libraries
 import pandas as pd
 import numpy as np
@@ -27,7 +28,7 @@ from CTkColorPicker import *
 import requests
 
 # Package imports
-from ..core._plotting import get_defaultcolors, feature_boxplots, combined_feature_boxplots, features_over_time
+from ..core._plotting import get_defaultcolors, feature_boxplots, combined_feature_boxplots, features_over_time, plot_network_diagram, plot_3d
 
 class plotting_window(ctk.CTkFrame):
     """
@@ -60,6 +61,7 @@ class plotting_window(ctk.CTkFrame):
         boxplot_frame.grid_columnconfigure(0, weight=1)
         boxplot_frame.grid_columnconfigure(1, weight=1)
 
+        features_over_time_frame.grid_columnconfigure(1, weight=1)
 
         # Selected files frame
         self.selected_files_frame = ctk.CTkScrollableFrame(master=self)
@@ -87,6 +89,7 @@ class plotting_window(ctk.CTkFrame):
         label_main_frame.grid_rowconfigure(0, weight=0)
         label_main_frame.grid_rowconfigure(1, weight=0)
         label_main_frame.grid_rowconfigure(2, weight=0)
+        label_main_frame.grid_rowconfigure(3, weight=0)
 
         # Values
         self.selected_folder = ''
@@ -139,8 +142,27 @@ class plotting_window(ctk.CTkFrame):
         create_plot_button.grid(row=3, column=0, pady=10, padx=10, sticky='nesw', columnspan=2)
 
 
+        # Frame synchrony frame
+        sync_frame = ctk.CTkFrame(master=plotting_frame, fg_color=self.parent.gray_1)
+        sync_frame.grid(row=3, column=0, sticky='nesw', padx=5, pady=5)
+
+        sync_label = ctk.CTkLabel(master=sync_frame, text="Synchronicity plots", font=ctk.CTkFont(size=15))
+        sync_label.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky='w')
+
+        self.network_diagram = ctk.CTkCheckBox(master=sync_frame, text='Network diagram')
+        self.network_diagram.grid(row=1, column=1, padx=10, pady=5, sticky='w')
+
+        self.plot_3D = ctk.CTkCheckBox(master=sync_frame, text='3D-plot')
+        self.plot_3D.grid(row=2, column=1, padx=10, pady=5, sticky='w')
+
+        self.sync_discern_wells_entry = ctk.CTkCheckBox(master=sync_frame, text='Color wells')
+        self.sync_discern_wells_entry.grid(row=3, column=1, padx=10, pady=5, sticky='w')
+
+        sync_button = ctk.CTkButton(master=sync_frame, text="Create synchronicity Plot", command=self.create_sync_plot)
+        sync_button.grid(row=5, column=0, columnspan=2, padx=10, pady=10, sticky='nesw')
+
         return_to_main = ctk.CTkButton(master=plotting_frame, text="Return to main menu", command=lambda: self.parent.show_frame(self.parent.home_frame), fg_color=parent.gray_1)
-        return_to_main.grid(row=3, column=0, columnspan=2, padx=5, pady=5, sticky='nesw')
+        return_to_main.grid(row=6, column=0, columnspan=2, padx=5, pady=5, sticky='nesw')
 
         # Create labels
         self.new_label_entry=ctk.CTkEntry(master=create_labels_frame, placeholder_text="Create a label; e.g.: \'control\'")
@@ -273,6 +295,101 @@ class plotting_window(ctk.CTkFrame):
                               icon="cancel",
                               wraplength=400)
             traceback.print_exc()
+
+    def create_sync_plot(self):
+        # check if there are groups that contain wells
+        valid_groups=False
+        for label in self.assigned_labels.keys():
+            if len(self.assigned_labels[label]) > 0:
+                valid_groups=True
+        if not valid_groups:
+            CTkMessagebox(title="Error",
+                              message='Please create at least one label, and assign at least one well to it.',
+                              icon="cancel",
+                              wraplength=400)
+            return
+        
+        try:
+            file_path = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")],
+            title="Save 3D-plot PDF File"
+            )
+            
+            if not file_path:
+                return
+            
+            # Get parameters
+            parameters_path = os.path.join(self.selected_folder, "parameters.json")
+            if not os.path.exists(parameters_path):
+                CTkMessagebox(title="Missing file", message="parameters.json not found in the selected folder.", icon="cancel")
+                return
+
+            with open(parameters_path, 'r') as f:
+                parameters = json.load(f)
+
+            # Roep de juiste plotfunctie aan
+            if self.plot_3D.get() == 1:
+                pdf_path = plot_3d(folder=self.selected_folder, labels=copy.deepcopy(self.assigned_labels), output_fileadress=file_path, well_amnt=self.well_amnt, parameters = parameters, diagnol = True)
+                webbrowser.open(f"file://{pdf_path}")
+                CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
+
+            if self.plot_3D.get() == 0 and self.network_diagram.get() == 0:
+                CTkMessagebox(title="No plot type selected", message="Please select a plot type (3D or Network diagram).", icon="warning")
+                          
+        
+            webbrowser.open(f"file://{pdf_path}")
+            CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
+        except Exception as e:
+            CTkMessagebox(title="Error", message=f"An error occurred while generating the plot:\n{str(e)}", icon="cancel")
+            traceback.print_exc()
+
+        try:
+            file_path = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")],
+            title="Save network PDF File"
+            )
+            
+            if not file_path:
+                return
+            
+            # Get parameters
+            parameters_path = os.path.join(self.selected_folder, "parameters.json")
+            if not os.path.exists(parameters_path):
+                CTkMessagebox(title="Missing file", message="parameters.json not found in the selected folder.", icon="cancel")
+                return
+
+            with open(parameters_path, 'r') as f:
+                parameters = json.load(f)
+            if self.network_diagram.get() == 1:
+                pdf_path = plot_network_diagram(folder=self.selected_folder,
+                                     labels=copy.deepcopy(self.assigned_labels),
+                                     output_fileadress=file_path,
+                                     well_amount=self.well_amnt,
+                                     parameters=parameters,
+                                     asynchrony=0)
+                webbrowser.open(f"file://{pdf_path}")
+                CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
+                
+            if self.plot_3D.get() == 0 and self.network_diagram.get() == 0:
+                CTkMessagebox(title="No plot type selected", message="Please select a plot type (3D or Network diagram).", icon="warning")
+                          
+
+            webbrowser.open(f"file://{pdf_path}")
+            CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
+        except Exception as e:
+            CTkMessagebox(title="Error", message=f"An error occurred while generating the plot:\n{str(e)}", icon="cancel")
+            traceback.print_exc()
+            
+            
+        except Exception as error:
+            CTkMessagebox(title="Error",
+                              message='Something went wrong while creating the synchronicity plots',
+                              icon="cancel",
+                              wraplength=400)
+            traceback.print_exc()
+        return
 
     def set_selected_label(self, label):
         self.selected_label=label
