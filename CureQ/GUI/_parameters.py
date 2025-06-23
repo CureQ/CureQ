@@ -249,8 +249,8 @@ class parameter_frame(ctk.CTkFrame):
         sync_method_label.grid(row=2, column=0, padx=10, pady=10, sticky='w')
         sync_method_tooltip = CTkToolTip(sync_method_label, message="Choose the method to compute synchronicity between spike trains.", wraplength=self.tooltipwraplength)
 
-        sync_options = ["Adaptive ISI-distance", "ISI-distance", "Adaptive SPIKE-distance", "SPIKE-distance"]
-        sync_method_var = ctk.StringVar(value="Adaptive ISI-distance") # Adaptive SPIKE-distance
+        sync_options = ["ISI-distance", "Adaptive ISI-distance",  "SPIKE-distance", "Adaptive SPIKE-distance"]
+        sync_method_var = ctk.StringVar(value="SPIKE-distance") 
         sync_method_dropdown = ctk.CTkComboBox(master=otherparameters, variable=sync_method_var, values=sync_options)
         sync_method_dropdown.grid(row=2, column=1, padx=10, pady=10, sticky='w')
 
@@ -314,7 +314,7 @@ class parameter_frame(ctk.CTkFrame):
             activitythinput.delete(0, END)
             activitythinput.insert(0, parameters["activity threshold"])
             multiprocessingvar.set(bool(parameters["use multiprocessing"]))
-            sync_method_var.set(parameters.get("synchronicity method", "Adaptive ISI-distance")) #SPIKE-distance adaptive
+            sync_method_var.set(parameters.get("synchronicity method", "SPIKE-distance")) #SPIKE-distance 
             nbd_kde_bandwidth_input.delete(0, END)
             nbd_kde_bandwidth_input.insert(0, parameters["nbd kde bandwidth"])
 
