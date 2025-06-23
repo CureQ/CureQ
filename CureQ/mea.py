@@ -57,7 +57,7 @@ def get_default_parameters():
         'remove inactive electrodes' : True,
         'activity threshold' : 0.1,
         'use multiprocessing' : False,
-        'synchronicity method': 'Adaptive SPIKE-distance'
+        'synchronicity method': 'SPIKE-distance'
     }
 
     return parameters
@@ -219,10 +219,6 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
         f.create_group("network_values")
         sync_group = f.create_group("synchronicity_values")
     
-        # Subgroep binnen synchronicity_values
-        sync_group.create_group("ISI_distance_electrodes_pair")
-
-
     # Load default parameters if none were given
     if parameters=={}:
         parameters=get_default_parameters()
@@ -300,17 +296,18 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
                 # Calculate electrode and well features
                 electrode_features_df=electrode_features(well, parameters)
                 well_features_df=well_features(well, parameters)
+                electrode_pair_features_df = electrode_pair_features(parameters, save_data=False)
                 print(f"Calculated features well: {well}")
 
                 # If its the first iteration, create the dataframe
                 if first_iteration:
                     first_iteration=False
                     electrode_features_output=copy.deepcopy(electrode_features_df)
-                    output=feature_output(electrode_features_df, well_features_df)
+                    output=feature_output(electrode_features_df, well_features_df, electrode_pair_features_df)
                 # If its not the first iteration, keep appending to the dataframe
                 else:
                     electrode_features_output=pd.concat([electrode_features_output, copy.deepcopy(electrode_features_df)], ignore_index=False)
-                    output=pd.concat([output, feature_output(electrode_features_df, well_features_df)], axis=0, ignore_index=False)
+                    output=pd.concat([output, feature_output(electrode_features_df, well_features_df, electrode_pair_features_df)], axis=0, ignore_index=False)
                 end=time.time()
                 print(f"It took {end-start} seconds to analyse well: {well}")
 
@@ -390,17 +387,18 @@ def analyse_wells(fileadress, sampling_rate, electrode_amnt, parameters={}):
             # Calculate electrode and well features
             electrode_features_df=electrode_features(well, parameters)
             well_features_df=well_features(well, parameters)
+            electrode_pair_features_df = electrode_pair_features(parameters, save_data=False)
             print(f"Calculated features well: {well}")
 
             # If its the first iteration, create the dataframe
             if first_iteration:
                 first_iteration=False
                 electrode_features_output=copy.deepcopy(electrode_features_df)
-                output=feature_output(electrode_features_df, well_features_df)
+                output=feature_output(electrode_features_df, well_features_df, electrode_pair_features_df)
             # If its not the first iteration, keep appending to the dataframe
             else:
                 electrode_features_output=pd.concat([electrode_features_output, copy.deepcopy(electrode_features_df)], ignore_index=False)
-                output=pd.concat([output, feature_output(electrode_features_df, well_features_df)], axis=0, ignore_index=False)
+                output=pd.concat([output, feature_output(electrode_features_df, well_features_df, electrode_pair_features_df)], axis=0, ignore_index=False)
             end=time.time()
             print(f"It took {end-start} seconds to analyse well: {well}")
         
