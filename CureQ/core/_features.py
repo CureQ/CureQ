@@ -345,20 +345,18 @@ def electrode_pair_features(parameters, save_data=True):
     # Create labels for matrix axes using electrode numbers
     labels = [f'electrode_{i}' for i in electrodes]
 
-    # Optional: well labels if needed, based on electrode count
-    well_labels = [f'wel_l{i}' for i in wells]
 
     # Define mapping between synchronicity method names and internal method codes
     method_map = {
-        'Adaptive ISI-distance': 'adaptive_ISI',
-        'ISI-distance': 'ISI',
-        'SPIKE-distance': 'SPIKE',
-        'Adaptive SPIKE-distance': 'adaptive_SPIKE'
+        'Adaptive ISI-distance': 'adaptive_ISI_distance',
+        'ISI-distance': 'ISI_distance',
+        'SPIKE-distance': 'SPIKE_distance',
+        'Adaptive SPIKE-distance': 'adaptive_SPIKE_distance'
     }
 
-    # Getting correct method gives auto 'adaptive_SPIKE' back if nothing is filled.
-    method = method_map.get(parameters['synchronicity method'], 'adaptive_SPIKE')
- 
+    # Getting correct method gives auto 'SPIKE-distance' back if nothing is filled.
+    method = method_map.get(parameters['synchronicity method'], 'SPIKE_distance')
+
     with h5py.File(output_hdf_file, 'r') as f:
            
         for well in wells:
@@ -366,7 +364,7 @@ def electrode_pair_features(parameters, save_data=True):
             distance_matrix = np.full((len(electrodes), len(electrodes)), np.nan)  # standaard lege waarden
             distances = []
 
-            # Set diagonal to one
+            # Set diagonal to one (synchrony with itself)
             np.fill_diagonal(distance_matrix, 1)
 
             # Load spiketrain of each electrode
@@ -390,56 +388,63 @@ def electrode_pair_features(parameters, save_data=True):
                 spiketrain_x = spiketimes_dict.get((well, electrode_x), None)
                 spiketrain_y = spiketimes_dict.get((well, electrode_y), None)
                 
-                
+                # If one (or both) electrodes is not active -> there is asynchronicity
                 if (spiketrain_x is None or spiketrain_x.size == 0) or \
                     (spiketrain_y is None or spiketrain_y.size == 0):
                     electrode_pair_well = (well, electrode_pair)
                     pairs_skipped.append(electrode_pair_well)
-                    distance_value = 1
+                    distance_value = 0
+
+
                 else:
-
-                    if parameters['synchronicity method'] == 'Adaptive ISI-distance' or parameters['synchronicity method'] == 'Adaptive SPIKE-distance':
+                    # Calculate the synchronicity with given method
+                    if parameters['synchronicity method'] == 'adaptive_ISI_distance' or parameters['synchronicity method'] == 'adaptive_SPIKE_distance':
+                        
                         # Calculate automatic threshold
-
                         spiketrains = [np.asarray(spiketrain_x), np.asarray(spiketrain_y)]
                         threshold = default_thresh(spiketrains, start_time, end_time)
                             
                     else:
+                        # No threshold
                         threshold = 0
-                                
-                    if parameters['synchronicity method'] == 'Adaptive ISI-distance' or parameters['synchronicity method'] == 'ISI-distance':
+
+                    # Calculate synchronicity for ISI-distance            
+                    if parameters['synchronicity method'] == 'adaptive_ISI-distance' or parameters['synchronicity method'] == 'ISI_distance':
                         distance_value, _ = isi_distance(spiketrain_x, spiketrain_y, start_time, end_time, threshold)
 
+                    # Calculate synchronicity for SPIKE-distance
                     else:
-                        print('SPIKE-distance')
                         distance_value, _ = spike_distance(spiketrain_x, spiketrain_y, start_time, end_time, threshold, RI=0)
-
+                    
+                    # Store synchronicity value in symmetric matrix positions
                     if distance_value is not None:
                         i, j = electrode_x - 1, electrode_y - 1
                         distance_matrix[i, j] = distance_value
                         distance_matrix[j, i] = distance_value
 
+                # Save full matrix and individual value
                 matrices[well] = pd.DataFrame(distance_matrix, index=labels, columns=labels) 
-                
                 distance_dict[(well, (electrode_x, electrode_y))] = distance_value
                 distances.append(distance_value)
                 
+            # Compute and store mean distance perr well    
             distance_mean = np.mean(distances)
-            distance_df.append(distance_mean)
-        mean_distance_df = pd.DataFrame(distance_df, index= well_labels, columns = [method] )
-        print(mean_distance_df)
+            distance_df.append([well, distance_mean])
 
-    # Opslaan per well
+        # Calculate the well synchronicitys
+        mean_distance_df = pd.DataFrame(distance_df, columns = ["Well", method] )
+
+
+    # Saving in output hdf5 file
     if save_data:
         with h5py.File(output_hdf_file, 'a') as f:
-            f.create_dataset(f'synchronicity_values/{method}_distance_well', data=mean_distance_df)
+            f.create_dataset(f'synchronicity_values/{method}_well', data=mean_distance_df)
             for well, matrix in matrices.items():
-                f.create_dataset(f'synchronicity_values/{method}_distance_electrodes_pair/matrix_well_{well}', data=matrix)
+                f.create_dataset(f'synchronicity_values/{method}_electrodes_pair/matrix_well_{well}', data=matrix)
 
-
+    electrode_pair_features = mean_distance_df
            
-    return  distance_dict
-
+    return  electrode_pair_features
 
 
 
@@ -728,7 +733,7 @@ def well_features(well, parameters):
     return well_features_df
  
 
-def feature_output(electrode_features, well_features):
+def feature_output(electrode_features, well_features, electrode_pair_features):
     """
     Function to combine and clean up electrode and well features dataframes
 
@@ -759,9 +764,14 @@ def feature_output(electrode_features, well_features):
     # Remove unnecessary columns
     avg_electrode_features=avg_electrode_features.drop(columns=["Electrode"])
     well_features=well_features.drop(columns=["Well"])
+    electrode_pair_features.drop(columns=["Well"])
 
     # Combine the dataframes
-    avg_electrode_features = pd.concat([avg_electrode_features, well_features], axis=1, join='inner')
+    avg_electrode_features = pd.concat(
+        [avg_electrode_features, well_features, electrode_pair_features],
+        axis=1,
+        join='inner'
+    )
     
     return avg_electrode_features
 
@@ -808,12 +818,20 @@ def recalculate_features(outputfolder, well_amnt, electrode_amnt, electrodes, sa
         # Calculate well features
         well_features_df = well_features(well+1, parameters)
 
+        # Calculate electrode pair features
+        electrode_pair_features_df = electrode_pair_features(well+1, parameters)
+
         # Remove unnecessary columns
         avg_electrode_features=avg_electrode_features.drop(columns=["Electrode"])
         well_features_df=well_features_df.drop(columns=["Well"])
-
+        electrode_pair_features_df.drop(columns=["Well"])
+                                        
         # Combine the dataframes
-        avg_electrode_features = pd.concat([avg_electrode_features, well_features_df],axis=1, join='inner')
+        avg_electrode_features = pd.concat(
+        [avg_electrode_features, well_features, electrode_pair_features],
+        axis=1,
+        join='inner'
+        )
 
         # append to list
         features_list.append(avg_electrode_features)
