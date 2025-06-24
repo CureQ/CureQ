@@ -204,7 +204,7 @@ def data_prepper(h5_data, parameters, Vars):
     precomputed_data = [reshape_wells(final_dataframe.iloc[frame], n_Wells, n_Electrodes, Size) for frame in range(Vars["Num frames"])]
     return precomputed_data, n_Wells, n_Electrodes, v_max, Size, sum_final_dataframe, max_df
 
-def make_hm(Vars, Classes):    
+def make_hm(Vars, Classes, Colour_classes):    
     """
     Makes the heatmap animation.
 
@@ -249,18 +249,12 @@ def make_hm(Vars, Classes):
         
         # Colourcodes the spines so that it's visible what well has which cell culture in it.
         for spine in ax.spines.values():
-            if (i in Classes["125-6 SCA1 54 repeats"]):
-                spine.set_color(mcolors.to_rgba('green', alpha=0.8))
-                spine.set_linewidth(0.5)
-            if (i in Classes["125-6 Control"]):
-                spine.set_color(mcolors.to_rgba('violet', alpha=0.8))
-                spine.set_linewidth(0.5)
-            if (i in Classes["113-6 SCA1 46 repeats"]):
-                spine.set_color(mcolors.to_rgba('gold', alpha=0.5))
-                spine.set_linewidth(0.5)
-            if (i in Classes["114-2 Control"]):
-                spine.set_color(mcolors.to_rgba('red', alpha=0.5))
-                spine.set_linewidth(0.5)
+            for class_name, indices in Classes.items():
+                if (i+1) in indices:
+                    color = Colour_classes.get(class_name, 'grey')  # fallback color if missing
+                    spine.set_color(mcolors.to_rgba(color, alpha=0.6))
+                    spine.set_linewidth(0.5)
+                    break  
 
         # TEMP, this is for the spines for each subplot. TODO: WHEN INTEGRATED AND JESSE HAS THE WELL SELECTION FUNCTION, REMOVE THE I AND MAKE IT INTO THE OUTPUT VALUE OF JESSE'S FUNCTION   
         i = i+1
@@ -314,7 +308,7 @@ def make_hm(Vars, Classes):
 
     return ani, fig, update
 
-def make_hm_img(Vars, Classes):  
+def make_hm_img(Vars, Classes, Colour_classes):  
     """
     Makes a heatmap image, showing the total number of spikes in an electrode.
 
@@ -350,29 +344,20 @@ def make_hm_img(Vars, Classes):
         sns.heatmap(well_values, ax=ax, cmap='plasma', vmin=0, vmax=vmax, cbar=False, square=True, xticklabels=False, yticklabels=False, annot=True, fmt="d", annot_kws={"size": 6})
         
         ax.set_frame_on(True)
-        
+
         for spine in ax.spines.values():
-            if (i in Classes["125-6 SCA1 54 repeats"]):
-                spine.set_visible(True)
-                spine.set_color(mcolors.to_rgba('green', alpha=0.8))
-                spine.set_linewidth(1.5)
-            if (i in Classes["125-6 Control"]):
-                spine.set_visible(True)
-                spine.set_color(mcolors.to_rgba('violet', alpha=0.8))
-                spine.set_linewidth(1.5)
-            if (i in Classes["113-6 SCA1 46 repeats"]):
-                spine.set_visible(True)
-                spine.set_color(mcolors.to_rgba('gold', alpha=0.5))
-                spine.set_linewidth(1.5)
-            if (i in Classes["114-2 Control"]):
-                spine.set_visible(True)
-                spine.set_color(mcolors.to_rgba('red', alpha=0.5))
-                spine.set_linewidth(1.5)
+            for class_name, indices in Classes.items():
+                if (i+1) in indices:
+                    color = Colour_classes.get(class_name, 'grey')  
+                    spine.set_visible(True)
+                    spine.set_color(mcolors.to_rgba(color, alpha=0.8))
+                    spine.set_linewidth(1.5)
+                    break  
 
     fig.patch.set_facecolor("black")
     return fig  
 
-def make_hm_max_activity(Vars, Classes):  
+def make_hm_max_activity(Vars, Classes, Colour_classes):  
     """
     Makes a heatmap image, showing the maximum number of detected spikes in a 1 second timeframe of all electrodes.
 
@@ -412,22 +397,13 @@ def make_hm_max_activity(Vars, Classes):
         ax.set_frame_on(True)
         
         for spine in ax.spines.values():
-            if (i in Classes["125-6 SCA1 54 repeats"]):
-                spine.set_visible(True)
-                spine.set_color(mcolors.to_rgba('green', alpha=0.8))
-                spine.set_linewidth(1.5)
-            if (i in Classes["125-6 Control"]):
-                spine.set_visible(True)
-                spine.set_color(mcolors.to_rgba('violet', alpha=0.8))
-                spine.set_linewidth(1.5)
-            if (i in Classes["113-6 SCA1 46 repeats"]):
-                spine.set_visible(True)
-                spine.set_color(mcolors.to_rgba('gold', alpha=0.5))
-                spine.set_linewidth(1.5)
-            if (i in Classes["114-2 Control"]):
-                spine.set_visible(True)
-                spine.set_color(mcolors.to_rgba('red', alpha=0.5))
-                spine.set_linewidth(1.5)
+            for class_name, indices in Classes.items():
+                if (i+1) in indices:
+                    color = Colour_classes.get(class_name, 'grey')  
+                    spine.set_visible(True)
+                    spine.set_color(mcolors.to_rgba(color, alpha=0.8))
+                    spine.set_linewidth(1.5)
+                    break  
 
     fig.patch.set_facecolor("black")
     return fig  
@@ -472,9 +448,3 @@ def create_placeholder_figure(Vars):
     title = fig.suptitle("Spike rate (Spikes/Sec)", color='white', fontsize=16, weight='bold', y=0.95)
     title.set_path_effects([patheffects.withStroke(linewidth=3, foreground='black')])
     return fig
-
-# Start_time = time.time()
-# ani.save('Heatmap_v4.mp4', writer='ffmpeg', fps=10, extra_args=['-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2'])
-# End_time = time.time()
-# Duration = End_time - Start_time
-# print(f"Video generation completed in {Duration:.2f} seconds.")

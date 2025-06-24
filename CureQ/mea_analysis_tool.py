@@ -740,42 +740,6 @@ class view_results(ctk.CTkFrame):
         self.folder=folder
         self.rawfile=rawfile
         self.parent=parent
-        
-        # Dicts for HM
-        Vars = {
-            "fps": 10,
-            "Num frames": None,
-            "df": None,
-            "n_Wells": None,
-            "n_Electrodes": None,
-            "v_max": None,
-            "Size": None,
-            "Precomputed Max": None,
-            "Rows": None,
-            "Cols": None,
-            "cmap": None,
-            "max_df": None
-        }
-        Classes = {
-            "125-6 SCA1 54 repeats": [0,1,8,9,16,17,24,25,32,33,40,41],
-            "125-6 Control": [2,3,10,11,18,19,26,27,34,35,42,43],
-            "113-6 SCA1 46 repeats": [4,5,12,13,20,21,28,29,36,37,44,45],
-            "114-2 Control": [6,7,14,15,22,23,30,31,38,39,46,47]
-        }
-        Colour_classes = {
-            "125-6 SCA1 54 repeats": 'green',
-            "125-6 Control": 'violet',
-            "113-6 SCA1 46 repeats": 'gold',
-            "114-2 Control": 'red'
-        }
-
-        ML_dict = {
-            "model": None,
-            "data": None,
-            "wells": None,
-            "rows": None,
-            "cols": None
-        }
 
         self.parent.title(f"MEAlytics - Version: {version('CureQ')} - {self.folder}")
 
@@ -867,34 +831,61 @@ class view_results(ctk.CTkFrame):
                 i+=1
 
         """Heatmap"""
-        
+        Vars = {
+            "fps": 10,
+            "Num frames": None,
+            "df": None,
+            "n_Wells": None,
+            "n_Electrodes": None,
+            "v_max": None,
+            "Size": None,
+            "Precomputed Max": None,
+            "Rows": None,
+            "Cols": None,
+            "cmap": None,
+            "max_df": None,
+            "last_hm": None
+        }
+        self.Classes = {
+            "Unknown": list(range(0, int(datashape[0]/parameters["electrode amount"])+1)),
+        }
+        self.Colour_classes = {
+            "Unknown": "grey"
+        }
+
         Vars["Rows"] = ywells
         Vars["Cols"] = xwells
         Vars["Num frames"] = int(parameters['measurements'] / parameters['sampling rate'] * Vars["fps"])
         self.current_tab = self.tab_frame.get()
         self.check_tab_change()
-        heatmap_button_frame = ctk.CTkFrame(master=self.tab_frame.tab("Heatmap"))
-        heatmap_button_frame.grid(row=0, column=1, padx=20, pady=20, sticky="n")
+        heatmap_button_frame = ctk.CTkFrame(master=self.tab_frame.tab("Heatmap"), width=180)
+        heatmap_button_frame.grid(row=0, column=1, padx=20, pady=20, sticky="ns")
+        heatmap_button_frame.grid_propagate(False)
+        heatmap_button_frame.pack_propagate(False)
 
         hm_data_generator = ctk.CTkButton(heatmap_button_frame, text="Process data", command=lambda: self.generate_data(add_hm_labels, display_hm, display_hm_full, display_hm_max, download_hm, h5_file, parameters, Vars))
         hm_data_generator.pack(pady=15)
 
-        add_hm_labels = ctk.CTkButton(heatmap_button_frame, text="Add labels", state ="disabled", command=lambda: self.add_labels())
+        add_hm_labels = ctk.CTkButton(heatmap_button_frame, text="Add labels", state ="disabled", command=lambda: self.add_labels(heatmap_button_frame))
         add_hm_labels.pack(pady=15)
 
-        display_hm = ctk.CTkButton(heatmap_button_frame, text="Generate heatmap", state="disabled", command=lambda: self.start_animation(Vars, Classes))
+        display_hm = ctk.CTkButton(heatmap_button_frame, text="Generate heatmap", state="disabled", command=lambda: self.start_animation(Vars, self.Classes, self.Colour_classes))
         display_hm.pack(pady=15)  
 
-        display_hm_full = ctk.CTkButton(heatmap_button_frame, text="Show total activity", state="disabled", command=lambda: self.show_full_heatmap(Vars, Classes))
+        display_hm_full = ctk.CTkButton(heatmap_button_frame, text="Show total activity", state="disabled", command=lambda: self.show_full_heatmap(Vars, self.Classes, self.Colour_classes))
         display_hm_full.pack(pady=15)  
 
-        display_hm_max = ctk.CTkButton(heatmap_button_frame, text="Show max activity", state="disabled", command=lambda: self.show_max_activity(Vars, Classes))
+        display_hm_max = ctk.CTkButton(heatmap_button_frame, text="Show max activity", state="disabled", command=lambda: self.show_max_activity(Vars, self.Classes, self.Colour_classes))
         display_hm_max.pack(pady=15)
 
-        download_hm = ctk.CTkButton(heatmap_button_frame, text="Download", state="disabled", command=lambda: self.download_heatmap())
+        download_hm = ctk.CTkButton(heatmap_button_frame, text="Download", state="disabled", command=lambda: self.download_heatmap(Vars, self.Classes, self.Colour_classes))
         download_hm.pack(pady=15)
 
-        self.add_legend_to_frame(heatmap_button_frame, Colour_classes)
+        self.animation = None
+        self.slider = None
+        self.from_label = None
+        self.to_label = None
+        self.add_legend_to_frame(heatmap_button_frame, self.Colour_classes)
         Vars["cmap"] = cmap_creation()
 
         placeholder_fig = create_placeholder_figure(Vars)
@@ -902,10 +893,16 @@ class view_results(ctk.CTkFrame):
         placeholder_canvas.draw()
         placeholder_canvas.get_tk_widget().grid(row=0, column=0, padx=10, pady=10)
 
-        self.from_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="")
-        self.from_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
-
         """Machine Learning"""
+        self.label_dict = {}
+        ML_dict = {
+            "model": None,
+            "data": None,
+            "wells": None,
+            "rows": None,
+            "cols": None,
+            "version": "MEAlytics version"
+        }
 
         ML_dict["wells"] = ywells*xwells
         ML_dict["rows"] = ywells
@@ -927,13 +924,21 @@ class view_results(ctk.CTkFrame):
         ML_button_frame=ctk.CTkFrame(self.tab_frame.tab("Machine Learning"), width=300)
         ML_button_frame.grid(row=0, column=1, pady=10, padx=10, sticky='n')
 
-        dropdown = ctk.CTkOptionMenu(
+        model_dropdown = ctk.CTkOptionMenu(
             master=ML_button_frame,
             values=["Random Forest", "XGBoost", "Support Vector Machine"],
-            command=lambda choice: self.dropdownmenu(ML_dict, choice)
+            command=lambda choice: self.model_dropdownmenu(ML_dict, choice)
         )
-        dropdown.set("Choose the model")
-        dropdown.pack(pady=10)
+        model_dropdown.set("Choose the model")
+        model_dropdown.pack(pady=10)
+
+        version_dropdown = ctk.CTkOptionMenu(
+            master=ML_button_frame,
+            values=["MEAlytics version", "User version"],
+            command=lambda choice: self.version_dropdownmenu(ML_dict, choice)
+        )
+        version_dropdown.set("MEAlytics version")
+        version_dropdown.pack(pady=10)
 
         ML_full_show = ctk.CTkButton(ML_button_frame, text="Show all predictions", command=lambda: self.show_all_predictions(ML_dict))
         ML_full_show.pack(pady=15)
@@ -944,16 +949,16 @@ class view_results(ctk.CTkFrame):
         ML_performance_show = ctk.CTkButton(ML_button_frame, text="Model performance", command=lambda: self.show_ML_performance(ML_dict))
         ML_performance_show.pack(pady=15)
         
-        ML_upload = ctk.CTkButton(ML_button_frame, text="Upload data")
+        ML_upload = ctk.CTkButton(ML_button_frame, text="Upload data", command=lambda: self.upload_ml("single"))
         ML_upload.pack(pady=15)
 
-        ML_batch_upload = ctk.CTkButton(ML_button_frame, text="Batch upload data")
+        ML_batch_upload = ctk.CTkButton(ML_button_frame, text="Batch upload data", command=lambda: self.upload_ml("batch"))
         ML_batch_upload.pack(pady=15)
 
-        ML_parameter_optimise = ctk.CTkButton(ML_button_frame, text="Optimise parameters")
+        ML_parameter_optimise = ctk.CTkButton(ML_button_frame, text="Show parameters", command=lambda: self.show_model_params(ML_dict))
         ML_parameter_optimise.pack(pady=15)
 
-        ML_train_model = ctk.CTkButton(ML_button_frame, text="Train new model")
+        ML_train_model = ctk.CTkButton(ML_button_frame, text="Train new model", command=lambda: self.train_new_model(ML_dict)) 
         ML_train_model.pack(pady=15)
         
         ML_disclaimer = ctk.CTkLabel(ML_button_frame, text="This feature is not ready for actual research as the models still don't perform as required.", wraplength=250)
@@ -988,15 +993,26 @@ class view_results(ctk.CTkFrame):
         display_hm_max.configure(state="normal")  
         download_hm.configure(state="normal")  
 
-    def add_labels():
-        print("yes")
+    def add_labels(self, heatmap_button_frame):
+        file_path = filedialog.askopenfilename(
+            filetypes=[("JSON files", "*.json"), ("All files", "*.*")],  # File type filters
+            title="Open JSON File")
 
-    def download_heatmap():
-        print("yes")
+        if not file_path:
+            return
 
+        with open(file_path, "r") as json_file:
+            imported_labels = json.load(json_file)
+        
+        self.Classes = imported_labels
 
-    def start_animation(self, Vars, Classes):
-        ani, fig, update = make_hm(Vars, Classes)
+        colours = ['green', 'violet', 'gold', 'red', 'blue', 'orange', 'cyan', 'pink', 'brown', 'gray']
+        self.Colour_classes = {key: colour for key, colour in zip(self.Classes.keys(), colours)}
+
+        self.add_legend_to_frame(heatmap_button_frame, self.Colour_classes)
+
+    def start_animation(self, Vars, Classes, Colour_classes):
+        ani, fig, update = make_hm(Vars, Classes, Colour_classes)
 
         canvas = FigureCanvasTkAgg(fig, master=self.tab_frame.tab("Heatmap"))
         canvas.draw()
@@ -1053,22 +1069,11 @@ class view_results(ctk.CTkFrame):
         self.to_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text=(Vars["Num frames"]/10))
         self.to_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
 
-        # def toggle_pause():
-        #     global is_paused
-        #     is_paused = not is_paused
-        #     if is_paused:
-        #         pause_button.configure(text="▶")  # Play icon
-        #         print("Slider Paused")
-        #     else:
-        #         pause_button.configure(text="⏸")  # Pause icon
-        #         print("Slider Resumed")
-        
-        # pause_button = ctk.CTkButton(master=self.tab_frame.tab("Heatmap"), text="⏸", command=toggle_pause, width=40)
-        # pause_button.grid(row=1, column=1, padx=(5, 10), pady=10, sticky="w)
+        Vars["last_hm"] = "animation_hm"
 
         ani.event_source.start()
 
-    def show_full_heatmap(self, Vars, Classes):
+    def show_full_heatmap(self, Vars, Classes, Colour_classes):
         if self.animation:
             self.animation.event_source.stop()
             self.animation = None
@@ -1076,10 +1081,11 @@ class view_results(ctk.CTkFrame):
         if self.slider:
             self.slider.destroy()
         
-        self.from_label.destroy()
-        self.to_label.destroy()
+        if self.from_label:
+            self.from_label.destroy()
+            self.to_label.destroy()
 
-        fig = make_hm_img(Vars, Classes)
+        fig = make_hm_img(Vars, Classes, Colour_classes)
 
         canvas = FigureCanvasTkAgg(fig, master=self.tab_frame.tab("Heatmap"))
         canvas.draw()
@@ -1091,7 +1097,9 @@ class view_results(ctk.CTkFrame):
         self.to_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="")
         self.to_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
         
-    def show_max_activity(self, Vars, Classes):
+        Vars["last_hm"] = "total_hm"
+
+    def show_max_activity(self, Vars, Classes, Colour_classes):
         if self.animation:
             self.animation.event_source.stop()
             self.animation = None
@@ -1099,10 +1107,11 @@ class view_results(ctk.CTkFrame):
         if self.slider:
             self.slider.destroy()
 
-        self.from_label.destroy()
-        self.to_label.destroy()
+        if self.from_label:
+            self.from_label.destroy()
+            self.to_label.destroy()
 
-        fig = make_hm_max_activity(Vars, Classes)
+        fig = make_hm_max_activity(Vars, Classes, Colour_classes)
 
         canvas = FigureCanvasTkAgg(fig, master=self.tab_frame.tab("Heatmap"))
         canvas.draw()
@@ -1113,20 +1122,91 @@ class view_results(ctk.CTkFrame):
         self.from_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
         self.to_label = ctk.CTkLabel(master=self.tab_frame.tab("Heatmap"), text="")
         self.to_label.grid(row=1, column=0, padx=10, pady=10, sticky="e")
+
+        Vars["last_hm"] = "max_hm"
+
+    def download_heatmap(self, Vars, Classes, Colour_classes):
+        if Vars["last_hm"] is not None:
+            from tkinter.filedialog import asksaveasfilename
+            from matplotlib.animation import FFMpegWriter
+
+            if Vars["last_hm"] == "animation_hm":
+                ani, fig, update = make_hm(Vars, Classes, Colour_classes)
+                file_path = asksaveasfilename(
+                    defaultextension=".mp4",
+                    filetypes=[("MP4 Video", "*.mp4"), ("All files", "*.*")]
+                )
+                if file_path:
+                    try:
+                        writer = FFMpegWriter(fps=10, extra_args=['-crf', '28', '-preset', 'ultrafast'])
+
+                        hm_saving_window = ctk.CTkToplevel(self)
+                        hm_saving_window.title("Saving heatmap animation")
+                        hm_saving_window.geometry("300x100")
+                        hm_saving_window.resizable(False, False)
+                        hm_saving_window.label = ctk.CTkLabel(hm_saving_window, text="Saving frames...")
+                        hm_saving_window.label.pack(pady=10)
+
+                        hm_saving_window.progress = ctk.CTkProgressBar(hm_saving_window, width=250)
+                        hm_saving_window.progress.set(0)
+                        hm_saving_window.progress.pack(pady=5)
+
+                        def update_progress(hm_saving_window, frame_index):
+                            progress = (frame_index + 1) / Vars["Num frames"]
+                            hm_saving_window.progress.set(progress)
+                            hm_saving_window.label.configure(text=f"Saving... {int(progress * 100)}%")
+
+                        print(f"Saving animation to {file_path}...")
+                        with writer.saving(fig, file_path, dpi=80):  
+                            for frame in range(Vars["Num frames"]):
+                                update(frame)          
+                                writer.grab_frame()   
+                                update_progress(hm_saving_window, frame) 
+                        
+                    except Exception as e:
+                        print(f"Failed to save MP4: {e}")
+
+            elif Vars["last_hm"] == "total_hm":
+                fig = make_hm_img(Vars, Classes, Colour_classes)
+                file_path = asksaveasfilename(
+                    defaultextension=".png",
+                    filetypes=[("PNG file", "*.png"), ("PDF file", "*.pdf"), ("All files", "*.*")]
+                )
+                if file_path:
+                    fig.savefig(file_path)
+                plt.close(fig)  
+
+            elif Vars["last_hm"] == "max_hm":
+                fig = make_hm_max_activity(Vars, Classes, Colour_classes)
+                file_path = asksaveasfilename(
+                    defaultextension=".png",
+                    filetypes=[("PNG file", "*.png"), ("PDF file", "*.pdf"), ("All files", "*.*")]
+                )
+                if file_path:
+                    fig.savefig(file_path)
+                plt.close(fig)
 
     def add_legend_to_frame(self, frame, colour_dict):
+        for child in frame.winfo_children():
+            if getattr(child, 'is_legend_widget', False):
+                child.destroy()
+        
         legend_label = ctk.CTkLabel(frame, text="Legend", font=("Arial", 14, "bold"))
+        legend_label.is_legend_widget = True
         legend_label.pack(pady=(15, 5))  
 
         for class_name, color in colour_dict.items():
             legend_row = ctk.CTkFrame(frame, fg_color="transparent")
+            legend_row.is_legend_widget = True
             legend_row.pack(anchor="w", padx=10, pady=2, fill="x")
 
             color_box = ctk.CTkLabel(legend_row, text="", width=20, height=20, corner_radius=3)
+            color_box.is_legend_widget = True
             color_box.configure(fg_color=color)
             color_box.pack(side="left")
 
             text_label = ctk.CTkLabel(legend_row, text=class_name, anchor="w")
+            text_label.is_legend_widget = True
             text_label.pack(side="left", padx=10)
 
     def check_tab_change(self):
@@ -1135,7 +1215,7 @@ class view_results(ctk.CTkFrame):
         if selected_tab != self.current_tab:
             self.current_tab = selected_tab
             if selected_tab == "Heatmap":
-                self.parent.geometry("1060x767")
+                self.parent.geometry("1080x795")
 
         self.after(200, self.check_tab_change)
         
@@ -1144,19 +1224,22 @@ class view_results(ctk.CTkFrame):
         if ML_dict["model"] is None:
             CTkMessagebox(title="Error", message="Please select a Machine Learning model first", icon="cancel")
         else:
-            new_text = ML_predict(ML_dict["data"], ML_dict["model"], Well)
+            new_text = ML_predict(ML_dict["data"], ML_dict["model"], Well, ML_dict["version"])
             ML_prediction.configure(text=new_text)
 
-    def dropdownmenu(self, ML_dict, choice):
+    def model_dropdownmenu(self, ML_dict, choice):
         ML_dict["model"] = choice
         if ML_dict["data"] is None:
             ML_dict["data"] = ML_data_prep(self.folder)
 
+    def version_dropdownmenu(self, ML_dict, choice):
+        ML_dict["version"] = choice
+       
     def show_ML_features(self, ML_dict):
         if ML_dict["model"] is None:
             CTkMessagebox(title="Error", message="Please select a Machine Learning model first", icon="cancel")
         else:
-            feature_plot = Feature_importance(ML_dict["model"], ML_dict["data"])
+            feature_plot = Feature_importance(ML_dict["model"], ML_dict["data"], ML_dict["version"])
             feature_plot.show()
 
     def show_ML_performance(self, ML_dict):
@@ -1165,10 +1248,11 @@ class view_results(ctk.CTkFrame):
         else:
             ml_performance_window = ctk.CTkToplevel(self)
             ml_performance_window.title(f"Performance {ML_dict["model"]}")
-            columns = ["Precision", "Recall", "F1-score", "Accuracy"]
+            columns = ["Accuracy", "Precision", "Recall", "F1-score"]
             ml_performance_window.grid_columnconfigure(len(columns), weight=1)
-            Precision, Recall, F1_score, Accuracy = ML_performance(ML_dict["model"])
-            data = [[Precision, Recall, F1_score, Accuracy]]
+            Accuracy, Precision, Recall, F1_score  = ML_performance(ML_dict["model"], ML_dict["version"])
+            data = [[Accuracy, Precision, Recall, F1_score]]
+            data_LR = [[0.6612, 0.6633, 0.6705, 0.6582]]
 
             for col_index, col_name in enumerate(columns):
                 header = ctk.CTkLabel(ml_performance_window, text=col_name, font=ctk.CTkFont(weight="bold"))
@@ -1179,6 +1263,19 @@ class view_results(ctk.CTkFrame):
                     cell = ctk.CTkLabel(ml_performance_window, text=value)
                     cell.grid(row=row_index, column=col_index, padx=10, pady=5, sticky="nsew")
             
+            LR_perf = ctk.CTkLabel(ml_performance_window, text = "  Performance of the Logistic Regression model (for reference):", font=ctk.CTkFont(slant="italic"))
+            LR_perf.grid(row=row_index + 1, column=0, columnspan=len(columns), pady=(15, 5))
+
+            second_header_row = row_index + 2
+            for col_index, col_name in enumerate(columns):
+                header = ctk.CTkLabel(ml_performance_window, text=col_name, font=ctk.CTkFont(weight="bold"))
+                header.grid(row=second_header_row, column=col_index, padx=10, pady=5, sticky="nsew")
+
+            for row_index_2, row_data in enumerate(data_LR, start=second_header_row + 1):  
+                for col_index, value in enumerate(row_data):
+                    cell = ctk.CTkLabel(ml_performance_window, text=f"{value:.4f}")
+                    cell.grid(row=row_index_2, column=col_index, padx=10, pady=5, sticky="nsew")
+
             def show_help():
                 CTkMessagebox(
                     title="Metric Explanations",
@@ -1205,8 +1302,138 @@ class view_results(ctk.CTkFrame):
         if ML_dict["model"] is None:
             CTkMessagebox(title="Error", message="Please select a Machine Learning model first", icon="cancel")
         else:
-            full_predict = ML_predict_full(ML_dict["data"], ML_dict["model"], ML_dict["wells"], ML_dict["rows"], ML_dict["cols"])
+            full_predict = ML_predict_full(ML_dict["data"], ML_dict["model"], ML_dict["wells"], ML_dict["rows"], ML_dict["cols"], ML_dict["version"])
             full_predict.show()
+
+    def upload_ml(self, amount):
+        if amount == "single":
+            
+            add_labels_window = ctk.CTkToplevel(self)
+            add_labels_window.title("Add labels")
+            add_labels_window.geometry("240x240")
+
+            add_labels_window.grid_rowconfigure(0, weight=1)
+            add_labels_window.grid_columnconfigure(0, weight=1)
+
+            Label_frame=ctk.CTkFrame(add_labels_window)
+            Label_frame.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
+
+            upload_label_button = ctk.CTkButton(Label_frame, text="Upload labels", command=lambda: self.upload_labels(upload_data_final_button))
+            upload_label_button.pack(pady=15)
+
+            assign_label_button = ctk.CTkButton(Label_frame, text="Create labels", command=lambda: self.assign_labels())
+            assign_label_button.pack(pady=15)
+
+            upload_data_final_button = ctk.CTkButton(Label_frame, text="Upload data", state ="disabled", command=lambda: self.upload_data_final(self.folder, add_labels_window))
+            upload_data_final_button.pack(pady=15)
+
+        if amount == "batch":
+            uploadfolder = filedialog.askdirectory()
+            if uploadfolder != '':
+                add_labels_window = ctk.CTkToplevel(self)
+                add_labels_window.title("Add labels")
+                add_labels_window.geometry("240x240")
+
+                add_labels_window.grid_rowconfigure(0, weight=1)
+                add_labels_window.grid_columnconfigure(0, weight=1)
+
+                Label_frame=ctk.CTkFrame(add_labels_window)
+                Label_frame.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
+
+                upload_label_button = ctk.CTkButton(Label_frame, text="Upload labels", command=lambda: self.upload_labels(upload_data_final_button))
+                upload_label_button.pack(pady=15)
+
+                assign_label_button = ctk.CTkButton(Label_frame, text="Create labels", command=lambda: self.assign_labels())
+                assign_label_button.pack(pady=15)
+
+                upload_data_final_button = ctk.CTkButton(Label_frame, text="Upload data", state ="disabled", command=lambda: self.upload_data_final(uploadfolder, add_labels_window))
+                upload_data_final_button.pack(pady=15)
+
+    def upload_labels(self, upload_data_final_button):
+        file_path = filedialog.askopenfilename(
+        filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        title="Open JSON File")
+
+        if not file_path:
+            return
+
+        with open(file_path, "r") as json_file:
+            imported_labels = json.load(json_file)
+            for label in imported_labels.keys():
+                if not re.search(r'SCA1_\d+|SCA3_\d+|HD_\d+|control', label):
+                    CTkMessagebox(title="Error",
+                            message='The label must either be \'control\' or be a disease formatted as follows: \'disease\' followd by a \'_\' and then followed by the number of repeats. e.g. \'SCA1_46\'. The currently accepted diseases are: \'SCA1\', \'SCA3\' and \'HD\'. \nPlease create a new label file at the \'Create labels\' button.',
+                            icon="cancel",
+                            wraplength=300)
+                    return
+            self.label_dict = imported_labels
+
+        upload_data_final_button.configure(state="normal")
+
+    def assign_labels(self):
+        label_window(self.parent, self.folder)
+            
+    def upload_data_final(self, folder, add_labels_window):
+        add_data(folder, self.label_dict)
+        CTkMessagebox(title="Thank you", message="Thank you! Your data has been uploaded to the database.")
+        add_labels_window.destroy()
+            
+    def show_model_params(self, ML_dict):
+        if ML_dict["model"] is None:
+            CTkMessagebox(title="Error", message="Please select a Machine Learning model first", icon="cancel")
+        else:
+            
+            params = Params_show(ML_dict["model"], ML_dict["version"])
+            param_window = ctk.CTkToplevel()
+            param_window.title("Model Parameters")
+
+            ctk.CTkLabel(param_window, text="Parameter", font=("Arial", 14, "bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
+            ctk.CTkLabel(param_window, text="Value", font=("Arial", 14, "bold")).grid(row=0, column=1, padx=10, pady=5, sticky="w")
+
+            for i, (key, value) in enumerate(params.items(), start=1):
+                ctk.CTkLabel(param_window, text=str(key)).grid(row=i, column=0, padx=10, pady=2, sticky="w")
+                ctk.CTkLabel(param_window, text=str(value)).grid(row=i, column=1, padx=10, pady=2, sticky="w")
+            
+    # def train_model(self, ML_dict):
+        if ML_dict["model"] is None:
+            CTkMessagebox(title="Error", message="Please select a Machine Learning model first", icon="cancel")
+        else:
+            print("yes")
+
+    def train_new_model(self, ML_dict):
+        if ML_dict["model"] is None:
+            CTkMessagebox(title="Error", message="Please select a Machine Learning model first", icon="cancel")
+        else:
+            train_window = ctk.CTkToplevel()
+            train_window.title("Train new model")
+            
+            train_disclaimer = ctk.CTkLabel(train_window, text="Training a new model will take ±30 minutes, during this time, you cannot close this window or visibly see the model is training. \nWhen the training is done, a new window will open. \nProceed?", wraplength=250)
+            train_disclaimer.pack(pady=15)
+            
+            train_button = ctk.CTkButton(train_window, text="Train", command=lambda: train(ML_dict)) 
+            train_button.pack(pady=15)
+
+            def train(ML_dict):
+                fig, class_report = Train_model(ML_dict["model"])
+
+                trained_window = ctk.CTkToplevel()
+                trained_window.title(f'Performance of new {ML_dict["model"]}')
+                
+                trained_frame=ctk.CTkFrame(trained_window)
+                trained_frame.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
+
+                canvas = FigureCanvasTkAgg(fig, master=trained_frame)
+                canvas.draw()
+                canvas_widget = canvas.get_tk_widget()
+                canvas_widget.pack(side='left', padx=10, pady=10)
+
+                trained_class_report = ctk.CTkTextbox(trained_frame, width=300, height=200)
+                trained_class_report.insert("0.0", class_report)
+                trained_class_report.configure(state="disabled")  
+                trained_class_report.pack(side='right', padx=10, pady=10)
+
+                train_window.destroy()
+
 
 
 class single_electrode_view(ctk.CTkToplevel):
@@ -2700,6 +2927,171 @@ class plotting_window(ctk.CTkFrame):
 
         self.select_folder_button.configure(state='disabled')
 
+class label_window(ctk.CTkToplevel):
+    def __init__(self, parent, folder):
+        super().__init__(parent)
+        
+        self.title("Labeling window")
+
+        self.parent=parent
+        self.folder=folder
+
+        # Weights
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
+        # Label frames
+        self.assign_labels_frame = ctk.CTkFrame(master=self)
+        self.assign_labels_frame.grid(row=0, column=0, padx=5, pady=5, sticky='new')
+
+        label_main_frame=ctk.CTkFrame(master=self, fg_color='transparent')
+        label_main_frame.grid(row=0, column=1, sticky='nesw')
+
+        create_labels_frame = ctk.CTkFrame(master=label_main_frame, fg_color=self.parent.gray_1)
+        create_labels_frame.grid(row=0, column=0, padx=5, pady=5, sticky='nesw')
+        create_labels_frame.grid_columnconfigure(0, weight=1)
+
+        label_settings_frame=ctk.CTkFrame(master=label_main_frame, fg_color=self.parent.gray_1)
+        label_settings_frame.grid(row=1, column=0, padx=5, pady=5, sticky='nesw')
+        label_settings_frame.grid_columnconfigure(0, weight=1)
+
+        self.labels_frame = ctk.CTkFrame(master=label_main_frame, fg_color=self.parent.gray_1)
+        self.labels_frame.grid(row=2, column=0, padx=5, pady=5, sticky='nesw')
+        self.labels_frame.grid_columnconfigure(0, weight=1)
+
+        label_main_frame.grid_rowconfigure(0, weight=0)
+        label_main_frame.grid_rowconfigure(1, weight=0)
+        label_main_frame.grid_rowconfigure(2, weight=0)
+
+        # Values
+        self.well_buttons=[]
+        self.label_buttons=[]
+        self.assigned_labels={}
+        self.selected_label=[]
+        self.default_colors=get_defaultcolors()
+        self.well_amnt=None
+
+        self.create_well_buttons(self.folder)
+
+        # Create labels
+        self.new_label_entry=ctk.CTkEntry(master=create_labels_frame, placeholder_text="Create a label; e.g.: \'control\'")
+        self.new_label_entry.grid(row=0, column=0, pady=10, padx=10, sticky='nesw')
+
+        new_label_button=ctk.CTkButton(master=create_labels_frame, text='Add Label', command=self.new_label)
+        new_label_button.grid(row=1, column=0, padx=10, pady=5, sticky='nesw')
+
+        save_label_button=ctk.CTkButton(master=label_settings_frame, text="Save Labels", command=self.save_labels)
+        save_label_button.grid(row=2, column=0, padx=10, pady=(10,5), sticky='nesw')
+
+        save_label_button=ctk.CTkButton(master=label_settings_frame, text="Reset Labels", command=self.reset_labels)
+        save_label_button.grid(row=4, column=0, padx=10, pady=(5,10), sticky='nesw')
+
+    def save_labels(self):
+        file_path = filedialog.asksaveasfilename(
+        defaultextension=".json",
+        filetypes=[("JSON files", "*.json"), ("All files", "*.*")],
+        title="Save JSON File"
+        )
+
+        if not file_path:
+            return
+        
+        with open(file_path, "w") as json_file:
+            json.dump(self.assigned_labels, json_file, indent=4)
+
+        CTkMessagebox(message=f"Labels succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Labels")
+
+    def set_labels(self, labels):
+        # Reset labels
+        for label_button in self.label_buttons:
+            label_button.destroy()
+        self.label_buttons=[]
+
+        for label in labels.keys():
+            self.create_label_button(label)
+        self.assigned_labels=labels
+
+        self.update_button_colours()
+
+    def reset_labels(self):
+        self.set_labels({})
+
+    def set_selected_label(self, label):
+        self.selected_label=label
+
+    def create_label_button(self, label):
+        label_button=ctk.CTkButton(master=self.labels_frame, text=label, command=partial(self.set_selected_label, label), fg_color=self.default_colors[len(self.label_buttons)], hover_color=self.parent.adjust_color(self.default_colors[len(self.label_buttons)], 0.6))
+        label_button.grid(row=len(self.label_buttons), column=0, pady=5, padx=10, sticky='nesw')
+        self.label_buttons.append(label_button)
+        self.assigned_labels[label]=[]
+        self.new_label_entry.delete(0, END)
+
+    def new_label(self):
+        label = self.new_label_entry.get()
+        check = label.split("_")
+        if not (re.search(r'SCA1_\d+|SCA3_\d+|HD_\d+|control', label)):
+            CTkMessagebox(title="Error",
+                            message='The label must either be \'control\' or be a disease formatted as follows: \'disease\' followd by a \'_\' and then followed by the number of repeats. e.g. \'SCA1_46\'. \nThe currently accepted diseases are: \'SCA1\', \'SCA3\' and \'HD\'.',
+                            icon="cancel",
+                            wraplength=300)
+            return
+        if (label == '') or (label in self.assigned_labels.keys()):
+            return
+        self.create_label_button(label)
+
+    def update_button_colours(self):
+        for well_button in self.well_buttons:
+            well_button.configure(fg_color=self.parent.theme["CTkButton"]["fg_color"][1])
+        for index, key in enumerate(self.assigned_labels.keys()):
+            for well in self.assigned_labels[key]:
+                self.well_buttons[well-1].configure(fg_color=self.default_colors[index], hover_color=self.parent.adjust_color(self.default_colors[index], 0.6))
+
+    def well_button_func(self, button):
+        # If the label was already selected, remove the selection
+        if button in self.assigned_labels[self.selected_label]:
+            self.assigned_labels[self.selected_label].remove(button)
+        else:
+            # First remove well from all labels
+            for key in self.assigned_labels.keys():
+                if button in self.assigned_labels[key]:
+                    self.assigned_labels[key].remove(button)
+            self.assigned_labels[self.selected_label].append(button)
+        print(self.assigned_labels)
+        self.update_button_colours()
+
+    def create_well_buttons(self, folder):
+        well_amnts=[]
+        file_names=[]
+        for root, dirs, files in os.walk(folder):
+            for file in files:
+                if file.endswith("Features.csv") and not file.endswith("Electrode_Features.csv"):
+                    data=pd.read_csv(os.path.join(root, file))
+                    well_amnts.append(len(data))
+                    file_names.append(Path(os.path.join(root, file)).stem)
+        if len(well_amnts) < 1:
+            CTkMessagebox(title="Error",
+                              message='Not enough features-files found. Minimum amount is 1',
+                              icon="cancel",
+                              wraplength=400)
+            return
+        if not(np.min(well_amnts) == np.max(well_amnts)):
+            CTkMessagebox(title="Error",
+                              message='Not all experiments have the same amount of wells, please remove the exceptions from the folder.',
+                              icon="cancel",
+                              wraplength=400)
+            return
+        
+        self.well_amnt=int(np.mean(well_amnts))
+        width, height = self.parent.calculate_optimal_grid(np.mean(well_amnts))
+        counter=1
+
+        for w in range(width):
+            for h in range(height):
+                well_button=ctk.CTkButton(master=self.assign_labels_frame, text=counter, command=partial(self.well_button_func, counter), height=100, width=100, font=ctk.CTkFont(size=25))
+                well_button.grid(row=w, column=h, sticky='nesw')
+                self.well_buttons.append(well_button)
+                counter+=1
+
 def MEA_GUI():
     """
     Launches the graphical user interface (GUI) of MEAlytics.
@@ -2711,7 +3103,6 @@ def MEA_GUI():
 
     app = MainApp()
     app.mainloop()
-
 
 if __name__ == "__main__":
     MEA_GUI()
