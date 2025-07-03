@@ -278,10 +278,6 @@ def features_over_time(folder, labels, div_prefix, output_fileadress, colors=Non
     show_datapoints : bool, optional
         Whether to show the individual datapoints on the boxplot
 
-    Returns
-    -------
-    pdf_path : str
-        Path of output pdf-file
 
     """
 
@@ -400,10 +396,6 @@ def plot_3d(folder, labels, output_fileadress, well_amnt, parameters, diagnol):
     parameters : dict
         Additional parameters such as electrode amount.
 
-    Returns
-    -------
-    synchronicity_df : pd.DataFrame
-        Loaded synchronicity values from the .h5 file.
     """
     
     
@@ -425,9 +417,9 @@ def plot_3d(folder, labels, output_fileadress, well_amnt, parameters, diagnol):
     all_data = []
     wells = np.arange(1, well_amnt+1 , )
 
-    # Create pdf
-    pdf_path=output_fileadress
-    pdf = PdfPages(pdf_path)
+    # Prepare base name for PNG export
+    base_name = os.path.splitext(os.path.basename(output_fileadress))[0]
+    output_dir = os.path.dirname(output_fileadress)
 
 
     # Get synchronicity data
@@ -446,18 +438,18 @@ def plot_3d(folder, labels, output_fileadress, well_amnt, parameters, diagnol):
         
             # Plot 3D subplots
             cols = 4  # 4 per rij
-            rows = int(np.ceil(well_amnt / cols))
             max_subplots_per_page = 12 # Maximum number of subplots per figure (page)
-            
-            
             
             # Loop over the data in groups of 12 to create a separate figure for each group
             for start_idx in range(0, len(all_data), max_subplots_per_page):
                 end_idx = start_idx + max_subplots_per_page
                 subset = all_data[start_idx:end_idx]
 
-                # Create new figure
-                fig = plt.figure(figsize=(cols * 5, rows * 5))
+                # Calculate how many rows we need for this page
+                rows_per_page = int(np.ceil(len(subset) / cols))
+
+                # Create new figure with dynamic height
+                fig = plt.figure(figsize=(cols * 5, rows_per_page * 5))
                 fig.suptitle(
                     f"Synchronicity between electrodes with {method_label} \n0 = fully synchronized", 
                     fontsize=20
@@ -468,11 +460,11 @@ def plot_3d(folder, labels, output_fileadress, well_amnt, parameters, diagnol):
                     if data is None:
                         continue
 
-                    ax = fig.add_subplot(rows, cols, i + 1, projection='3d')
+                    ax = fig.add_subplot(rows_per_page, cols, i + 1, projection='3d')
 
                     # Convert data to matrix
                     mat = data.values
-                    if diagnol:  # Optionally set diagonal to zero
+                    if diagnol:
                         np.fill_diagonal(mat, 0)
 
                     # Prepare coordinates for 3D bar plot
@@ -494,26 +486,24 @@ def plot_3d(folder, labels, output_fileadress, well_amnt, parameters, diagnol):
                     well_num = start_idx + i + 1
                     label = next((key for key, values in labels.items() if well_num in values), 'unknown')
 
-                    # Set axis labels and title
                     ax.set_title(f'Well {well_num}: {label}', fontsize=13)
                     ax.set_xlabel('Electrode')
                     ax.set_ylabel('Electrode')
                     ax.set_zlabel(label)
                     ax.set_zlim(0, 1)
 
-                # Adjust layout and save figure to PDF
                 plt.tight_layout()
-                pdf.savefig(fig)
-                plt.close(fig)
+                page_num = start_idx // max_subplots_per_page + 1
+                png_name = f"{base_name}_{page_num}.png"
+                png_path = os.path.join(output_dir, png_name)
+                fig.savefig(png_path, dpi=300)
+
 
         else:
             raise KeyError("Dataset 'synchronicity_values' not found in the HDF5 file.")
 
-    # Close the PDF after all figures are saved
-    pdf.close()
 
-    # Return the PDF path
-    return pdf_path
+    return 
 
 
 # Add layout for nodes of network diagram
@@ -610,9 +600,9 @@ def plot_network_diagram(folder, labels, output_fileadress, well_amount, paramet
 
     wells = np.arange(1, well_amount + 1)
 
-    # Create pdf
-    pdf_path=output_fileadress
-    pdf = PdfPages(pdf_path)
+    # Prepare base name for PNG export
+    base_name = os.path.splitext(os.path.basename(output_fileadress))[0]
+    output_dir = os.path.dirname(output_fileadress)
 
     
     
@@ -646,7 +636,9 @@ def plot_network_diagram(folder, labels, output_fileadress, well_amount, paramet
         subset = all_data[start_idx:end_idx]
 
         # Create new figure for each chunk
-        fig, axes = plt.subplots(rows, cols, figsize=(cols * 4, rows * 4))
+        rows_per_page = int(np.ceil(len(subset) / cols))
+        fig, axes = plt.subplots(rows_per_page, cols, figsize=(cols * 4, rows_per_page * 4))
+
         fig.suptitle(
             f"Synchronicity between electrodes with {method_label} \nWith 1 = fully synchronized",
             fontsize=20
@@ -661,14 +653,15 @@ def plot_network_diagram(folder, labels, output_fileadress, well_amount, paramet
             np.fill_diagonal(matrix, 0)  # Remove self-connections
 
             G = nx.Graph()
+            G.add_nodes_from(range(electrode_amount))  # Use all electrodes
 
-            # Create edges from matrix
+            # Add edges
             for a in range(electrode_amount):
                 for b in range(a + 1, electrode_amount):
                     weight = matrix[a, b]
                     if weight > 0:
                         G.add_edge(a, b, weight=weight)
-
+            
             # Position the nodes in a hexagonal layout
             pos = generate_hex_layout(electrode_amount)
 
@@ -697,12 +690,10 @@ def plot_network_diagram(folder, labels, output_fileadress, well_amount, paramet
         for j in range(len(subset), len(axes)):
             axes[j].axis('off')
 
-        plt.tight_layout()
-        pdf.savefig(fig)
-        plt.close(fig)
+        plt.tight_layout(rect=[0, 0.03, 1, 0.95])  
+        page_num = start_idx // max_subplots_per_page + 1
+        png_name = f"{base_name}_{page_num}.png"
+        png_path = os.path.join(output_dir, png_name)
+        fig.savefig(png_path, dpi=300)
 
-    # Close PDF after all pages are added
-    pdf.close()
-
-    # Return path to the saved PDF
-    return pdf_path
+    return 

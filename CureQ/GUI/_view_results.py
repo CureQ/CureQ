@@ -130,8 +130,13 @@ class view_results(ctk.CTkFrame):
         self.tab_frame.tab("Whole Well View").grid_columnconfigure(0, weight=1)
         self.tab_frame.tab("Whole Well View").grid_rowconfigure(0, weight=1)
 
+        self.tab_frame.add("Syncronicity")
+        self.tab_frame.tab("Syncronicity").grid_columnconfigure(0, weight=1)
+        self.tab_frame.tab("Syncronicity").grid_rowconfigure(0, weight=1)
+
         # sev = single electrode view
         # wwv = whole well view
+        # syn = synchronicity
 
         # Load files
         parameters=open(f"{folder}/parameters.json")
@@ -192,16 +197,35 @@ class view_results(ctk.CTkFrame):
         # Button to return to main menu
         return_to_main = ctk.CTkButton(master=self, text="Return to main menu", command=lambda: self.parent.show_frame(self.parent.home_frame), fg_color=parent.gray_1)
         return_to_main.grid(row=1, column=0, pady=10, padx=10)
-    
+
+        """Syncronicity view"""
+        syn_well_button_frame=ctk.CTkFrame(self.tab_frame.tab("Syncronicity"))
+        syn_well_button_frame.grid(row=0, column=0, pady=10, padx=10, sticky='nesw')
+
+        syn_wellbuttons=[]
+        i=1
+
+        for y in range(ywells):
+            for x in range(xwells):
+                syn_btn=ctk.CTkButton(master=syn_well_button_frame, text=i, command=partial(self.open_syn_tab_well, i), height=100, width=100, font=ctk.CTkFont(size=25))
+                syn_btn.grid(row=y, column=x)
+                syn_wellbuttons.append(well_btn)
+                i+=1
+
+        # Button to return to main menu
+        return_to_main = ctk.CTkButton(master=self, text="Return to main menu", command=lambda: self.parent.show_frame(self.parent.home_frame), fg_color=parent.gray_1)
+        return_to_main.grid(row=1, column=0, pady=10, padx=10)
+
     def set_selected_well(self, i):
         self.selected_well=i
         for j in range(len(self.sev_wellbuttons)):
             self.sev_wellbuttons[j].configure(fg_color=self.parent.theme["CTkButton"]["fg_color"][1])
         self.sev_wellbuttons[i-1].configure(fg_color=self.parent.theme["CTkButton"]["hover_color"][1])
 
-
+    
     def open_sev_tab(self, electrode):
         single_electrode_view(self.parent, self.folder, self.rawfile, self.selected_well, electrode)
 
     def open_wwv_tab(self, well):
         whole_well_view(self.parent, self.folder, well)
+

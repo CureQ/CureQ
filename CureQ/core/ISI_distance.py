@@ -1,3 +1,13 @@
+""""
+SPDX-License-Identifier: BSD-3-Clause
+This code is adapted from the PySpike library:
+https://github.com/mariomulansky/PySpike
+
+Copyright (c) 2015, Mario Mulansky
+All rights reserved.
+
+This adapted version is modified for use in CureQ pipelines.
+"""
 
 import numpy as np
 import pandas as pd
@@ -188,6 +198,7 @@ def isi_distance(s1, s2, t_start, t_end, MRTS=0.0):
 
     return isi_value / (t_end - t_start), df_isi_time
 
+# Misschien adaptive in een andere ding?
 def default_thresh(train_list, t_start, t_end):
     """
     Calculates a default threshold based on the interspike intervals (ISIs) from all spike trains, intended for use in the ISI-distance calculation

@@ -1,3 +1,13 @@
+""""
+SPDX-License-Identifier: BSD-3-Clause
+This code is adapted from the PySpike library:
+https://github.com/mariomulansky/PySpike
+
+Copyright (c) 2015, Mario Mulansky
+All rights reserved.
+
+This adapted version is modified for use in CureQ pipelines.
+"""
 import numpy as np
 import pandas as pd
 from CureQ.core.ISI_distance import *

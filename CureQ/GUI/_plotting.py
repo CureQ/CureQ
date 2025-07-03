@@ -309,86 +309,79 @@ class plotting_window(ctk.CTkFrame):
                               wraplength=400)
             return
         
-        try:
-            file_path = filedialog.asksaveasfilename(
-            defaultextension=".pdf",
-            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")],
-            title="Save 3D-plot PDF File"
-            )
-            
-            if not file_path:
-                return
-            
-            # Get parameters
-            parameters_path = os.path.join(self.selected_folder, "parameters.json")
-            if not os.path.exists(parameters_path):
-                CTkMessagebox(title="Missing file", message="parameters.json not found in the selected folder.", icon="cancel")
-                return
+        if self.plot_3D.get() == 1:
+            try:
+                file_path = filedialog.asksaveasfilename(
+                defaultextension=".png",
+                filetypes=[("PNG files", "*.png"), ("All files", "*.*")],
+                title="Save 3D-plot png File"
+                )
+                
+                if not file_path:
+                    return
+                
+                # Get parameters
+                parameters_path = os.path.join(self.selected_folder, "parameters.json")
+                if not os.path.exists(parameters_path):
+                    CTkMessagebox(title="Missing file", message="parameters.json not found in the selected folder.", icon="cancel")
+                    return
 
-            with open(parameters_path, 'r') as f:
-                parameters = json.load(f)
+                with open(parameters_path, 'r') as f:
+                    parameters = json.load(f)
 
-            # Roep de juiste plotfunctie aan
-            if self.plot_3D.get() == 1:
+                
                 pdf_path = plot_3d(folder=self.selected_folder, labels=copy.deepcopy(self.assigned_labels), output_fileadress=file_path, well_amnt=self.well_amnt, parameters = parameters, diagnol = True)
                 webbrowser.open(f"file://{pdf_path}")
                 CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
 
-            if self.plot_3D.get() == 0 and self.network_diagram.get() == 0:
-                CTkMessagebox(title="No plot type selected", message="Please select a plot type (3D or Network diagram).", icon="warning")
-                          
-        
-            webbrowser.open(f"file://{pdf_path}")
-            CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
-        except Exception as e:
-            CTkMessagebox(title="Error", message=f"An error occurred while generating the plot:\n{str(e)}", icon="cancel")
-            traceback.print_exc()
-
-        try:
-            file_path = filedialog.asksaveasfilename(
-            defaultextension=".pdf",
-            filetypes=[("PDF files", "*.pdf"), ("All files", "*.*")],
-            title="Save network PDF File"
-            )
-            
-            if not file_path:
-                return
-            
-            # Get parameters
-            parameters_path = os.path.join(self.selected_folder, "parameters.json")
-            if not os.path.exists(parameters_path):
-                CTkMessagebox(title="Missing file", message="parameters.json not found in the selected folder.", icon="cancel")
-                return
-
-            with open(parameters_path, 'r') as f:
-                parameters = json.load(f)
-            if self.network_diagram.get() == 1:
-                pdf_path = plot_network_diagram(folder=self.selected_folder,
-                                     labels=copy.deepcopy(self.assigned_labels),
-                                     output_fileadress=file_path,
-                                     well_amount=self.well_amnt,
-                                     parameters=parameters,
-                                     asynchrony=0)
-                webbrowser.open(f"file://{pdf_path}")
                 CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
-                
-            if self.plot_3D.get() == 0 and self.network_diagram.get() == 0:
-                CTkMessagebox(title="No plot type selected", message="Please select a plot type (3D or Network diagram).", icon="warning")
-                          
+            except Exception as e:
+                CTkMessagebox(title="Error", message=f"An error occurred while generating the plot:\n{str(e)}", icon="cancel")
+                traceback.print_exc()
 
-            webbrowser.open(f"file://{pdf_path}")
-            CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
-        except Exception as e:
-            CTkMessagebox(title="Error", message=f"An error occurred while generating the plot:\n{str(e)}", icon="cancel")
-            traceback.print_exc()
-            
-            
-        except Exception as error:
-            CTkMessagebox(title="Error",
-                              message='Something went wrong while creating the synchronicity plots',
-                              icon="cancel",
-                              wraplength=400)
-            traceback.print_exc()
+        elif self.network_diagram.get() == 1:
+            try:
+                file_path = filedialog.asksaveasfilename(
+                defaultextension=".png",
+                filetypes=[("PNG files", "*.png"), ("All files", "*.*")],
+                title="Save 3D-plot png File"
+                )
+                
+                if not file_path:
+                    return
+                
+                # Get parameters
+                parameters_path = os.path.join(self.selected_folder, "parameters.json")
+                if not os.path.exists(parameters_path):
+                    CTkMessagebox(title="Missing file", message="parameters.json not found in the selected folder.", icon="cancel")
+                    return
+
+                with open(parameters_path, 'r') as f:
+                    parameters = json.load(f)
+                if self.network_diagram.get() == 1:
+                    pdf_path = plot_network_diagram(folder=self.selected_folder,
+                                        labels=copy.deepcopy(self.assigned_labels),
+                                        output_fileadress=file_path,
+                                        well_amount=self.well_amnt,
+                                        parameters=parameters,
+                                        asynchrony=0)
+                    webbrowser.open(f"file://{pdf_path}")
+                    CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
+
+                CTkMessagebox(message=f"Figures succesfully saved at {file_path}", icon="check", option_1="Ok", title="Saved Figures")
+            except Exception as e:
+                CTkMessagebox(title="Error", message=f"An error occurred while generating the plot:\n{str(e)}", icon="cancel")
+                traceback.print_exc()
+                
+                
+            except Exception as error:
+                CTkMessagebox(title="Error",
+                                message='Something went wrong while creating the synchronicity plots',
+                                icon="cancel",
+                                wraplength=400)
+                traceback.print_exc()
+        else: 
+            CTkMessagebox(title="No plot type selected", message="Please select a plot type (3D or Network diagram).", icon="warning")
         return
 
     def set_selected_label(self, label):
