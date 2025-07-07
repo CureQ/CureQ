@@ -2,32 +2,39 @@
 
 # MEAlytics
 
-This repository contains a python package for analyzing Microelectrode Array (MEA) experiments.<br>
+This repository contains a python package for analyzing Micro-Electrode Array (MEA) experiments.<br>
 This repository is maintained by the Amsterdam University of Applied Sciences (AUAS).<br>
 MEAlytics offers high speed spike, burst and network burst detection followed by feature extraction.<br>
 
 #### [For more information about the analysis or how to use the library, check out the MEAlytics Github pages](https://cureq.github.io/CureQ/).
 
-## Cureq
+## CureQ
 This tool was created for the CureQ consortium.<br>
 For more information about the CureQ project, visit https://cureq.nl/
 ___
 
 ## Install the library
 
-First, make sure you have installed a version of python on your machine, all python releases can be found here: https://www.python.org/downloads/ <br>
-Secondly, make sure you have installed a package manager such as pip. <br>
-Next, open a terminal and navigate to your home folder.
-
-#### Install library with pip
+1. **Download and install Python** (if not already installed) from [python.org](https://python.org/downloads/)
+2. **Open a terminal or command prompt with installed Python library** <br> Navigate to your home folder.
+   ```
+   cd /path/to/home/folder
+   ```
+3. Make sure you downloaded **Python**!<br>
+> Check this with ```python --version``` in your CMD. <br>
+> <i>If you don't have Python installed yet, install it by typing ```python``` in your CMD.<br> 
+This will automatically install pip.</i><br>
+> Check this with ```pip --version``` in your CMD.<br>
+> <i>If you don't have pip installed yet, install it by typing ```get-pip.py``` in your CMD.</i><br>
+4. **Install library with pip**<br>
 Install the MEA analyzer with the following command when you are using Pip:
 ```shell
 pip install CureQ 
 ```
 
-More elaborate and simple installation instructions can be found in the user guide.<br>
+More elaborate and simple installation instructions can be found in the [User Guide](https://cureq.github.io/CureQ/installation.html).<br>
 
-#### Please not that this project is still in development. Certain aspects of the package might change in the future.
+#### Please note that this project is still in development. Certain aspects of the package might change in the future.
 
 ---
 
@@ -58,7 +65,7 @@ if __name__ == '__main__':
 ---
 
 ## MEA GUI
-Addionally, the CureQ mea library contains a graphical user interface that can be used to perform and the analysis. <br>
+Addionally, the CureQ mea library contains a graphical user interface that can be used to perform the analysis. <br>
 The GUI is also used to inspect the raw MEA data and the analysis results. Example visualisations can be found below. <br>
 The GUI can be opened as follows:
 
@@ -100,7 +107,7 @@ MEAlytics offers a wide range of parameters that can be used to alter the analys
 
 MEAlytics is capable of using **multiprocessing** to make optimal use of all available resources, speeding up the analysis!
 
-![](./Example_visualisations/process.PNG)
+![](./Example_visualisations/process.png)
 
 ### Spike detection
 
@@ -117,13 +124,13 @@ Additonally, the user can zoom in on the data to view the smaller timeframes.
 
 Burst detection is performed using the logISI method, meaning that the thresholds adapt to the input data!
 
-![Burst detection](./Example_visualisations/burst_detection.PNG)
+![Burst detection](./Example_visualisations/burst_detection.png)
 
 ### Network burst detection
 
 Network burst detection is performed by looking for high activity periods on multiple channels.
 
-![Network burst detection](./Example_visualisations/network_burst_detection.PNG)
+![Network burst detection](./Example_visualisations/network_burst_detection.png)
 
 ### Batch processing
 
@@ -135,7 +142,7 @@ Perform high-throughput analysis using the batch processing module!
 
 MEAlytics calculates over 40 descriptive well and electrode features and saves them in a csv file. These can then be read by other applications such as excel!
 
-![](./Example_visualisations/features.PNG)
+![Features](./Example_visualisations/features.png)
 
 ### Group comparison
 
