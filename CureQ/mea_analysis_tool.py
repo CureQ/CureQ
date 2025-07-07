@@ -1247,7 +1247,7 @@ class view_results(ctk.CTkFrame):
             CTkMessagebox(title="Error", message="Please select a Machine Learning model first", icon="cancel")
         else:
             ml_performance_window = ctk.CTkToplevel(self)
-            ml_performance_window.title(f"Performance {ML_dict["model"]}")
+            ml_performance_window.title(f"Performance {ML_dict['model']}")
             columns = ["Accuracy", "Precision", "Recall", "F1-score"]
             ml_performance_window.grid_columnconfigure(len(columns), weight=1)
             Accuracy, Precision, Recall, F1_score  = ML_performance(ML_dict["model"], ML_dict["version"])

@@ -31,7 +31,8 @@ setuptools.setup(
         "CTkMessagebox>=2.7",   # ctk messagebox widget
         "CTkColorPicker>=0.9.0",# ctk colorpicker widget
         'requests>=2.32.3',     # Used to get information about newest available version of package
-        'pyshortcuts>=1.9.5'    # Create desktop shortcuts
+        'pyshortcuts>=1.9.5',   # Create desktop shortcuts
+        'xgboost>=2.1.4'        # Machine Learning package
     ],
     classifiers=[
         "Programming Language :: Python :: 3",
