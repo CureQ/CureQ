@@ -6,6 +6,7 @@ import webbrowser
 import sys
 from pathlib import Path
 from tkinter import *
+import importlib
 from importlib.metadata import version
 
 # External libraries

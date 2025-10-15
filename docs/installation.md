@@ -1,17 +1,11 @@
----
-layout: default
-title: Installation
-permalink: /installation
----
-
 ## Installing Python
 
 Since the tool is programmed in python, it is necessary to have python installed in order to run the application. Here, we demonstrate one method to install python on a Windows machine. However there are many (more elaborate) guides available online that should suffice.<br>
 <br>
-The python interpreter can be installed using the official python installer. All python versions can be found on https://www.python.org/downloads/. The MEA analysis tool has been developed and tested on python 3.11, but will most likely also work on other python 3.* versions.<br>
+The python interpreter can be installed using the official python installer. All python versions can be found on [https://www.python.org/downloads/](https://www.python.org/downloads/). The MEA analysis tool has been developed and tested on python 3.11, but will most likely also work on other python 3.* versions.<br>
 
 Download the desired python version, and execute the file you have just downloaded. You will be presented with the following window:<br>
-![]({{ site.baseurl }}/assets/images/python_installer.png)
+<img src="../assets/images/python_installer.png" width="100%" height="100%">
 
 Select the option **Add python.exe to PATH**. This will allow your operating system to recognise the python installation. Then, press **Install Now**. Finally, let’s confirm that both python and pip are successfully installed by running the following commands in the command prompt.<br>
 ```console

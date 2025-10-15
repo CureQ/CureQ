@@ -1,30 +1,17 @@
 # Imports
 import os
 import threading
-from functools import partial
-import json
-import copy
-import math
-import webbrowser
-import sys
-from pathlib import Path
 from tkinter import *
-from tkinter import ttk
 from tkinter import filedialog
-from importlib.metadata import version
 import traceback
 import time
 
 # External libraries
-import pandas as pd
 import numpy as np
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  NavigationToolbar2Tk) 
-import h5py
 import customtkinter as ctk
 from CTkToolTip import *
 from CTkMessagebox import CTkMessagebox
 from CTkColorPicker import *
-import requests
 
 # Package imports
 from ..mea import analyse_wells

@@ -1,9 +1,3 @@
----
-layout: default
-title: MEAlytics as Python package
-permalink: /python_package
----
-
 Besides the GUI, the MEA analysis tool can also be called as a python library, and has a few functions that can be of use to the user. Let’s walk through an example to fully analyse a MEA file.
 
 ### Analysing MEA file
@@ -33,11 +27,12 @@ Finally, pass all the arguments to the analyse_wells function to initiate the an
 
 ```python
 if __name__ == '__main__':
-    analyse_wells(fileadress=fileadress,
-                  sampling_rate=sampling_rate,
-                  electrode_amnt=electrode_amount,
-                  parameters=parameters
-                  )
+    analyse_wells(
+        fileadress=fileadress,
+        sampling_rate=sampling_rate,
+        electrode_amnt=electrode_amount,
+        parameters=parameters
+    )
 ```
 
 In the end, it should look like this:

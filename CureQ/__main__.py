@@ -1,7 +1,9 @@
+# pyinstaller -n "MEAlytics" __main__.py --icon="MEAlytics_logo.ico" --add-data="./GUI/MEAlytics_logo.ico":"." --add-data="./GUI/theme.json":"." -y
+
 import argparse
 import os
-from pyshortcuts import make_shortcut
 from importlib.metadata import version
+import multiprocessing
 
 from CureQ.GUI.mea_analysis_tool import MEA_GUI
 
@@ -41,6 +43,7 @@ def main():
         launch_gui()
 
 if __name__ == '__main__':
+    multiprocessing.freeze_support()
     try:
         main()
     except Exception as error:

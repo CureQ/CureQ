@@ -1,12 +1,6 @@
----
-layout: default
-title: Analysis output
-permalink: /output
----
-
 During the analysis, the application will create an “outputfolder” where it stores all results and details from the analysis. This outputfolder can be found in the same location as the raw data file. The outputfolder will share the same name as the raw data file, with the date and time of the analysis attached at the end. The outputfolder contains several files:
 
-<img src="./assets/images/output.png" width="90%" height="90%">
+<img src="../assets/images/output.png" width="90%" height="90%">
 
 **output_values.h5** contain files that are used to save the intermediate results of the spike, burst and network burst detection process. These files are used to calculate the output features and visualise the process in the GUI. These files are generally not important for the end user.
 
@@ -16,8 +10,8 @@ The file ending with **Features.csv** will contain the output features that are 
 
 The file ending with **Electrode_Features.csv** will contain the single electrode features, such as spike and single channel burst metrics, calculated per individual electrode.
 
-For more information about the features the MEA analysis tool calculates, see [Features Output](features.html).
+For more information about the features the MEA analysis tool calculates, see [Features Output](features.md).
 
-Lastly, the **parameters.json** file contains information about the analysis such as which parameters were used, some information about the dataset, and which version of the tool was used. This file can be used to copy settings from a previous analysis. For more information on how to do this, see [Analyse Single File](analyse_file.html)
+Lastly, the **parameters.json** file contains information about the analysis such as which parameters were used, some information about the dataset, and which version of the tool was used. This file can be used to copy settings from a previous analysis. For more information on how to do this, see [Analyse Single File](analyse_file.md)
 
 #### It is recommended to not alter or relocate any of these files, as certain functionality of the package, such as plotting, excluding electrodes and inspecting results rely on the naming and location of these files.

@@ -351,10 +351,10 @@ def burst_detection(data, electrode, parameters, plot_electrodes= False, savedat
 
             # Plot layout
             if use_ISIth2:
-                thresholdtext=f"Advanced burst detection, ISIth1: {ISIth1}, ISIth2: {ISIth2}"
+                thresholdtext=f"Threshold 1: {ISIth1}, Threshold 2: {ISIth2}"
             else:
-                thresholdtext=f"Default burst detection, ISIth1: {ISIth1}"
-            rawburstplot.title.set_text(f"Well {well} - MEA electrode {electrode}, bursts detected: {len(burst_cores)}, {thresholdtext}")
+                thresholdtext=f"Threshold 1: {ISIth1}"
+            rawburstplot.title.set_text(f"Well {well} - Electrode {electrode}, bursts detected: {len(burst_cores)}, {thresholdtext}")
             rawburstplot.set_xlabel("Time (s)")
             rawburstplot.set_ylabel("Voltage")
             rawburstplot.set_xlim([time_seconds.min(), time_seconds.max()])

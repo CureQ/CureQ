@@ -1,0 +1,59 @@
+site_name: MEAlytics
+site_url: https://cureq.github.io/CureQ/
+theme:
+  logo: assets/images/MEAlytics_logo.png
+  favicon: assets/images/MEAlytics_logo.png
+  name: material
+
+  features:
+    - navigation.footer
+    - content.code.copy
+
+  palette:
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Gettings started:
+    - Installation: installation.md
+    - Graphical user interface: gui.md
+    - MEAlytics as Python package: python_package.md
+  - Analysis:
+    - Analyse file: analyse_file.md
+    - Batch processing: batch_processing.md
+    - Output: output.md
+    - Features: features.md
+    - Parameters: parameters.md
+  - Data inspection:
+    - Inspect results: view_results.md
+    - Compare groups: compare_groups.md
+  - Other:
+    - Processing Axion files: axion.md
+    - Compressing/rechunking files: compress_rechunk.md
+    - Exclude electrodes: exclude_electrodes.md
+    - Supported plates: supported_plates.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      linenums: true
+      use_pygments: true
+  - pymdownx.superfences
+  - pymdownx.extra
+
+
+watch:
+  - docs
+
+extra_css:
+  - styles/extra.css

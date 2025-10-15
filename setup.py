@@ -15,7 +15,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/CureQ/CureQ.git",
     packages=setuptools.find_packages(),
-    install_requires=[              # Installs all required libraries to run the pipeline analysis correctly
+    install_requires=[
         "matplotlib>=3.7.3",        # For visualisation plots of the data
         "numpy>=1.26.4",            # For array computing in python
         "h5py>=3.9.0",              # For reading the HDF5 file in python
@@ -24,7 +24,6 @@ setuptools.setup(
         "seaborn>=0.12.2",          # For statistical data visualization
         "statsmodels>=0.14.0",      # For calculating the partial autocorrelation function
         "scikit-image>=0.22.0",     # For determining the threshold of the network bursts
-        "plotly>=5.14.0",           # For creating an interactive 3D view of a single well
 	    "KDEpy>=1.1.9",		        # For fast and efficient Kernel Density Estimation in Python
         "customtkinter>=5.2.2",     # Graphical user interface
         "CTkToolTip>=0.8",          # customtkinter tooltip
@@ -45,7 +44,7 @@ setuptools.setup(
     py_modules=["main"],
     entry_points={
         'console_scripts': [
-            'cureq=CureQ.main:main',
+            'cureq=CureQ.__main__:main',
         ],
     },
 )

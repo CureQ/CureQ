@@ -310,7 +310,7 @@ def features_over_time(folder, labels, div_prefix, output_fileadress, colors=Non
     featurefiles = []
     for root, dirs, files in os.walk(folder):
         for file in files:
-            if file.endswith("Features.csv"):
+            if file.endswith("Features.csv") and not "Electrode" in file:
                 featurefiles.append(os.path.join(root, file))
                 print(os.path.join(root, file))
 

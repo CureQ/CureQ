@@ -1,9 +1,3 @@
----
-layout: default
-title: Parameters
-permalink: /parameters
----
-
 The MEAlytics package contains a wide range of parameters that can be used to alter the analysis pipeline. Described below are all the parameters, and how they affect the analysis pipeline.
 
 The default parameter values are stored as a dictionary in the library, and can be accessed as follows:

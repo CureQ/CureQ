@@ -1,33 +1,24 @@
 # Imports
 import os
-import threading
 from functools import partial
 import json
 import copy
-import math
 import webbrowser
-import sys
 from pathlib import Path
 from tkinter import *
-from tkinter import ttk
 from tkinter import filedialog
-from importlib.metadata import version
 import traceback
-import time
 
 # External libraries
 import pandas as pd
 import numpy as np
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg,  NavigationToolbar2Tk) 
-import h5py
 import customtkinter as ctk
 from CTkToolTip import *
 from CTkMessagebox import CTkMessagebox
 from CTkColorPicker import *
-import requests
 
 # Package imports
-from ..core._plotting import get_defaultcolors, feature_boxplots, combined_feature_boxplots, features_over_time
+from ..core._plotting import get_defaultcolors, combined_feature_boxplots, features_over_time
 
 class plotting_window(ctk.CTkFrame):
     """
@@ -60,7 +51,6 @@ class plotting_window(ctk.CTkFrame):
         boxplot_frame.grid_columnconfigure(0, weight=1)
         boxplot_frame.grid_columnconfigure(1, weight=1)
 
-
         # Selected files frame
         self.selected_files_frame = ctk.CTkScrollableFrame(master=self)
         self.selected_files_frame.grid(row=1, column=1, padx=5, pady=5, sticky='nesw')
@@ -68,6 +58,12 @@ class plotting_window(ctk.CTkFrame):
         # Label frames
         self.assign_labels_frame = ctk.CTkFrame(master=self)
         self.assign_labels_frame.grid(row=1, column=2, padx=5, pady=5, sticky='new')
+
+        self.well_buttons_frame = ctk.CTkFrame(self.assign_labels_frame)
+        self.well_buttons_frame.grid(row=0, column=0)
+
+        layout_warning = ctk.CTkButton(master=self.assign_labels_frame, text="Warning: The well/electrode layout is auto-generated and may not match the physical plate exactly. Click here for details.", command=lambda: webbrowser.open_new("https://cureq.github.io/CureQ/supported_plates.html"), fg_color=parent.gray_1)
+        layout_warning.grid(row=1 , column=0, pady=10, padx=10, sticky='e')
 
         label_main_frame=ctk.CTkFrame(master=self, fg_color='transparent')
         label_main_frame.grid(row=1, column=3, sticky='nesw')
@@ -137,7 +133,6 @@ class plotting_window(ctk.CTkFrame):
 
         create_plot_button=ctk.CTkButton(text="Create Boxplots", master=boxplot_frame, command=self.create_boxplots)
         create_plot_button.grid(row=3, column=0, pady=10, padx=10, sticky='nesw', columnspan=2)
-
 
         return_to_main = ctk.CTkButton(master=plotting_frame, text="Return to main menu", command=lambda: self.parent.show_frame(self.parent.home_frame), fg_color=parent.gray_1)
         return_to_main.grid(row=3, column=0, columnspan=2, padx=5, pady=5, sticky='nesw')
@@ -342,7 +337,7 @@ class plotting_window(ctk.CTkFrame):
 
         for h in range(height):
             for w in range(width):
-                well_button=ctk.CTkButton(master=self.assign_labels_frame, text=counter, command=partial(self.well_button_func, counter), height=100, width=100, font=ctk.CTkFont(size=25))
+                well_button=ctk.CTkButton(master=self.well_buttons_frame, text=counter, command=partial(self.well_button_func, counter), height=100, width=100, font=ctk.CTkFont(size=25))
                 well_button.grid(row=h, column=w, sticky='nesw')
                 self.well_buttons.append(well_button)
                 counter+=1
