@@ -5,3 +5,10 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+
+.idea
+/Neural_Network/Data/
+
+*.h5
+outputs*
+Outputs*
