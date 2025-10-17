@@ -38,6 +38,7 @@ nav:
   - Data inspection:
     - Inspect results: view_results.md
     - Compare groups: compare_groups.md
+    - Heatmap: heatmap.md
   - Other:
     - Processing Axion files: axion.md
     - Compressing/rechunking files: compress_rechunk.md

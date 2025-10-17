@@ -112,7 +112,7 @@ class heatmap_frame(ctk.CTkToplevel):
 
         self.progressbar = None
 
-        layout_warning = ctk.CTkButton(master=self, text="Warning: The well/electrode layout is auto-generated and may not match the physical plate exactly. Click here for details.", command=lambda: webbrowser.open_new("https://cureq.github.io/CureQ/supported_plates.html"), fg_color=parent.gray_1)
+        layout_warning = ctk.CTkButton(master=self, text="Warning: The well/electrode layout is auto-generated and may not match the physical plate exactly. Click here for details.", command=lambda: webbrowser.open_new("https://cureq.github.io/CureQ/supported_plates/"), fg_color=parent.gray_1)
         layout_warning.grid(row=2 , column=0, pady=10, padx=10, sticky='nesw', columnspan=2)
 
     def generate_data_handler(self):

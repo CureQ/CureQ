@@ -193,7 +193,7 @@ class view_results(ctk.CTkFrame):
         return_to_main = ctk.CTkButton(master=self, text="Return to main menu", command=lambda: self.parent.show_frame(self.parent.home_frame), fg_color=parent.gray_1)
         return_to_main.grid(row=1, column=0, pady=10, padx=10, sticky='w')
 
-        layout_warning = ctk.CTkButton(master=self, text="Warning: The well/electrode layout is auto-generated and may not match the physical plate exactly. Click here for details.", command=lambda: webbrowser.open_new("https://cureq.github.io/CureQ/supported_plates.html"), fg_color=parent.gray_1)
+        layout_warning = ctk.CTkButton(master=self, text="Warning: The well/electrode layout is auto-generated and may not match the physical plate exactly. Click here for details.", command=lambda: webbrowser.open_new("https://cureq.github.io/CureQ/supported_plates/"), fg_color=parent.gray_1)
         layout_warning.grid(row=1 , column=1, pady=10, padx=10, sticky='e')
 
    
