@@ -10,5 +10,10 @@ build/
 /Neural_Network/Data/
 
 *.h5
-outputs*
-Outputs*
+/Neural_Network/outputs/
+/Neural_Network/outputs*
+/Neural_Network/Outputs*
+/CureQ/Neural_Network/Outputs 20250128_SCA1_first_test(000)/
+/CureQ/Neural_Network/Outputs 20250127_SCA1_first_test(001)/
+/CureQ/Neural_Network/outputs v1/
+/CureQ/Neural_Network/outputs/

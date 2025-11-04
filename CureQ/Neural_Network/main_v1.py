@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-MEA-classificatie (Axion 6x8) – per-well Conv1D pipeline (gebalanceerde training)
+MEA-classificatie (Axion 6x8) – per-well Conv1D pipeline
 - Leest 2D RAW HDF5: [channels, time] = (768, T)
 - Reshapes naar [rows=6, cols=8, electrodes=16, time]
 - Spike-detectie per elektrode (bandpass + neg. drempel), OR -> binaire well-trace [R,C,T]
 - 1 ms binning -> ~1000 Hz
 - Segmenten per well (seq_len_ms), Conv1D-training (multiclass)
-- TRAINING: slechts één van de twee CTRL-lijnen (kolomblokken) wordt gebruikt om imbalance te voorkomen
-- EVALUATIE (consensus): gebeurt op alle wells
+- Consensus (majority vote) per well voor rapportage
 
 Run:
     pip install tensorflow h5py scipy scikit-learn numpy
@@ -16,7 +15,7 @@ Run:
 
 import os, json
 from dataclasses import dataclass
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 import numpy as np
 import h5py
 from scipy.signal import butter, filtfilt
@@ -32,7 +31,7 @@ from tensorflow.keras import layers, callbacks
 @dataclass
 class Config:
     # === Pad naar je HDF5 ===
-    h5_path: str = r"./Data/SCA1/20250127_SCA1_first_test(001).h5"
+    h5_path: str = r"./Data/SCA1/20250128_SCA1_first_test(000).h5"
 
     # === HDF5 dataset key met raw analoge data ===
     key_raw: str = "Data/Recording_0/AnalogStream/Stream_0/ChannelData"
@@ -49,8 +48,8 @@ class Config:
 
     # === Sampling/segmentering ===
     sampling_hz: int = 20000  # raw sample rate (pas aan indien anders)
-    seq_len_ms: int = 4000    # segmentduur
-    bin_ms: int = 1           # 1 ms binning (reduceert 20kHz -> 1kHz)
+    seq_len_ms: int = 4000  # segmentduur
+    bin_ms: int = 1  # 1 ms binning (reduceert 20kHz -> 1kHz)
     train_segments_per_well: int = 180
     val_segments_per_well: int = 60
     stride_ms_eval: int = 4000  # consensus stride
@@ -67,14 +66,6 @@ class Config:
     epochs: int = 500
     patience: int = 50
     seed: int = 42
-
-    # === Klassebalans-instellingen ===
-    # Gebruik slechts één CTRL-lijn voor training om klasse-imbalance te voorkomen
-    use_only_one_ctrl_line: bool = True
-    # Kies: "left" (kolommen 3–4 -> 0-based 2–3) of "right" (kolommen 7–8 -> 0-based 6–7)
-    ctrl_line_side: str = "left"
-    # Optioneel: expliciet per label -> lijst van kolommen (0-based). Indien gezet, overschrijft ctrl_line_side.
-    include_cols_per_label: Optional[Dict[str, List[int]]] = None
 
     # === Output ===
     outdir: str = "outputs"
@@ -111,45 +102,6 @@ def build_label_map_for_columns(cols: int) -> Dict[int, str]:
         else:
             lab[c] = "UNK"
     return lab
-
-
-def get_allowed_cols_per_label(cfg: Config, cols: int) -> Dict[str, set]:
-    """
-    Bepaal per label welke kolommen (0-based) we meenemen voor TRAINING.
-    - CTRL: kies één lijn (2–3 of 6–7), tenzij cfg.include_cols_per_label expliciet is gezet.
-    - HTT-lijnen: standaard alle kolommen die al in build_label_map_for_columns vallen.
-    """
-    col2label = build_label_map_for_columns(cols)
-
-    if cfg.include_cols_per_label is not None:
-        # Zet expliciete lijsten om naar sets
-        allowed = {lab: set(v) for lab, v in cfg.include_cols_per_label.items()}
-        return allowed
-
-    # Verzamel alle kolommen per label
-    all_cols_per_label: Dict[str, set] = {}
-    for c in range(cols):
-        lab = col2label.get(c, "UNK")
-        if lab == "UNK":
-            continue
-        all_cols_per_label.setdefault(lab, set()).add(c)
-
-    if cfg.use_only_one_ctrl_line:
-        # CTRL heeft twee blokken: (2,3) en (6,7) in 0-based
-        ctrl_left  = {2, 3}
-        ctrl_right = {6, 7}
-        side = cfg.ctrl_line_side.lower()
-        if side == "left":
-            chosen = ctrl_left
-        elif side == "right":
-            chosen = ctrl_right
-        else:
-            raise ValueError("cfg.ctrl_line_side moet 'left' of 'right' zijn.")
-        if "CTRL" in all_cols_per_label:
-            all_cols_per_label["CTRL"] = all_cols_per_label["CTRL"].intersection(chosen)
-
-    return all_cols_per_label
-
 
 def robust_std(x: np.ndarray) -> float:
     med = np.median(x)
@@ -229,43 +181,30 @@ def load_raw_as_rcte(h5_path: str) -> np.ndarray:
     return raw_rcte
 
 
-def make_segments_per_well(
-    spk_rct: np.ndarray,
-    n_segments_per_well: int,
-    seq_len: int,
-    allowed_cols_per_label: Optional[Dict[str, set]] = None
-) -> Tuple[np.ndarray, np.ndarray, List[str]]:
+def make_segments_per_well(spk_rct: np.ndarray, n_segments_per_well: int, seq_len: int) -> Tuple[
+    np.ndarray, np.ndarray, List[str]]:
     """
-    Maakt segmenten per well, optioneel gefilterd op toegestane kolommen per label.
-    Retour: X: [N, seq_len, 1], y_idx: [N], classes: List[str]
+    Maakt segmenten per well.
+    Retourneert X: [N, seq_len, 1] uint8, y_idx: [N] int, classes: List[str]
     """
     R, C, T = spk_rct.shape
     col2label = build_label_map_for_columns(C)
     X_list, labels = [], []
-
     for r in range(R):
         for c in range(C):
             lab = col2label[c]
             if lab == "UNK":
                 continue
-
-            # Kolomfilter toepassen (alleen wanneer meegegeven; bedoeld voor TRAIN)
-            if allowed_cols_per_label is not None:
-                allowed_cols = allowed_cols_per_label.get(lab, None)
-                if (allowed_cols is not None) and (c not in allowed_cols):
-                    continue
-
             sig = spk_rct[r, c, :]
             if T < seq_len:
                 continue
-
             starts = np.random.randint(0, T - seq_len + 1, size=n_segments_per_well)
             segs = np.stack([sig[s:s + seq_len] for s in starts], axis=0)  # [n, seq]
             X_list.append(segs[..., None])  # [n, seq, 1]
             labels += [lab] * segs.shape[0]
 
     if not X_list:
-        raise RuntimeError("Geen segmenten gevonden (check data/seq_len_ms en filters).")
+        raise RuntimeError("Geen segmenten gevonden (check data/seq_len_ms).")
 
     X = np.concatenate(X_list, axis=0).astype(np.uint8)
     classes = sorted(list(set(labels)))
@@ -298,7 +237,6 @@ def consensus_eval_1d(spk_rct: np.ndarray, model: tf.keras.Model, classes: List[
                       seq_len: int, stride_ms: int, bin_ms: int, out_path: str) -> str:
     """
     Majority vote per well met stride in ms (op binned tijdas).
-    Gebruikt ALLE wells (dus ook de CTRL-lijn die niet in training zat).
     """
     R, C, T = spk_rct.shape
     fs_bin = int(round(1000 / bin_ms))  # bij 1ms -> 1000 Hz
@@ -362,50 +300,28 @@ def train():
     spk_rct = bin_time(spk_rct, fs=cfg.sampling_hz, bin_ms=cfg.bin_ms)  # [R,C,Tb]
     print("Na binning shape:", spk_rct.shape, "mean(%):", float(spk_rct.mean()) * 100.0)
 
-    # 3) Segmenten per well — TRAIN (gefilterd op kolommen) en split
+    # 3) Segmenten per well
     seq_len = int(round(cfg.seq_len_ms / cfg.bin_ms))  # bij 1ms -> 4000 samples
+    X_all, y_all, classes = make_segments_per_well(spk_rct, cfg.train_segments_per_well, seq_len)
+    print("X_all:", X_all.shape, "y_all:", y_all.shape, "classes:", classes)
 
-    # Toegestane kolommen per label voor TRAINING (1 CTRL-lijn)
-    allowed_train_cols = get_allowed_cols_per_label(cfg, C)
-    print("Allowed train cols per label:", {k: sorted(list(v)) for k, v in allowed_train_cols.items()})
+    # 4) Splits
+    Xtr, Xte, ytr, yte = train_test_split(X_all, y_all, test_size=0.20, random_state=cfg.seed, stratify=y_all)
+    Xtr, Xva, ytr, yva = train_test_split(Xtr, ytr, test_size=0.125, random_state=cfg.seed, stratify=ytr)  # 0.7/0.1/0.2
 
-    # Bouw TRAIN-pool met filter (1 CTRL-lijn)
-    X_all_tr, y_all_tr, classes_tr = make_segments_per_well(
-        spk_rct, cfg.train_segments_per_well, seq_len, allowed_cols_per_label=allowed_train_cols
-    )
-    print("TRAIN pool -> X:", X_all_tr.shape, "y:", y_all_tr.shape, "classes:", classes_tr)
-
-    # Stratified splits uit de gefilterde TRAIN-pool
-    Xtr, Xte, ytr, yte = train_test_split(
-        X_all_tr, y_all_tr, test_size=0.20, random_state=cfg.seed, stratify=y_all_tr
-    )
-    Xtr, Xva, ytr, yva = train_test_split(
-        Xtr, ytr, test_size=0.125, random_state=cfg.seed, stratify=ytr
-    )  # 0.7/0.1/0.2
-
-    # 4) tf.data (cast naar float32 in de pipeline)
-    train_ds = (
-        tf.data.Dataset.from_tensor_slices((Xtr, ytr))
-        .shuffle(10000, seed=cfg.seed)
-        .batch(cfg.batch_size)
-        .map(lambda x, y: (tf.cast(x, tf.float32), y))
+    # 5) tf.data (cast pas in de pipeline naar float32)
+    train_ds = tf.data.Dataset.from_tensor_slices((Xtr, ytr)).shuffle(10000, seed=cfg.seed) \
+        .batch(cfg.batch_size).map(lambda x, y: (tf.cast(x, tf.float32), y)) \
         .prefetch(tf.data.AUTOTUNE)
-    )
-    val_ds = (
-        tf.data.Dataset.from_tensor_slices((Xva, yva))
-        .batch(cfg.batch_size)
-        .map(lambda x, y: (tf.cast(x, tf.float32), y))
+    val_ds = tf.data.Dataset.from_tensor_slices((Xva, yva)).batch(cfg.batch_size) \
+        .map(lambda x, y: (tf.cast(x, tf.float32), y)) \
         .prefetch(tf.data.AUTOTUNE)
-    )
-    test_ds = (
-        tf.data.Dataset.from_tensor_slices((Xte, yte))
-        .batch(cfg.batch_size)
-        .map(lambda x, y: (tf.cast(x, tf.float32), y))
+    test_ds = tf.data.Dataset.from_tensor_slices((Xte, yte)).batch(cfg.batch_size) \
+        .map(lambda x, y: (tf.cast(x, tf.float32), y)) \
         .prefetch(tf.data.AUTOTUNE)
-    )
 
-    # 5) Model
-    model = build_cnn_1d(n_classes=len(classes_tr), seq_len=seq_len)
+    # 6) Model
+    model = build_cnn_1d(n_classes=len(classes), seq_len=seq_len)
     ckpt = os.path.join(cfg.outdir, "best_model.keras")
     cbs = [
         callbacks.ModelCheckpoint(ckpt, monitor="val_accuracy", mode="max", save_best_only=True, verbose=1),
@@ -414,20 +330,20 @@ def train():
     ]
     hist = model.fit(train_ds, validation_data=val_ds, epochs=cfg.epochs, callbacks=cbs)
 
-    # 6) Bewaar
+    # 7) Bewaar
     model.save(os.path.join(cfg.outdir, "last_model.keras"))
     with open(os.path.join(cfg.outdir, "history.json"), "w") as f:
         json.dump({k: [float(x) for x in v] for k, v in hist.history.items()}, f, indent=2)
     with open(os.path.join(cfg.outdir, "classes.json"), "w") as f:
-        json.dump({"classes": classes_tr}, f, indent=2)
+        json.dump({"classes": classes}, f, indent=2)
 
-    # 7) Snelle test op segment-niveau
+    # 8) Snelle test op segment-niveau
     loss, acc = model.evaluate(test_ds, verbose=0)
     print(f"[Segment] test acc = {acc:.4f}")
 
-    # 8) Consensus per well (binned tijdas) op ALLE wells
+    # 9) Consensus per well (binned tijdas)
     report_path = os.path.join(cfg.outdir, "consensus_report.txt")
-    _ = consensus_eval_1d(spk_rct, model, classes_tr, seq_len, cfg.stride_ms_eval, cfg.bin_ms, report_path)
+    _ = consensus_eval_1d(spk_rct, model, classes, seq_len, cfg.stride_ms_eval, cfg.bin_ms, report_path)
     print(f"Consensus-rapport geschreven naar: {report_path}")
 
 
