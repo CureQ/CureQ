@@ -7,7 +7,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 # Setup metadata for initializing the library
 setuptools.setup(
     name="cureq",
-    version="1.2.16",
+    version="1.2.17",
     author="CureQ",
     author_email="cureq-ft@hva.nl",
     description="Library for analyzing MEA files.",
@@ -19,6 +19,7 @@ setuptools.setup(
         "widgets": [
             "ipywidgets>=8.1.2",
             "voila>=0.5.6",
+            "plotly>=5.16.1"
         ]
     },    
     install_requires=[

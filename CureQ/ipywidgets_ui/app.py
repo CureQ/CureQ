@@ -1244,4 +1244,4 @@ class CureQApp:
         return self.root
 
     def show(self):
-        display(self.root)
+        return self.root
