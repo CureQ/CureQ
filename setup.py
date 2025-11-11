@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 # Setup metadata for initializing the library
 setuptools.setup(
-    name="CureQ",
+    name="cureq",
     version="1.2.16",
     author="CureQ",
     author_email="cureq-ft@hva.nl",
