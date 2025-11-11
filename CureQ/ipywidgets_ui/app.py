@@ -16,7 +16,7 @@ from ..core._plotting import well_electrodes_kde, feature_boxplots, combined_fea
 from ..core._features import recalculate_features
 
 
-class CureQApp:
+class CureQApp(W.VBox):
     """
     ipywidgets UI for CureQ/MEAlytics. Designed to run in Jupyter or via Voilà.
 
@@ -31,6 +31,10 @@ class CureQApp:
     """
 
     def __init__(self, notebook: bool = True):
+        super().__init__()
+        self.button = W.Button(description="Run")
+        self.output = W.Output()
+        self.children = [self.button, self.output]        
         self.notebook = notebook
         self.parameters: Dict[str, Any] = get_default_parameters()
         self.state: Dict[str, Any] = {
