@@ -158,6 +158,36 @@ Visualise the development of features over time by adding a prefix to your featu
 
 ![Features over time](./Example_visualisations/features_over_time.png)
 
+
+---
+
+## Run the ipywidgets UI (Jupyter)
+
+An experimental ipywidgets-based UI is available for use in Jupyter notebooks or with Voilà.
+
+- Install optional dependencies:
+
+  - With pip: `pip install "CureQ[widgets]"`
+  - Or add separately: `pip install ipywidgets voila`
+  - In JupyterLab, also enable widgets if needed.
+
+- Launch in a notebook:
+  ```python
+  from CureQ.ipywidgets_ui import CureQApp
+  app = CureQApp()
+  app.show()  # or display(app.widget())
+  ```
+
+Pages currently supported:
+
+- Analyze file: run a single-file analysis with progress and abort.
+- Parameters: view/edit/save analysis parameters.
+- Batch processing: select a folder, choose .h5 files, and run sequentially with per-file progress.
+- Compress/Rechunk: compress one file or all files in a folder (LZF/GZIP).
+- Other pages are stubbed and will arrive in future updates.
+
+Tip: For large files, prefer the "File path" field instead of uploading via the widget.
+
 <!--
 **CureQ/CureQ** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
 -->
