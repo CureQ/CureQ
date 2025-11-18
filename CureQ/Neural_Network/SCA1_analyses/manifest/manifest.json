@@ -1,0 +1,254 @@
+{
+  "measurements": [
+    {
+      "id": 1,
+      "date": "2025-01-27",
+      "well_csv": "20250127_SCA1_first_test(001)_output_2025-11-13_13-05-57_Features.csv",
+      "electrode_csv": "20250127_SCA1_first_test(001)_output_2025-11-13_13-05-57_Electrode_Features.csv"
+    },
+    {
+      "id": 2,
+      "date": "2025-01-28",
+      "well_csv": "20250128_SCA1_first_test(000)_output_2025-11-13_13-56-14_Features.csv",
+      "electrode_csv": "20250128_SCA1_first_test(000)_output_2025-11-13_13-56-14_Electrode_Features.csv"
+    },
+    {
+      "id": 3,
+      "date": "2025-01-29",
+      "well_csv": "20250129_SCA1(000)_output_2025-11-13_13-40-21_Features.csv",
+      "electrode_csv": "20250129_SCA1(000)_output_2025-11-13_13-40-21_Electrode_Features.csv"
+    },
+    {
+      "id": 4,
+      "date": "2025-01-30",
+      "well_csv": "20250130_SCA1(000)_output_2025-11-13_13-24-02_Features.csv",
+      "electrode_csv": "20250130_SCA1(000)_output_2025-11-13_13-24-02_Electrode_Features.csv"
+    },
+    {
+      "id": 5,
+      "date": "2025-01-31",
+      "well_csv": "20250131_SCA1(000)_output_2025-11-13_13-07-34_Features.csv",
+      "electrode_csv": "20250131_SCA1(000)_output_2025-11-13_13-07-34_Electrode_Features.csv"
+    },
+    {
+      "id": 6,
+      "date": "2025-02-03",
+      "well_csv": "20250203_SCA1(000)_rechunked_output_2025-11-05_13-23-46_Features.csv",
+      "electrode_csv": "20250203_SCA1(000)_rechunked_output_2025-11-05_13-23-46_Electrode_Features.csv"
+    },
+    {
+      "id": 7,
+      "date": "2025-02-04",
+      "well_csv": "20250204_SCA1(000)_rechunked_output_2025-11-05_13-27-27_Features.csv",
+      "electrode_csv": "20250204_SCA1(000)_rechunked_output_2025-11-05_13-27-27_Electrode_Features.csv"
+    },
+    {
+      "id": 8,
+      "date": "2025-02-05",
+      "well_csv": "20250205_SCA1(000)_rechunked_output_2025-11-05_13-31-02_Features.csv",
+      "electrode_csv": "20250205_SCA1(000)_rechunked_output_2025-11-05_13-31-02_Electrode_Features.csv"
+    },
+    {
+      "id": 9,
+      "date": "2025-02-06",
+      "well_csv": "20250206_SCA1(000)_rechunked_output_2025-11-05_13-34-40_Features.csv",
+      "electrode_csv": "20250206_SCA1(000)_rechunked_output_2025-11-05_13-34-40_Electrode_Features.csv"
+    },
+    {
+      "id": 10,
+      "date": "2025-02-07",
+      "well_csv": "20250207_SCA1(000)_rechunked_output_2025-11-05_13-38-28_Features.csv",
+      "electrode_csv": "20250207_SCA1(000)_rechunked_output_2025-11-05_13-38-28_Electrode_Features.csv"
+    },
+    {
+      "id": 11,
+      "date": "2025-02-11",
+      "well_csv": "20250211_SCA1(001)_rechunked_output_2025-11-05_13-42-11_Features.csv",
+      "electrode_csv": "20250211_SCA1(001)_rechunked_output_2025-11-05_13-42-11_Electrode_Features.csv"
+    },
+    {
+      "id": 12,
+      "date": "2025-02-12",
+      "well_csv": "20250212_SCA1(000)_rechunked_output_2025-11-05_13-46-04_Features.csv",
+      "electrode_csv": "20250212_SCA1(000)_rechunked_output_2025-11-05_13-46-04_Electrode_Features.csv"
+    },
+    {
+      "id": 13,
+      "date": "2025-02-13",
+      "well_csv": "20250213_SCA1(000)a_rechunked_output_2025-11-05_13-50-04_Features.csv",
+      "electrode_csv": "20250213_SCA1(000)a_rechunked_output_2025-11-05_13-50-04_Electrode_Features.csv"
+    },
+    {
+      "id": 14,
+      "date": "2025-02-14",
+      "well_csv": "20250214_SCA1(000)_rechunked_output_2025-11-05_13-53-55_Features.csv",
+      "electrode_csv": "20250214_SCA1(000)_rechunked_output_2025-11-05_13-53-55_Electrode_Features.csv"
+    },
+    {
+      "id": 15,
+      "date": "2025-02-17",
+      "well_csv": "20250217_SCA1(000)_rechunked_output_2025-11-05_13-57-40_Features.csv",
+      "electrode_csv": "20250217_SCA1(000)_rechunked_output_2025-11-05_13-57-40_Electrode_Features.csv"
+    },
+    {
+      "id": 16,
+      "date": "2025-02-18",
+      "well_csv": "20250218_SCA1(000)_rechunked_output_2025-11-05_14-01-37_Features.csv",
+      "electrode_csv": "20250218_SCA1(000)_rechunked_output_2025-11-05_14-01-37_Electrode_Features.csv"
+    },
+    {
+      "id": 17,
+      "date": "2025-02-19",
+      "well_csv": "20250219_SCA1(000)_rechunked_output_2025-11-05_14-05-33_Features.csv",
+      "electrode_csv": "20250219_SCA1(000)_rechunked_output_2025-11-05_14-05-33_Electrode_Features.csv"
+    },
+    {
+      "id": 18,
+      "date": "2025-02-20",
+      "well_csv": "20250220_SCA1(000)_rechunked_output_2025-11-05_14-09-31_Features.csv",
+      "electrode_csv": "20250220_SCA1(000)_rechunked_output_2025-11-05_14-09-31_Electrode_Features.csv"
+    },
+    {
+      "id": 19,
+      "date": "2025-02-21",
+      "well_csv": "20250221_SCA1(000)_rechunked_output_2025-11-05_14-13-33_Features.csv",
+      "electrode_csv": "20250221_SCA1(000)_rechunked_output_2025-11-05_14-13-33_Electrode_Features.csv"
+    },
+    {
+      "id": 20,
+      "date": "2025-02-24",
+      "well_csv": "20250224_SCA1(000)_rechunked_output_2025-11-05_14-17-36_Features.csv",
+      "electrode_csv": "20250224_SCA1(000)_rechunked_output_2025-11-05_14-17-36_Electrode_Features.csv"
+    },
+    {
+      "id": 21,
+      "date": "2025-02-25",
+      "well_csv": "20250225_SCA1(000)_rechunked_output_2025-11-05_14-21-31_Features.csv",
+      "electrode_csv": "20250225_SCA1(000)_rechunked_output_2025-11-05_14-21-31_Electrode_Features.csv"
+    },
+    {
+      "id": 22,
+      "date": "2025-02-26",
+      "well_csv": "20250226_SCA1(000)_output_2025-11-05_14-43-04_Features.csv",
+      "electrode_csv": "20250226_SCA1(000)_output_2025-11-05_14-43-04_Electrode_Features.csv"
+    },
+    {
+      "id": 23,
+      "date": "2025-02-27",
+      "well_csv": "20250227_SCA1(000)_rechunked_output_2025-11-05_14-25-27_Features.csv",
+      "electrode_csv": "20250227_SCA1(000)_rechunked_output_2025-11-05_14-25-27_Electrode_Features.csv"
+    },
+    {
+      "id": 24,
+      "date": "2025-02-28",
+      "well_csv": "20250228_SCA1(000)_output_2025-11-05_14-51-58_Features.csv",
+      "electrode_csv": "20250228_SCA1(000)_output_2025-11-05_14-51-58_Electrode_Features.csv"
+    },
+    {
+      "id": 25,
+      "date": "2025-03-03",
+      "well_csv": "20250303_SCA1(000)_output_2025-11-05_15-00-49_Features.csv",
+      "electrode_csv": "20250303_SCA1(000)_output_2025-11-05_15-00-49_Electrode_Features.csv"
+    },
+    {
+      "id": 26,
+      "date": "2025-03-04",
+      "well_csv": "20250304_SCA1(000)_output_2025-11-05_15-09-46_Features.csv",
+      "electrode_csv": "20250304_SCA1(000)_output_2025-11-05_15-09-46_Electrode_Features.csv"
+    },
+    {
+      "id": 27,
+      "date": "2025-03-05",
+      "well_csv": "20250305_SCA1(000)_output_2025-11-05_15-18-41_Features.csv",
+      "electrode_csv": "20250305_SCA1(000)_output_2025-11-05_15-18-41_Electrode_Features.csv"
+    },
+    {
+      "id": 28,
+      "date": "2025-03-06",
+      "well_csv": "20250306_SCA1(000)_output_2025-11-05_15-27-36_Features.csv",
+      "electrode_csv": "20250306_SCA1(000)_output_2025-11-05_15-27-36_Electrode_Features.csv"
+    },
+    {
+      "id": 29,
+      "date": "2025-03-10",
+      "well_csv": "20250310_SCA1(000)_rechunked_output_2025-11-06_14-18-48_Features.csv",
+      "electrode_csv": "20250310_SCA1(000)_rechunked_output_2025-11-06_14-18-48_Electrode_Features.csv"
+    },
+    {
+      "id": 30,
+      "date": "2025-03-12",
+      "well_csv": "20250312_SCA1(000)_rechunked_output_2025-11-06_14-26-18_Features.csv",
+      "electrode_csv": "20250312_SCA1(000)_rechunked_output_2025-11-06_14-26-18_Electrode_Features.csv"
+    },
+    {
+      "id": 31,
+      "date": "2025-03-13",
+      "well_csv": "20250313_SCA1(000)_rechunked_output_2025-11-06_14-33-38_Features.csv",
+      "electrode_csv": "20250313_SCA1(000)_rechunked_output_2025-11-06_14-33-38_Electrode_Features.csv"
+    },
+    {
+      "id": 32,
+      "date": "2025-03-14",
+      "well_csv": "20250314_SCA1(000)_rechunked_output_2025-11-06_14-41-05_Features.csv",
+      "electrode_csv": "20250314_SCA1(000)_rechunked_output_2025-11-06_14-41-05_Electrode_Features.csv"
+    },
+    {
+      "id": 33,
+      "date": "2025-03-17",
+      "well_csv": "20250317_SCA1(000)_rechunked_output_2025-11-06_14-48-47_Features.csv",
+      "electrode_csv": "20250317_SCA1(000)_rechunked_output_2025-11-06_14-48-47_Electrode_Features.csv"
+    },
+    {
+      "id": 34,
+      "date": "2025-03-18",
+      "well_csv": "20250318_SCA1(000)_rechunked_output_2025-11-06_14-57-25_Features.csv",
+      "electrode_csv": "20250318_SCA1(000)_rechunked_output_2025-11-06_14-57-25_Electrode_Features.csv"
+    },
+    {
+      "id": 35,
+      "date": "2025-03-19",
+      "well_csv": "20250319_SCA1(000)_rechunked_output_2025-11-06_15-05-29_Features.csv",
+      "electrode_csv": "20250319_SCA1(000)_rechunked_output_2025-11-06_15-05-29_Electrode_Features.csv"
+    },
+    {
+      "id": 36,
+      "date": "2025-03-20",
+      "well_csv": "20250320_SCA1(000)_rechunked_output_2025-11-06_15-13-06_Features.csv",
+      "electrode_csv": "20250320_SCA1(000)_rechunked_output_2025-11-06_15-13-06_Electrode_Features.csv"
+    },
+    {
+      "id": 37,
+      "date": "2025-03-21",
+      "well_csv": "20250321_SCA1(000)_rechunked_output_2025-11-06_15-20-39_Features.csv",
+      "electrode_csv": "20250321_SCA1(000)_rechunked_output_2025-11-06_15-20-39_Electrode_Features.csv"
+    },
+    {
+      "id": 38,
+      "date": "2025-03-24",
+      "well_csv": "20250324_SCA1(000)_rechunked_output_2025-11-06_15-28-06_Features.csv",
+      "electrode_csv": "20250324_SCA1(000)_rechunked_output_2025-11-06_15-28-06_Electrode_Features.csv"
+    },
+    {
+      "id": 39,
+      "date": "2025-03-25",
+      "well_csv": "20250325_SCA1(000)_rechunked_output_2025-11-06_15-36-01_Features.csv",
+      "electrode_csv": "20250325_SCA1(000)_rechunked_output_2025-11-06_15-36-01_Electrode_Features.csv"
+    },
+    {
+      "id": 40,
+      "date": "2025-03-26",
+      "well_csv": "20250326_SCA1(000)_rechunked_output_2025-11-06_15-44-29_Features.csv",
+      "electrode_csv": "20250326_SCA1(000)_rechunked_output_2025-11-06_15-44-29_Electrode_Features.csv"
+    },
+    {
+      "id": 41,
+      "date": "2025-03-27",
+      "well_csv": "20250327_SCA1(000)_rechunked_output_2025-11-06_15-52-56_Features.csv",
+      "electrode_csv": "20250327_SCA1(000)_rechunked_output_2025-11-06_15-52-56_Electrode_Features.csv"
+    }
+  ],
+  "grid": {
+    "wells": 48,
+    "electrodes_per_well": 16
+  }
+}
