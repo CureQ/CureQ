@@ -53,6 +53,7 @@ def ML_data_prep(folder):
     for match in matches:
         if match.endswith("Electrode_Features.csv"):
             Electrode_features = pd.read_csv(match)
+            Electrode_features.rename(columns={'Coefficient of variation ISI': 'Coefficient of variation_ISI'}, inplace=True) #renames the column to the name used during fitting
             Electrode_features['Spikes'] = Electrode_features['Spikes'].fillna(0)
             Electrode_features['Bursts'] = Electrode_features['Bursts'].fillna(0)
             Electrode_features = Electrode_features.fillna(-666)
