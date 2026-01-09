@@ -29,6 +29,9 @@ import requests
 from ._single_electrode_view import single_electrode_view
 from ._whole_well_view import whole_well_view
 
+# Package imports
+from ..core._impedance_heatmap import viability_heatmap_handler
+
 class select_folder_frame(ctk.CTkFrame):
     """
     Allows the user to select a dataset and outputfile to inspect the results.
@@ -63,6 +66,7 @@ class select_folder_frame(ctk.CTkFrame):
 
         return_button=ctk.CTkButton(self, text="Return", command= lambda: parent.show_frame(self.parent.home_frame))
         return_button.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky='nesw')
+
 
     def openfolder(self):
             resultsfolder = filedialog.askdirectory()
@@ -125,10 +129,17 @@ class view_results(ctk.CTkFrame):
         self.tab_frame.add("Single Electrode View")
         self.tab_frame.tab("Single Electrode View").grid_columnconfigure(0, weight=1)
         self.tab_frame.tab("Single Electrode View").grid_rowconfigure(0, weight=1)
-
+    
         self.tab_frame.add("Whole Well View")
         self.tab_frame.tab("Whole Well View").grid_columnconfigure(0, weight=1)
         self.tab_frame.tab("Whole Well View").grid_rowconfigure(0, weight=1)
+
+        self.tab_frame.add("Impedance Heatmap")
+        self.tab_frame.tab("Impedance Heatmap").grid_columnconfigure(0, weight=1)
+        self.tab_frame.tab("Impedance Heatmap").grid_rowconfigure(0, weight=1)
+        self.impedance_background = -1
+        self.impedance_baseline = -1 
+        self.show_electrodes = True
 
         # sev = single electrode view
         # wwv = whole well view
@@ -192,14 +203,143 @@ class view_results(ctk.CTkFrame):
         # Button to return to main menu
         return_to_main = ctk.CTkButton(master=self, text="Return to main menu", command=lambda: self.parent.show_frame(self.parent.home_frame), fg_color=parent.gray_1)
         return_to_main.grid(row=1, column=0, pady=10, padx=10)
+
+        """Impedance Heatmap"""
+        heatmap_frame=ctk.CTkFrame(self.tab_frame.tab("Impedance Heatmap"), width = 12, height = 10)
+        heatmap_frame.grid(row=0, column=0, pady=10, padx=10, sticky='nesw')
+        heatmap_frame.grid_propagate(False)
+
+        image_frame = ctk.CTkFrame(heatmap_frame, height = 10, width = 10)
+        image_frame.pack(fill="y", expand=True, side = 'left')
+
+        try:
+            self.image = viability_heatmap_handler(self.rawfile)
+        
+            photo = ctk.CTkImage(light_image=self.image, dark_image=self.image, size = self.image.size)
+
+            # Label om image te tonen
+            self.label = ctk.CTkLabel(image_frame, image=photo, text="")
+            self.label.image = photo  # referentie bewaren
+            self.label.pack(fill="both", expand=True)
+
+            # Control Frame
+            control_frame = ctk.CTkFrame(heatmap_frame, height = 10, width = 2)
+            control_frame.pack(fill="y", side='left')
+            ctk.CTkLabel(control_frame, text="").pack(pady=60)
+
+            # Baseline
+            baseline_txt = ctk.CTkLabel(control_frame, text="Baseline:")
+            baseline_txt.pack(pady=(5,0))
+            baseline_txt_tooltip = CTkToolTip(baseline_txt, message='Impedance value at which the highest color of the colorbar shows (standard = maximum)')
+            
+            self.baseline_entry = ctk.CTkEntry(control_frame)
+            self.baseline_entry.pack(pady=(5,10))
+            baseline_tooltip = CTkToolTip(self.baseline_entry, message='Impedance value at which the highest color of the colorbar shows (standard = maximum)')
+
+            # Background 
+            background_txt = ctk.CTkLabel(control_frame, text="Background:")
+            background_txt.pack(pady=(5,0))
+            background_txt_tooltip = CTkToolTip(background_txt, message='Impedance value at which the lowest color of the colorbar shows (standard = minimum)')
+            
+            self.background_entry = ctk.CTkEntry(control_frame)
+            self.background_entry.pack(pady=(5,10))
+            background_tooltip = CTkToolTip(self.background_entry, message='Impedance value at which the lowest color of the colorbar shows (standard = minimum)')
+
+            # Toggle electrodes
+            self.show_electrodes_switch = ctk.BooleanVar(value=True)
+            self.electrodes_toggle = ctk.CTkSwitch(control_frame, command=self.toggle_electrodes, variable=self.show_electrodes_switch, onvalue=True, offvalue=False, text="Show Electrodes")
+            self.electrodes_toggle.pack(pady=(5,10))
+            toggle_tooltip = CTkToolTip(self.electrodes_toggle, message="Toggle dots representing the electrodes")
+
+            # Refresh button
+            update_button = ctk.CTkButton(control_frame, text="Update", command = self.update)
+            update_button.pack(pady=5)
+            update_tooltip = CTkToolTip(update_button, message='Refresh image with values as set above')
+
+            # Reset button
+            reset_button = ctk.CTkButton(control_frame, text='Reset', command = self.reset)
+            reset_button.pack(pady=5)
+            reset_tooltip = CTkToolTip(reset_button, message='Reset baseline and background to standard (minimum and maximum values)')
+        
+            # Save button
+            save_button = ctk.CTkButton(control_frame, text="Save Image", command = self.save_image_as)
+            save_button.pack(pady=5)
+            save_tooltip = CTkToolTip(save_button, message="Save this the heatmap as an image")
+
+        except:
+            error_txt = ctk.CTkLabel(heatmap_frame, text="Something went wrong creating an impedance heatmap. \nPlease make sure the impedance was measured and included in the HDF5 file by using the correct matlab-script: Raw_to_hdf5_impedance.m")
+            error_txt.pack()
+
+    def update(self):
+        """
+        Update the heatmap based on new set values for background and baseline. Save new values.
+        """
+        try:
+            self.impedance_background = int(self.background_entry.get())
+        except:
+            pass
+        try: self.impedance_baseline = int(self.baseline_entry.get())
+        except:
+            pass
+        self.refresh
+
+    def refresh(self):
+        """
+        refresh the heatmap: Create a new image with set values
+        """
+        self.image = viability_heatmap_handler(self.rawfile, self.impedance_background, self.impedance_baseline, self.show_electrodes)
+        new_photo = ctk.CTkImage(light_image=self.image, dark_image=self.image, size = self.image.size)
+
+        # Remove old image
+        self.label.configure(image=None)
+        self.label.image = None
+
+        # Save new image
+        self.label.configure(image=new_photo)
+        self.label.image = new_photo
     
+    def reset(self):
+        """
+        Reset the background and baseline to standard:
+        - background: min value
+        - Baseline: max value
+        """
+        # Reset values to -1 (will call min and max within viability_heatmap_handler)
+        self.impedance_background = - 1
+        self.impedance_baseline = -1
+        self.show_electrodes = True
+
+        self.baseline_entry.delete(0, 'end')
+        self.background_entry.delete(0, 'end')
+
+        self.refresh()
+
+    def toggle_electrodes(self):
+        """
+        Allow user to turn electrodes on or of. This will toggle the red buttons representing electrodes.
+        """
+        self.show_electrodes = self.show_electrodes_switch.get()
+        self.refresh()
+        
+    def save_image_as(self):
+        """
+        Allow user to save the heatmap as a png.
+        """ 
+        photo = self.image
+        hsl = filedialog.asksaveasfile(mode='w', defaultextension=".png")
+        if hsl is None:
+            return
+        else:
+            abs_path = os.path.abspath(hsl.name)
+            photo.save(abs_path)
+
+
     def set_selected_well(self, i):
         self.selected_well=i
         for j in range(len(self.sev_wellbuttons)):
             self.sev_wellbuttons[j].configure(fg_color=self.parent.theme["CTkButton"]["fg_color"][1])
         self.sev_wellbuttons[i-1].configure(fg_color=self.parent.theme["CTkButton"]["hover_color"][1])
-
-
+        
     def open_sev_tab(self, electrode):
         single_electrode_view(self.parent, self.folder, self.rawfile, self.selected_well, electrode)
 

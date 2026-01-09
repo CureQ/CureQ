@@ -8,10 +8,8 @@ import matplotlib.colors as mcolors
 import matplotlib.cm as cm
 import csv
 import h5py
-import math
-
-#TODO Kijk of je functies van andere bestanden kan gebruiken voor efficiëntie
-
+import io
+from PIL import Image
 
 #%% Data prepping functions
 
@@ -60,68 +58,42 @@ def load_mapping(fileadress):
         # Save mapping data as integers in a dataframe 
         mapping = pd.DataFrame(np.array(h5file["Data/channel_map"]).astype(int), columns = cols)
 
-        # Set indexing to 1-based #TODO CHECK HOE DIT IN ELKAAR STEEKT
+        # Set indexing to 1-based
         mapping.set_index("Index", inplace=True)
 
     return mapping
 
-
-def calculate_modulus(df, frequency):
+def calculate_real(df):
     """
-    Calculate the modulus to transfer impedance 
-    from complex number to decimal
+    Calculate the real part of the impedance by splitting the text and turning it in to a float.
 
     Parameters
-    --------
-    df: Dataframe with impedance data
-    frequency: Which of the impedance data is used in Hz ('1000', '10000' or '41500') # TODO
+    ---------
+    df: the impedane in the form of a dataframe with 3 cols of frequencies. Created by function load_impedance
     """
-
-    # Create empty list for output values
-    moduluses = []
-
-    # Loop trough electrodes to calculate modulus
+    reals = []
     for index, row in df.iterrows():
-
-        # Collect complex impedance at set frequency
-        imp = row[frequency]
-
-        # Set value to 0 and skip the calculation if no impedance is measured
-        if (type(imp) != str) or (imp == ""):
-            moduluses.append(0)
-            continue
-
-        # Split compelx number into real and imaginary parts
-        real, imag = imp.split('-') 
-        
-        # Convert values to float and remove the i from imaginary part
-        real = float(real)
-        imag = float(imag[:-1])
-
-        # Calculate modulus of complex number
-        mod = (real**2 + imag**2)**0.5 
-
-        # Save the modulus
-        moduluses.append(mod)
-
-    return moduluses
+        imp = row['41500']
+        if (type(imp) == str) and (imp != ""):
+            real, imag = imp.split('-')
+            real = float(real)
+        else:
+            real = 0
+        reals.append(real)
+    return reals
 
 
-def normalise_data(impedance, background = - 1, baseline = -1):
+def normalise_data(impedance, background, baseline):
     """
     Normalise the impedance to a value between 0 and 1 
     based on the background noise and baseline
 
     Parameters
     --------
-    impedance: The impedance data as a list
-    background: the background impedance. If not given, its the minimal impedance
-    baseline: The expected impedance of fully covered electrode. If not given: maximum
+    impedance: The impedance data as a list, gotten from calculate real
+    background: the background impedance. If -1 is given, its the minimal impedance
+    baseline: The expected impedance of fully covered electrode. If -1 is given: maximum
     """
-
-    # Set background to minimum and baseline to maximum if these are not given
-    if background == -1: background = min(impedance)
-    if baseline == -1: baseline = max(impedance)
 
     # Create an empty list for the outputs
     out = []
@@ -149,7 +121,7 @@ def calculate_well_dimensions(mapping):
     """
     return (mapping["WellRow"].max(), mapping["WellColumn"].max())
 
-def cmap_creation(): # TODO msch andere naam? want zelfde als andere hm
+def cmap_creation_impedance():
     """
     Create a colormap for the heatmap. Colors are based on axion heatmap
     """
@@ -168,7 +140,6 @@ def cmap_creation(): # TODO msch andere naam? want zelfde als andere hm
     smooth_cmap = mcolors.LinearSegmentedColormap.from_list("smooth_heatmap", colours, N=256)
     return smooth_cmap
 
-
 def reshape_wells(impedance, mapping):
     """
     Reshape the impedance data to a list of wells,
@@ -178,12 +149,12 @@ def reshape_wells(impedance, mapping):
     Parameters:
     -------
     impedance: The normalised impedance data as a list
-    mapping: The mapping dataframe
+    mapping: The channelmapping dataframe
     """
     
     # Calculate the amount of wells 
     n_Wells = mapping['WellRow'].max() * mapping['WellColumn'].max()
-    n_Electrodes =  mapping['ElectrodeRow'].max() * mapping['ElectrodeColumn'].max() # TODO
+    n_Electrodes =  mapping['ElectrodeRow'].max() * mapping['ElectrodeColumn'].max()
 
     # Set the size of a well including padding (Hardcoded for 4x4 electrodes)
     Size = 6
@@ -221,7 +192,7 @@ def reshape_wells(impedance, mapping):
 
     return well_grids
 
-def electrode_mesh(mapping): # TODO toggle functie
+def electrode_mesh(mapping):
     """
     Create a mesh for the electrode to plot dots to represent
 
@@ -245,22 +216,49 @@ def electrode_mesh(mapping): # TODO toggle functie
             colindexes.append(j)
     return (rowindexes, colindexes)
 
+def fig2img(fig):
+    """
+    convert a figure to an image without saving it
 
-def create_viability_heatmap(well_data, well_dims): # Create heatmap with the correct data
+    Parameters
+    ---------
+    fig: The figure or plot to be converted to an image
+    """
+    # Save figure in newly created buffer
+    buf = io.BytesIO()
+    fig.savefig(buf)
+
+    # Go back to start of buffer
+    buf.seek(0)
+
+    # Open the image from buffer
+    img = Image.open(buf)
+
+    return img
+
+def create_viability_heatmap(well_data, mapping, background, baseline, show_electrodes = True):
     """
     Create a impedance heatmap with reshaped data
 
     Parameters
     -------
     well_data: reshaped and normalised impedance data
-    well_dims: the dimensions of the wellplate
+    mapping: the mapping information of the wellplate
+    background: The lowest value shown in heatmap. If -1: min value selected
+    baseline: The highest value shows in heatmap. If -1: max value selected
+    show_electrodes: Toggle whether the electrodes are shown as red dots
     """
+    # Calculate well dimensions
+    well_dims = calculate_well_dimensions(mapping)
 
     # Create a plot of subplots with the size of the wellplate
-    fig, axs = plt.subplots(well_dims[0],well_dims[1], figsize=(8, 6))
+    height = 6
+    size = ((well_dims[1]/well_dims[0] * height), height)
+    
+    fig, axs = plt.subplots(well_dims[0],well_dims[1], figsize=size)
 
     # Adjust the space between each well
-    fig.subplots_adjust(hspace = 0.009, wspace = 0.009)
+    fig.subplots_adjust(hspace = 0.009, wspace = 0.009, right=0.88)
 
     # Set the subplots in a list
     axs = axs.ravel()
@@ -277,14 +275,15 @@ def create_viability_heatmap(well_data, well_dims): # Create heatmap with the co
         ax.set_xlim(0, 5)
         ax.set_ylim(5,0)
        
-        # Represent every electrode with a red dot # TODO set in electrode_mesh functie (EN TESTEN)
-        ax.scatter( 
-            e_mesh[0], e_mesh[1], 
-            color='red',  # Set color of electrodes to red
-            s=5,          # Set the scale of the dots
-            marker='o',   # Set the shape to circle
-            edgecolors='black' # Set the edge to black
-        )
+        # Represent every electrode with a red dot als show electrodes true is
+        if show_electrodes:
+            ax.scatter( 
+                e_mesh[0], e_mesh[1], 
+                color='red',  # Set color of electrodes to red
+                s=5,          # Set the scale of the dots
+                marker='o',   # Set the shape to circle
+                edgecolors='black' # Set the edge to black
+            )
 
         # Color the lines around each well red
         for spine in ax.spines.values():
@@ -294,74 +293,63 @@ def create_viability_heatmap(well_data, well_dims): # Create heatmap with the co
         # Create the heatmap for each well
         hm = ax.imshow(
             well_data[index], # Collect reshaped data for well
-            cmap = cmap_creation(), # Collect colormap
+            cmap = cmap_creation_impedance(), # Collect colormap
             interpolation = 'gaussian', # Smoothen colors between electrodes
             vmax = 1, # Set max to 1 as normalised max
             vmin = 0, # Set min to 0 as normalised min
             origin = 'upper' # Locate heatmap correctly
         )
+        ax.margins(0)
     
-    # Set background of figure to black
-    fig.patch.set_facecolor("black")
+    # Set background of figure to transparent
+    fig.patch.set_alpha(0.0)
 
     # Get position of bottom right well for colorbar
     pos = axs[-1].get_position()
 
     # Create scaling colors
-    norm = mcolors.Normalize(10000, 55000) # TODO moet hiervoor deze waarden?? is visueel voor cbar
-    sm = cm.ScalarMappable(cmap = cmap_creation(), norm=norm)
+    norm = mcolors.Normalize(background, baseline)
+    sm = cm.ScalarMappable(cmap = cmap_creation_impedance(), norm=norm)
 
-    # Create colorbar and set text to white
-    cbar = fig.colorbar(sm, ax=axs.tolist(), cax=fig.add_axes([pos.x1 + 0.02, pos.y0, 0.02, pos.height * well_dims[0]]))
+    ## Create colorbar and set text to white
+    cbar = fig.colorbar(sm, cax=fig.add_axes([pos.x1 + 0.02, pos.y0, 0.02, pos.height * well_dims[0]]))
+    cbar.ax.tick_params(labelsize=8) 
     cbar.ax.yaxis.set_tick_params(color="white")
     cbar.ax.tick_params(axis='y', colors='white')
 
-    return fig
+    pic = fig2img(fig)
 
-def test_data_set(mapping): # TODO this is a testfunc to create a dataset for plotting
-    values = []
-    with open("testdata.csv", 'w', newline='') as csvfile:
-        spamwriter = csv.writer(csvfile, delimiter = ',')
-        for index, row in mapping.iterrows():
-            if row["ElectrodeRow"] == 1 and row["ElectrodeColumn"] == 1:
-                spamwriter.writerow([1])
-            elif row["ElectrodeRow"] == 4 and row["ElectrodeColumn"] == 4:
-                spamwriter.writerow([0.5])
-            else:
-                spamwriter.writerow([0])
-        return values
+    return pic
 
-def load_test_data(path):
-    test_data = []
-    with open("testdata.csv", 'r') as csvfile:
-        reader = csv.reader(csvfile)
-        for line in reader:
-            test_data.append(float(line[0]))
-    return test_data
+def viability_heatmap_handler(hdf5file, background = -1, baseline = -1, show_electrodes = True):
+    """
+    Main function to call in GUI. Handles every step by combining all of the functions above.
 
-#%% Code
-if __name__ == "__main__":
+    Parameters:
+    ---------
+    hdf5file: The file with all the data (Note: make sure impedance is saved in here)
+    background: The lowest value shown in heatmap. If -1: min value selected
+    baseline: The highest value shows in heatmap. If -1: max value selected
+    show_electrodes: Toggle whether the electrodes are shown as red dots
+    """  
+
     # Load data
-    fileadress = "D:/mea_data/2025_44_dagen_iv/Bow_div44.h5"
-    impedance = load_impedance(fileadress)
-    mapping = load_mapping(fileadress)
+    impedance = load_impedance(hdf5file)
+    mapping = load_mapping(hdf5file)
 
-    # Prep data
-    moduluses = calculate_modulus(impedance, '41500')
-    normalised = normalise_data(moduluses, 10000, 55000) # Normalise with 10k background and 55k baseline
+    # prepare data:
+    imp_real = calculate_real(impedance)
 
-    well_dims = calculate_well_dimensions(mapping)
-    well_data = reshape_wells(normalised, mapping)
+    if background == -1:
+        background = min(imp_real)
+        print(f"background: {background}")
+    if baseline == -1:
+        baseline = max(imp_real)
+
+    imp_norm = normalise_data(imp_real, background, baseline)
+    imp_resh = reshape_wells(imp_norm, mapping)
 
     # Create heatmap
-    fig = create_viability_heatmap(well_data, well_dims)
-    fig.show()
-    t = input("Press Enter to close...")
-
-    test_data_set(mapping)
-    test_data = load_test_data("testdata.csv")
-
-    test_data = reshape_wells(test_data, mapping)
-    #fig = create_viability_heatmap(test_data, well_dims)
-    #fig.show()
-    #t = input("press something to stop")
+    fig = create_viability_heatmap(imp_resh, mapping = mapping, background = background, 
+                                   baseline = baseline, show_electrodes = show_electrodes)
+    return fig
