@@ -252,7 +252,7 @@ class view_results(ctk.CTkFrame):
             toggle_tooltip = CTkToolTip(self.electrodes_toggle, message="Toggle dots representing the electrodes")
 
             # Refresh button
-            update_button = ctk.CTkButton(control_frame, text="Update", command = self.update)
+            update_button = ctk.CTkButton(control_frame, text="Update", command = self.update_impedance)
             update_button.pack(pady=5)
             update_tooltip = CTkToolTip(update_button, message='Refresh image with values as set above')
 
@@ -270,7 +270,7 @@ class view_results(ctk.CTkFrame):
             error_txt = ctk.CTkLabel(heatmap_frame, text="Something went wrong creating an impedance heatmap. \nPlease make sure the impedance was measured and included in the HDF5 file by using the correct matlab-script: Raw_to_hdf5_impedance.m")
             error_txt.pack()
 
-    def update(self):
+    def update_impedance(self):
         """
         Update the heatmap based on new set values for background and baseline. Save new values.
         """
@@ -278,12 +278,14 @@ class view_results(ctk.CTkFrame):
             self.impedance_background = int(self.background_entry.get())
         except:
             pass
-        try: self.impedance_baseline = int(self.baseline_entry.get())
+        try:
+            self.impedance_baseline = int(self.baseline_entry.get())
         except:
             pass
-        self.refresh
 
-    def refresh(self):
+        self.refresh_image()
+
+    def refresh_image(self):
         """
         refresh the heatmap: Create a new image with set values
         """
@@ -312,14 +314,14 @@ class view_results(ctk.CTkFrame):
         self.baseline_entry.delete(0, 'end')
         self.background_entry.delete(0, 'end')
 
-        self.refresh()
+        self.refresh_image()
 
     def toggle_electrodes(self):
         """
         Allow user to turn electrodes on or of. This will toggle the red buttons representing electrodes.
         """
         self.show_electrodes = self.show_electrodes_switch.get()
-        self.refresh()
+        self.refresh_image()
         
     def save_image_as(self):
         """

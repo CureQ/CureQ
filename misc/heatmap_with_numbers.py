@@ -293,16 +293,16 @@ def make_viability_heatmap_img(impedances, mapping):
     fig.subplots_adjust(wspace=0.009, hspace=0.009)
     axs = axs.ravel()
 
-    fig.suptitle(f"Impedance measured on 12-04-2024", fontsize=14, color="white")
+    fig.suptitle(f"Impedance of the Bow measurement", fontsize=14, color="white")
 
     i = 0
     for i, ax in enumerate(axs):
-        well_values = impedances[i][1:5, 1:5] // 1000
-        vmin = 10
-        vmax = 55
+        well_values = impedances[i][1:5, 1:5]
+        vmin = 0
+        vmax = 1
         sn.heatmap(well_values, ax=ax, cmap='plasma', vmin = vmin, 
                    vmax = vmax, cbar=False, square = True, xticklabels=False, yticklabels=False, 
-                   annot=True, fmt=".0f", annot_kws={"size": 6}, mask=np.isnan(well_values))
+                   annot=True, fmt=".2f", annot_kws={"size": 6}, mask=np.isnan(well_values))
 
         ax.set_frame_on(True)
 
@@ -317,8 +317,9 @@ if __name__ == "__main__":
     # Load data
     #fileadress = "D:/mea_data/2024_04_09_GLS_CTRL/20240409_GLS_CTRL_rechunked.h5"
     #fileadress = "D:/mea_data/2024_04_10_GLS_CTRL/20240410_GLS_CTRL_rechunked.h5"
-    fileadress = "D:/mea_data/2024_04_12_GLS_CTRL/20240412_GLS_CTRL_rechunked.h5"
+    #fileadress = "D:/mea_data/2024_04_12_GLS_CTRL/20240412_GLS_CTRL_rechunked.h5"
     #fileadress = "D:/mea_data/2024_04_16_GLS_CTRL/20240416_GLS_CTRL_rechunked.h5"
+    fileadress = "D:/mea_data/2025_44_dagen_iv/Bow_div44_inclus_rechunked.h5"
 
     impedance = load_impedance(fileadress)
     mapping = load_mapping(fileadress)
@@ -335,8 +336,8 @@ if __name__ == "__main__":
     #well_data = reshape_wells(moduluses, mapping)
 
     real = calculate_real(impedance, '41500')
-    real_normalised = normalise_data(real, 10000, 55000)
-    wells_norm = reshape_wells(real, mapping)
+    real_normalised = normalise_data(real)
+    wells_norm = reshape_wells(real_normalised, mapping)
 
     # Load spkes
     #spikes = load_spikes(outputs_16, mapping)

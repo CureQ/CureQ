@@ -342,7 +342,6 @@ def viability_heatmap_handler(hdf5file, background = -1, baseline = -1, show_ele
 
     if background == -1:
         background = min(imp_real)
-        print(f"background: {background}")
     if baseline == -1:
         baseline = max(imp_real)
 
