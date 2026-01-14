@@ -394,7 +394,7 @@ def plot_plate_grid_aggregate(
 
     ax.set_xlabel("Kolom")
     ax.set_ylabel("Rij")
-    ax.set_title(f"{metric_col} – plate heatmap ({agg} over alle metingen)")
+    ax.set_title(f"{metric_col} – plate heatmap")
 
     # cell borders
     ax.set_xticks(np.arange(-.5, GRID_COLS, 1), minor=True)
