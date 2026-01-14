@@ -13,8 +13,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # ============ CONFIG ============
-WELL_DIR       = Path(r"C:\Users\chenp\Documents\SCA1_Features\Well")          # <-- zet dit
-ELECTRODE_DIR  = Path(r"C:\Users\chenp\Documents\SCA1_Features\Electrode")     # <-- zet dit
+WELL_DIR       = Path(r"C:\Users\chenp\Documents\SCA1_Features\025\Well")          # <-- zet dit
+ELECTRODE_DIR  = Path(r"C:\Users\chenp\Documents\SCA1_Features\025\Electrode")     # <-- zet dit
 
 SCRIPT_DIR     = Path(__file__).resolve().parent
 MANIFEST_PATH  = SCRIPT_DIR / "./manifest/manifest.json"

@@ -540,9 +540,7 @@ def _make_per_well_grid_plots(df_local, measurement_ids_local, out_dir, value_co
                         ha='right', va='top', fontsize=8, bbox=dict(facecolor='white', alpha=0.6, edgecolor='none', pad=1))
 
                 # number of measurements present (non-NaN in raw pivot)
-                # n_meas_present = int(pivot_raw.loc[elec].count()) if elec in pivot_raw.index else 0
-                # ax.text(0.5, -0.18, f"measurements present: {n_meas_present}", transform=ax.transAxes,
-                #         ha='center', va='top', fontsize=7, color='black', alpha=0.9)
+
 
                 # set ticks at every measurement; label only every tick_label_every-th
                 ax.set_xticks(measurement_ids_local)

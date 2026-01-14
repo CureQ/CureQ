@@ -1,0 +1,44 @@
+{
+  "measurements": [
+    {
+      "id": 1,
+      "date": "2024-04-09",
+      "well_csv": "20240409_GLS_CTRL(000)_output_2025-11-24_15-37-16_Features.csv",
+      "electrode_csv": "20240409_GLS_CTRL(000)_output_2025-11-24_15-37-16_Electrode_Features.csv"
+    },
+    {
+      "id": 2,
+      "date": "2024-04-10",
+      "well_csv": "20240410_GLS_CTRL_(000)_output_2025-11-24_15-36-12_Features.csv",
+      "electrode_csv": "20240410_GLS_CTRL_(000)_output_2025-11-24_15-36-12_Electrode_Features.csv"
+    },
+    {
+      "id": 3,
+      "date": "2024-04-11",
+      "well_csv": "20240411_MEA_GLS_CTRL_day3(000)_output_2025-11-24_15-38-23_Features.csv",
+      "electrode_csv": "20240411_MEA_GLS_CTRL_day3(000)_output_2025-11-24_15-38-23_Electrode_Features.csv"
+    },
+    {
+      "id": 4,
+      "date": "2024-04-12",
+      "well_csv": "20240412_MEA_GLS_CTRL_day4(000)_output_2025-11-24_15-39-29_Features.csv",
+      "electrode_csv": "20240412_MEA_GLS_CTRL_day4(000)_output_2025-11-24_15-39-29_Electrode_Features.csv"
+    },
+    {
+      "id": 5,
+      "date": "2024-04-15",
+      "well_csv": "20240415_MEA_CTRL_GLS(000)_output_2025-11-24_15-34-09_Features.csv",
+      "electrode_csv": "20240415_MEA_CTRL_GLS(000)_output_2025-11-24_15-34-09_Electrode_Features.csv"
+    },
+    {
+      "id": 6,
+      "date": "2024-04-16",
+      "well_csv": "20240416_MEA_CTRL_GLS(000)_output_2025-11-24_15-40-45_Features.csv",
+      "electrode_csv": "20240416_MEA_CTRL_GLS(000)_output_2025-11-24_15-40-45_Electrode_Features.csv"
+    }
+  ],
+  "grid": {
+    "wells": 24,
+    "electrodes_per_well": 16
+  }
+}
