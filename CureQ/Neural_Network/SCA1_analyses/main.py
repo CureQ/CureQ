@@ -13,8 +13,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # ============ CONFIG ============
-WELL_DIR       = Path(r"C:\Users\chenp\Documents\SCA1_Features\025\Well")          # <-- zet dit
-ELECTRODE_DIR  = Path(r"C:\Users\chenp\Documents\SCA1_Features\025\Electrode")     # <-- zet dit
+WELL_DIR       = Path(r"C:\Users\chenp\Documents\SCA1_Features\Well")          # <-- zet dit
+ELECTRODE_DIR  = Path(r"C:\Users\chenp\Documents\SCA1_Features\Electrode")     # <-- zet dit
 
 SCRIPT_DIR     = Path(__file__).resolve().parent
 MANIFEST_PATH  = SCRIPT_DIR / "./manifest/manifest.json"
@@ -51,10 +51,12 @@ def read_well_csv(path: Path) -> pd.DataFrame | None:
         return None
 
     def pick_total(keyword: str):
+        # Prefer columns that look like totals/sums
         for c in df.columns:
             cl = c.lower()
             if keyword in cl and ("total" in cl or "sum" in cl):
                 return c
+        # Otherwise any column containing the keyword
         for c in df.columns:
             if keyword in c.lower():
                 return c
@@ -62,6 +64,8 @@ def read_well_csv(path: Path) -> pd.DataFrame | None:
 
     c_spikes_tot = pick_total("spike")
     c_bursts_tot = pick_total("burst")
+    # NEW: network bursts (in jouw voorbeeld heet dit "Network Bursts")
+    c_netbursts_tot = pick_total("network burst")
 
     out = pd.DataFrame()
     out["Well"] = pd.to_numeric(df[c_well], errors="coerce").astype("Int64")
@@ -69,6 +73,8 @@ def read_well_csv(path: Path) -> pd.DataFrame | None:
         out["Spikes_total_well"] = pd.to_numeric(df[c_spikes_tot], errors="coerce")
     if c_bursts_tot is not None:
         out["Bursts_total_well"] = pd.to_numeric(df[c_bursts_tot], errors="coerce")
+    if c_netbursts_tot is not None:
+        out["NetworkBursts_total_well"] = pd.to_numeric(df[c_netbursts_tot], errors="coerce")
     return out
 
 
@@ -120,24 +126,38 @@ def ensure_full_grid_with_presence(df_elec: pd.DataFrame, wells: int, elecs: int
 
 
 def summarize_well(df_well: pd.DataFrame | None, df_elec_full: pd.DataFrame) -> pd.DataFrame:
+    # Electrode-level can provide spikes/bursts totals; network bursts only exists well-level in Mealytics Features.csv
     agg = df_elec_full.groupby("Well", as_index=False).agg(
-        Spikes_total=("Spikes", "sum"), Bursts_total=("Bursts", "sum")
+        Spikes_total=("Spikes", "sum"),
+        Bursts_total=("Bursts", "sum")
     )
+    agg["NetworkBursts_total"] = 0  # default if not available
+
     if df_well is None:
         return agg
 
     dfw = df_well.copy()
     out = agg.copy()
+
     if "Spikes_total_well" in dfw:
         out = out.drop(columns=["Spikes_total"], errors="ignore").merge(
             dfw[["Well", "Spikes_total_well"]], on="Well", how="left"
         ).rename(columns={"Spikes_total_well": "Spikes_total"})
         out["Spikes_total"] = out["Spikes_total"].fillna(agg["Spikes_total"])
+
     if "Bursts_total_well" in dfw:
         out = out.drop(columns=["Bursts_total"], errors="ignore").merge(
             dfw[["Well", "Bursts_total_well"]], on="Well", how="left"
         ).rename(columns={"Bursts_total_well": "Bursts_total"})
         out["Bursts_total"] = out["Bursts_total"].fillna(agg["Bursts_total"])
+
+    # NEW: Network Bursts from well-level csv (Features.csv)
+    if "NetworkBursts_total_well" in dfw:
+        out = out.drop(columns=["NetworkBursts_total"], errors="ignore").merge(
+            dfw[["Well", "NetworkBursts_total_well"]], on="Well", how="left"
+        ).rename(columns={"NetworkBursts_total_well": "NetworkBursts_total"})
+        out["NetworkBursts_total"] = pd.to_numeric(out["NetworkBursts_total"], errors="coerce").fillna(0)
+
     return out
 
 
@@ -153,7 +173,6 @@ def set_xticks_subset(ax, positions: list[float], step: int = 2):
     """Set xticks using only every 'step'-th position from positions (positions is ordered)."""
     if not positions:
         return
-    # ensure positions sorted
     pos = list(positions)
     ticks = pos[::step]
     labels = [str(int(v)) for v in ticks]
@@ -189,19 +208,14 @@ def plot_per_well_timeseries(well_df: pd.DataFrame, out_dir: Path, metric: str, 
         ax.set_ylabel(metric)
         ax.set_title(f"Well {int(well)} – {metric}")
 
-        # Use only the positions that exist for this well, but show every TICK_STEP-th tick
         tick_positions = list(x)
         set_xticks_subset(ax, tick_positions, step=TICK_STEP)
 
-        # Give small padding so markers not right at edge
         min_x, max_x = float(x.min()), float(x.max())
         pad = 0.4
         ax.set_xlim(min_x - pad, max_x + pad)
 
-        # No rotation per your request; horizontal labels (default)
-        # Make sure there's space under the plot
         plt.subplots_adjust(bottom=0.18)
-
         fig.tight_layout()
         out_file = plot_dir / f"well_{int(well)}_{metric}.png"
         fig.savefig(out_file, dpi=150)
@@ -215,7 +229,8 @@ def plot_totals_over_measurements(well_df: pd.DataFrame, out_dir: Path, ids_sort
     totals = (
         well_df.groupby(["id", "date"], as_index=False)
                .agg(Total_Spikes=("Spikes_total", "sum"),
-                    Total_Bursts=("Bursts_total", "sum"))
+                    Total_Bursts=("Bursts_total", "sum"),
+                    Total_NetworkBursts=("NetworkBursts_total", "sum"))
                .sort_values("id")
     )
 
@@ -224,7 +239,6 @@ def plot_totals_over_measurements(well_df: pd.DataFrame, out_dir: Path, ids_sort
 
     n_points = len(ids_sorted)
     fig_size = _auto_figsize_by_npoints(n_points)
-
     xs = totals["id"].to_numpy(dtype=float)
 
     # Totale Spikes
@@ -253,6 +267,20 @@ def plot_totals_over_measurements(well_df: pd.DataFrame, out_dir: Path, ids_sort
     plt.subplots_adjust(bottom=0.18)
     fig.tight_layout()
     fig.savefig(summary_dir / "total_bursts_over_measurements.png", dpi=150)
+    plt.close(fig)
+
+    # NEW: Totale Network Bursts
+    fig, ax = plt.subplots(figsize=fig_size)
+    ax.plot(xs, totals["Total_NetworkBursts"].to_numpy(), linewidth=LINE_WIDTH)
+    ax.scatter(xs, totals["Total_NetworkBursts"].to_numpy(), s=max(4, DOT_SIZE/1.6), alpha=ALPHA)
+    ax.set_xlabel("Meting (id)")
+    ax.set_ylabel("Totale Network Bursts (alle wells)")
+    ax.set_title("Totale Network Bursts per meting")
+    set_xticks_subset(ax, xs.tolist(), step=TICK_STEP)
+    ax.set_xlim(xs.min() - 0.4, xs.max() + 0.4)
+    plt.subplots_adjust(bottom=0.18)
+    fig.tight_layout()
+    fig.savefig(summary_dir / "total_network_bursts_over_measurements.png", dpi=150)
     plt.close(fig)
 
 
@@ -318,11 +346,13 @@ def main():
         df_wsum.rename(columns={"Well": "well"}, inplace=True)
         df_wsum.insert(0, "id", mid)
         df_wsum.insert(1, "date", date_str)
-        if "Spikes_total" not in df_wsum.columns:
-            df_wsum["Spikes_total"] = 0
-        if "Bursts_total" not in df_wsum.columns:
-            df_wsum["Bursts_total"] = 0
-        all_well_rows.append(df_wsum[["id", "date", "well", "Spikes_total", "Bursts_total"]].copy())
+
+        # Ensure columns exist
+        for c in ["Spikes_total", "Bursts_total", "NetworkBursts_total"]:
+            if c not in df_wsum.columns:
+                df_wsum[c] = 0
+
+        all_well_rows.append(df_wsum[["id", "date", "well", "Spikes_total", "Bursts_total", "NetworkBursts_total"]].copy())
 
     if not all_elec_rows or not all_well_rows:
         raise ValueError("No valid measurement data was processed. Check manifest filenames and folder paths.")
@@ -340,7 +370,12 @@ def main():
     print(f"Saved electrode CSV: {elec_out}")
     print(f"Saved well CSV:      {well_out}")
 
-    well_for_plots = well_all.rename(columns={"Spikes_total": "Spikes", "Bursts_total": "Bursts"})
+    # For plotting
+    well_for_plots = well_all.rename(columns={
+        "Spikes_total": "Spikes",
+        "Bursts_total": "Bursts",
+        "NetworkBursts_total": "NetworkBursts"
+    })
 
     # Generate plots with every-2nd-tick and no rotation
     plot_per_well_timeseries(well_for_plots, out_root, "Spikes", ids_sorted, id_to_date, line_or_scatter="line")
@@ -348,6 +383,11 @@ def main():
     plot_per_well_timeseries(well_for_plots, out_root, "Bursts", ids_sorted, id_to_date, line_or_scatter="line")
     plot_per_well_timeseries(well_for_plots, out_root, "Bursts", ids_sorted, id_to_date, line_or_scatter="scatter")
 
+    # NEW: Network Bursts per well
+    plot_per_well_timeseries(well_for_plots, out_root, "NetworkBursts", ids_sorted, id_to_date, line_or_scatter="line")
+    plot_per_well_timeseries(well_for_plots, out_root, "NetworkBursts", ids_sorted, id_to_date, line_or_scatter="scatter")
+
+    # Summary totals over measurements (incl. network bursts)
     plot_totals_over_measurements(well_all, out_root, ids_sorted)
 
     print("✅ Analysis complete.")

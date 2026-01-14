@@ -12,8 +12,8 @@ import json, re
 import pandas as pd
 
 # === Vul hier de mappen in ===
-WELLS_DIR       = r"C:\Users\chenp\Documents\SCA1_Features\025\Well"
-ELECTRODES_DIR  = r"C:\Users\chenp\Documents\SCA1_Features\025\Electrode"
+WELLS_DIR       = r"C:\Users\chenp\Documents\SCA1_Features\Well"
+ELECTRODES_DIR  = r"C:\Users\chenp\Documents\SCA1_Features\Electrode"
 WELLS_PATTERN   = "*Features.csv"
 ELECTRODES_PATTERN = "*Electrode_Features.csv"
 REQUIRE_BOTH    = True
