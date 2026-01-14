@@ -28,8 +28,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 
 # ============ CONFIG ============
-WELL_DIR       = Path(r"C:\Users\chenp\Documents\SCA1_Features\025\Well")          # <-- zet dit
-ELECTRODE_DIR  = Path(r"C:\Users\chenp\Documents\SCA1_Features\025\Electrode")     # <-- zet dit
+WELL_DIR       = Path(r"C:\Users\chenp\Documents\SCA1_Features\Well")          # <-- zet dit
+ELECTRODE_DIR  = Path(r"C:\Users\chenp\Documents\SCA1_Features\Electrode")     # <-- zet dit
 
 SCRIPT_DIR     = Path(__file__).resolve().parent
 MANIFEST_PATH  = SCRIPT_DIR / "./manifest/manifest.json"
