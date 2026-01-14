@@ -4,6 +4,11 @@
 # - Shows every 2nd tick on the x-axis and no rotation of labels.
 # - Automatic figure width (EXTRA_PER_POINT = 0.1 inch).
 # - Outputs under ./analyses/
+#
+# Added:
+# - Network bursts support (from well Features.csv column "Network Bursts")
+# - 6x8 plate grid heatmaps per measurement (gray -> red -> dark red)
+#   with GLOBAL scaling across all measurements (comparable over time)
 # ------------------------------------------------------------
 
 from pathlib import Path
@@ -11,10 +16,11 @@ import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap, Normalize
 
 # ============ CONFIG ============
-WELL_DIR       = Path(r"C:\Users\chenp\Documents\SCA1_Features\Well")          # <-- zet dit
-ELECTRODE_DIR  = Path(r"C:\Users\chenp\Documents\SCA1_Features\Electrode")     # <-- zet dit
+WELL_DIR       = Path(r"C:\Users\chenp\Documents\SCA1_Features\025\Well")          # <-- zet dit
+ELECTRODE_DIR  = Path(r"C:\Users\chenp\Documents\SCA1_Features\025\Electrode")     # <-- zet dit
 
 SCRIPT_DIR     = Path(__file__).resolve().parent
 MANIFEST_PATH  = SCRIPT_DIR / "./manifest/manifest.json"
@@ -34,6 +40,18 @@ FIG_HEIGHT = 5.0
 
 # Tick show step: show every Nth tick (user requested every 2nd)
 TICK_STEP = 2
+
+# ---- Plate layout (48-well: 6 rows x 8 cols) ----
+GRID_ROWS = 6
+GRID_COLS = 8
+ROW_LABELS = ["A", "B", "C", "D", "E", "F"]
+COL_LABELS = [str(i) for i in range(1, GRID_COLS + 1)]
+
+# Heatmap colors: gray (low) -> red (high) -> dark red (very high)
+HEAT_CMAP = LinearSegmentedColormap.from_list(
+    "gray_red_darkred",
+    ["#D9D9D9", "#FF3B30", "#5A0000"]
+)
 # ===============================
 
 
@@ -64,8 +82,7 @@ def read_well_csv(path: Path) -> pd.DataFrame | None:
 
     c_spikes_tot = pick_total("spike")
     c_bursts_tot = pick_total("burst")
-    # NEW: network bursts (in jouw voorbeeld heet dit "Network Bursts")
-    c_netbursts_tot = pick_total("network burst")
+    c_netbursts_tot = pick_total("network burst")  # e.g. "Network Bursts"
 
     out = pd.DataFrame()
     out["Well"] = pd.to_numeric(df[c_well], errors="coerce").astype("Int64")
@@ -75,6 +92,7 @@ def read_well_csv(path: Path) -> pd.DataFrame | None:
         out["Bursts_total_well"] = pd.to_numeric(df[c_bursts_tot], errors="coerce")
     if c_netbursts_tot is not None:
         out["NetworkBursts_total_well"] = pd.to_numeric(df[c_netbursts_tot], errors="coerce")
+
     return out
 
 
@@ -126,12 +144,13 @@ def ensure_full_grid_with_presence(df_elec: pd.DataFrame, wells: int, elecs: int
 
 
 def summarize_well(df_well: pd.DataFrame | None, df_elec_full: pd.DataFrame) -> pd.DataFrame:
-    # Electrode-level can provide spikes/bursts totals; network bursts only exists well-level in Mealytics Features.csv
+    # Electrode-level totals for spikes/bursts
     agg = df_elec_full.groupby("Well", as_index=False).agg(
         Spikes_total=("Spikes", "sum"),
-        Bursts_total=("Bursts", "sum")
+        Bursts_total=("Bursts", "sum"),
     )
-    agg["NetworkBursts_total"] = 0  # default if not available
+    # Network bursts typically only exist in the well-level Features.csv
+    agg["NetworkBursts_total"] = 0
 
     if df_well is None:
         return agg
@@ -151,7 +170,7 @@ def summarize_well(df_well: pd.DataFrame | None, df_elec_full: pd.DataFrame) -> 
         ).rename(columns={"Bursts_total_well": "Bursts_total"})
         out["Bursts_total"] = out["Bursts_total"].fillna(agg["Bursts_total"])
 
-    # NEW: Network Bursts from well-level csv (Features.csv)
+    # Network bursts from well-level file if present
     if "NetworkBursts_total_well" in dfw:
         out = out.drop(columns=["NetworkBursts_total"], errors="ignore").merge(
             dfw[["Well", "NetworkBursts_total_well"]], on="Well", how="left"
@@ -180,7 +199,14 @@ def set_xticks_subset(ax, positions: list[float], step: int = 2):
     ax.set_xticklabels(labels, ha="center")
 
 
-def plot_per_well_timeseries(well_df: pd.DataFrame, out_dir: Path, metric: str, ids_sorted: list[int], dates_by_id: dict[int, str], line_or_scatter: str):
+def plot_per_well_timeseries(
+    well_df: pd.DataFrame,
+    out_dir: Path,
+    metric: str,
+    ids_sorted: list[int],
+    dates_by_id: dict[int, str],
+    line_or_scatter: str
+):
     sub = metric.lower()
     plot_dir = out_dir / "plots" / line_or_scatter / sub
     plot_dir.mkdir(parents=True, exist_ok=True)
@@ -208,8 +234,7 @@ def plot_per_well_timeseries(well_df: pd.DataFrame, out_dir: Path, metric: str, 
         ax.set_ylabel(metric)
         ax.set_title(f"Well {int(well)} – {metric}")
 
-        tick_positions = list(x)
-        set_xticks_subset(ax, tick_positions, step=TICK_STEP)
+        set_xticks_subset(ax, list(x), step=TICK_STEP)
 
         min_x, max_x = float(x.min()), float(x.max())
         pad = 0.4
@@ -226,11 +251,18 @@ def plot_totals_over_measurements(well_df: pd.DataFrame, out_dir: Path, ids_sort
     summary_dir = out_dir / "plots" / "summary"
     summary_dir.mkdir(parents=True, exist_ok=True)
 
+    # Ensure the column exists
+    if "NetworkBursts_total" not in well_df.columns:
+        well_df = well_df.copy()
+        well_df["NetworkBursts_total"] = 0
+
     totals = (
         well_df.groupby(["id", "date"], as_index=False)
-               .agg(Total_Spikes=("Spikes_total", "sum"),
-                    Total_Bursts=("Bursts_total", "sum"),
-                    Total_NetworkBursts=("NetworkBursts_total", "sum"))
+               .agg(
+                   Total_Spikes=("Spikes_total", "sum"),
+                   Total_Bursts=("Bursts_total", "sum"),
+                   Total_NetworkBursts=("NetworkBursts_total", "sum"),
+               )
                .sort_values("id")
     )
 
@@ -269,7 +301,7 @@ def plot_totals_over_measurements(well_df: pd.DataFrame, out_dir: Path, ids_sort
     fig.savefig(summary_dir / "total_bursts_over_measurements.png", dpi=150)
     plt.close(fig)
 
-    # NEW: Totale Network Bursts
+    # Totale Network Bursts
     fig, ax = plt.subplots(figsize=fig_size)
     ax.plot(xs, totals["Total_NetworkBursts"].to_numpy(), linewidth=LINE_WIDTH)
     ax.scatter(xs, totals["Total_NetworkBursts"].to_numpy(), s=max(4, DOT_SIZE/1.6), alpha=ALPHA)
@@ -284,10 +316,108 @@ def plot_totals_over_measurements(well_df: pd.DataFrame, out_dir: Path, ids_sort
     plt.close(fig)
 
 
+def plot_plate_grid_heatmaps(
+    well_df: pd.DataFrame,
+    out_dir: Path,
+    metric_col: str,
+    ids_sorted: list[int],
+    wells_total: int = 48,
+    annotate: bool = False,
+):
+    """
+    Makes one 6x8 plate heatmap per measurement id for a given metric.
+    Color scale is consistent across all measurements (global vmin/vmax),
+    so you can compare activity across the 41 measurements.
+
+    Assumes well numbering row-major:
+    A1..A8 => 1..8, B1..B8 => 9..16, ... F1..F8 => 41..48
+    """
+    plot_dir = out_dir / "plots" / "grid" / metric_col.lower()
+    plot_dir.mkdir(parents=True, exist_ok=True)
+
+    if metric_col not in well_df.columns:
+        print(f"[WARN] Metric '{metric_col}' not found in well_df -> skipping grid heatmaps.")
+        return
+
+    vals = pd.to_numeric(well_df[metric_col], errors="coerce")
+    finite = vals[np.isfinite(vals)]
+    if finite.empty:
+        print(f"[WARN] No finite values for metric '{metric_col}' -> skipping grid heatmaps.")
+        return
+
+    vmin = float(finite.min())
+    vmax = float(finite.max())
+    if np.isclose(vmin, vmax):
+        vmax = vmin + 1e-9
+
+    norm = Normalize(vmin=vmin, vmax=vmax)
+
+    needed = well_df[["id", "well", metric_col]].copy()
+    needed["well"] = pd.to_numeric(needed["well"], errors="coerce").astype("Int64")
+
+    for mid in ids_sorted:
+        sub = needed[needed["id"] == mid]
+        if sub.empty:
+            continue
+
+        mat = np.full((GRID_ROWS, GRID_COLS), np.nan, dtype=float)
+
+        for _, r in sub.iterrows():
+            if pd.isna(r["well"]):
+                continue
+            w = int(r["well"])
+            if w < 1 or w > wells_total:
+                continue
+
+            val = pd.to_numeric(r[metric_col], errors="coerce")
+            if not np.isfinite(val):
+                continue
+
+            rr = (w - 1) // GRID_COLS
+            cc = (w - 1) % GRID_COLS
+            if 0 <= rr < GRID_ROWS and 0 <= cc < GRID_COLS:
+                mat[rr, cc] = float(val)
+
+        fig, ax = plt.subplots(figsize=(10, 6))
+        im = ax.imshow(mat, cmap=HEAT_CMAP, norm=norm, aspect="equal")
+
+        ax.set_xticks(np.arange(GRID_COLS))
+        ax.set_yticks(np.arange(GRID_ROWS))
+        ax.set_xticklabels(COL_LABELS)
+        ax.set_yticklabels(ROW_LABELS)
+
+        ax.set_xlabel("Kolom")
+        ax.set_ylabel("Rij")
+        ax.set_title(f"{metric_col} – plate heatmap (meting id={mid})")
+
+        # cell borders
+        ax.set_xticks(np.arange(-.5, GRID_COLS, 1), minor=True)
+        ax.set_yticks(np.arange(-.5, GRID_ROWS, 1), minor=True)
+        ax.grid(which="minor", color="white", linestyle="-", linewidth=1.5)
+        ax.tick_params(which="minor", bottom=False, left=False)
+
+        # optional numeric labels
+        if annotate:
+            for rr in range(GRID_ROWS):
+                for cc in range(GRID_COLS):
+                    if np.isfinite(mat[rr, cc]):
+                        ax.text(cc, rr, f"{mat[rr, cc]:.0f}", ha="center", va="center", fontsize=8)
+
+        cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        cbar.set_label(f"{metric_col} (globale schaal: min={vmin:.2f}, max={vmax:.2f})")
+
+        fig.tight_layout()
+        out_file = plot_dir / f"plate_{metric_col.lower()}_id_{mid}.png"
+        fig.savefig(out_file, dpi=160)
+        plt.close(fig)
+
+
 # ---------------- Main pipeline ----------------
 def main():
     if not MANIFEST_PATH.exists():
-        raise FileNotFoundError(f"manifest.json not found at {MANIFEST_PATH}. Place manifest (filenames only) next to the script.")
+        raise FileNotFoundError(
+            f"manifest.json not found at {MANIFEST_PATH}. Place manifest (filenames only) next to the script."
+        )
 
     manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     meas = manifest.get("measurements", [])
@@ -352,7 +482,9 @@ def main():
             if c not in df_wsum.columns:
                 df_wsum[c] = 0
 
-        all_well_rows.append(df_wsum[["id", "date", "well", "Spikes_total", "Bursts_total", "NetworkBursts_total"]].copy())
+        all_well_rows.append(
+            df_wsum[["id", "date", "well", "Spikes_total", "Bursts_total", "NetworkBursts_total"]].copy()
+        )
 
     if not all_elec_rows or not all_well_rows:
         raise ValueError("No valid measurement data was processed. Check manifest filenames and folder paths.")
@@ -370,25 +502,30 @@ def main():
     print(f"Saved electrode CSV: {elec_out}")
     print(f"Saved well CSV:      {well_out}")
 
-    # For plotting
+    # For per-well timeseries plots
     well_for_plots = well_all.rename(columns={
         "Spikes_total": "Spikes",
         "Bursts_total": "Bursts",
         "NetworkBursts_total": "NetworkBursts"
     })
 
-    # Generate plots with every-2nd-tick and no rotation
+    # Per-well timeseries plots
     plot_per_well_timeseries(well_for_plots, out_root, "Spikes", ids_sorted, id_to_date, line_or_scatter="line")
     plot_per_well_timeseries(well_for_plots, out_root, "Spikes", ids_sorted, id_to_date, line_or_scatter="scatter")
     plot_per_well_timeseries(well_for_plots, out_root, "Bursts", ids_sorted, id_to_date, line_or_scatter="line")
     plot_per_well_timeseries(well_for_plots, out_root, "Bursts", ids_sorted, id_to_date, line_or_scatter="scatter")
 
-    # NEW: Network Bursts per well
+    # Network bursts per well
     plot_per_well_timeseries(well_for_plots, out_root, "NetworkBursts", ids_sorted, id_to_date, line_or_scatter="line")
     plot_per_well_timeseries(well_for_plots, out_root, "NetworkBursts", ids_sorted, id_to_date, line_or_scatter="scatter")
 
-    # Summary totals over measurements (incl. network bursts)
+    # Totals over measurements
     plot_totals_over_measurements(well_all, out_root, ids_sorted)
+
+    # Plate heatmaps (one image per id), with global scaling across all measurements
+    plot_plate_grid_heatmaps(well_all, out_root, "Spikes_total", ids_sorted, wells_total=wells, annotate=False)
+    plot_plate_grid_heatmaps(well_all, out_root, "Bursts_total", ids_sorted, wells_total=wells, annotate=False)
+    plot_plate_grid_heatmaps(well_all, out_root, "NetworkBursts_total", ids_sorted, wells_total=wells, annotate=False)
 
     print("✅ Analysis complete.")
     print(f"All outputs under: {out_root.resolve()}")
