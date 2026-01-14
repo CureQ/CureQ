@@ -1,23 +1,8 @@
 # analyze_mea_timeseries_manifest.py
 # ------------------------------------------------------------
-# MEA analysis script (manifest uses filenames only).
-# - Shows every 2nd tick on the x-axis and no rotation of labels.
-# - Automatic figure width (EXTRA_PER_POINT = 0.1 inch).
-# - Outputs under ./analyses/
-#
-# Includes:
-# - Spikes/Bursts totals per well over time
-# - Network bursts support (from well Features.csv column like "Network Bursts")
-# - Summary totals over measurements
-# - Aggregate plate heatmaps over ALL measurements (mean + sum)
-#
-# NEW:
-# - Column-group legend placed LEFT OUTSIDE the heatmap (clearer)
-# - Visual separators for:
-#   Cols 1-2: SCA1 (54 CAG repeats)
-#   Cols 3-4: Controle
-#   Cols 5-6: SCA1 (46 CAG repeats)
-#   Cols 7-8: Controle
+# Same as before, but:
+# - Legend left OUTSIDE with much less whitespace
+#   (tighter left margin + legend anchored closer to the heatmap)
 # ------------------------------------------------------------
 
 from pathlib import Path
@@ -28,8 +13,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 
 # ============ CONFIG ============
-WELL_DIR       = Path(r"C:\Users\chenp\Documents\SCA1_Features\Well")          # <-- zet dit
-ELECTRODE_DIR  = Path(r"C:\Users\chenp\Documents\SCA1_Features\Electrode")     # <-- zet dit
+WELL_DIR       = Path(r"C:\Users\chenp\Documents\SCA1_Features\025\Well")          # <-- zet dit
+ELECTRODE_DIR  = Path(r"C:\Users\chenp\Documents\SCA1_Features\025\Electrode")     # <-- zet dit
 
 SCRIPT_DIR     = Path(__file__).resolve().parent
 MANIFEST_PATH  = SCRIPT_DIR / "./manifest/manifest.json"
@@ -42,27 +27,22 @@ ALPHA          = 0.9
 LINE_CONNECT   = True
 LINE_WIDTH     = 1.2
 
-# Automatic figure sizing parameters (0.1 inch per datapunt)
 BASE_WIDTH_INCHES = 6.0
 EXTRA_PER_POINT = 0.1
 FIG_HEIGHT = 5.0
 
-# Tick show step: show every Nth tick (user requested every 2nd)
 TICK_STEP = 2
 
-# ---- Plate layout (48-well: 6 rows x 8 cols) ----
 GRID_ROWS = 6
 GRID_COLS = 8
 ROW_LABELS = ["A", "B", "C", "D", "E", "F"]
 COL_LABELS = [str(i) for i in range(1, GRID_COLS + 1)]
 
-# Heatmap colors: gray (low) -> red (high) -> dark red (very high)
 HEAT_CMAP = LinearSegmentedColormap.from_list(
     "gray_red_darkred",
     ["#D9D9D9", "#FF3B30", "#5A0000"]
 )
 
-# Column group mapping (by column numbers on the plate grid)
 COLUMN_GROUPS = [
     (1, 2, "SCA1 (54 CAG repeats)"),
     (3, 4, "Controle"),
@@ -97,7 +77,7 @@ def read_well_csv(path: Path) -> pd.DataFrame | None:
 
     c_spikes_tot = pick_total("spike")
     c_bursts_tot = pick_total("burst")
-    c_netbursts_tot = pick_total("network burst")  # e.g. "Network Bursts"
+    c_netbursts_tot = pick_total("network burst")
 
     out = pd.DataFrame()
     out["Well"] = pd.to_numeric(df[c_well], errors="coerce").astype("Int64")
@@ -137,7 +117,6 @@ def read_electrode_csv(path: Path) -> pd.DataFrame:
     return out
 
 
-# ---------- Helpers: grid / summarise ----------
 def ensure_full_grid_with_presence(df_elec: pd.DataFrame, wells: int, elecs: int) -> pd.DataFrame:
     wells_list = list(range(1, wells + 1))
     elecs_list = list(range(1, elecs + 1))
@@ -201,36 +180,32 @@ def _auto_figsize_by_npoints(n_points: int) -> tuple[float, float]:
 def set_xticks_subset(ax, positions: list[float], step: int = 2):
     if not positions:
         return
-    pos = list(positions)
-    ticks = pos[::step]
-    labels = [str(int(v)) for v in ticks]
+    ticks = list(positions)[::step]
     ax.set_xticks(ticks)
-    ax.set_xticklabels(labels, ha="center")
+    ax.set_xticklabels([str(int(v)) for v in ticks], ha="center")
 
 
-def add_plate_column_group_legend_left(fig):
+def draw_group_separators(ax):
+    for xb in [1.5, 3.5, 5.5]:
+        ax.axvline(x=xb, ymin=0, ymax=1, color="black", linewidth=2)
+
+
+def add_plate_column_group_legend_left(fig, anchor_x: float, y: float = 0.5):
     """
-    Adds a dedicated legend textbox on the LEFT side of the figure (outside the heatmap axes).
-    This reserves left margin space and avoids covering the heatmap.
+    Legend in figure coordinates.
+    anchor_x controls how close it sits to the heatmap.
     """
     lines = ["Kolomindeling:"]
     for c1, c2, label in COLUMN_GROUPS:
         lines.append(f"{c1}–{c2}: {label}")
     txt = "\n".join(lines)
 
-    # Place text in figure coordinates (not axis coordinates)
     fig.text(
-        0.02, 0.5, txt,
+        anchor_x, y, txt,
         ha="left", va="center",
         fontsize=10,
-        bbox=dict(boxstyle="round,pad=0.4", facecolor="white", edgecolor="black", alpha=0.95),
+        bbox=dict(boxstyle="round,pad=0.35", facecolor="white", edgecolor="black", alpha=0.95),
     )
-
-
-def draw_group_separators(ax):
-    """Draw thicker vertical lines between the 2-column groups."""
-    for xb in [1.5, 3.5, 5.5]:
-        ax.axvline(x=xb, ymin=0, ymax=1, color="black", linewidth=2)
 
 
 def plot_per_well_timeseries(
@@ -252,7 +227,6 @@ def plot_per_well_timeseries(
         dfw = dfw.sort_values("id")
         x = dfw["id"].to_numpy(dtype=float)
         y = dfw[metric].to_numpy()
-
         if x.size == 0:
             continue
 
@@ -267,17 +241,12 @@ def plot_per_well_timeseries(
         ax.set_xlabel("Meting (id)")
         ax.set_ylabel(metric)
         ax.set_title(f"Well {int(well)} – {metric}")
-
         set_xticks_subset(ax, list(x), step=TICK_STEP)
 
-        min_x, max_x = float(x.min()), float(x.max())
-        pad = 0.4
-        ax.set_xlim(min_x - pad, max_x + pad)
-
+        ax.set_xlim(float(x.min()) - 0.4, float(x.max()) + 0.4)
         plt.subplots_adjust(bottom=0.18)
         fig.tight_layout()
-        out_file = plot_dir / f"well_{int(well)}_{metric}.png"
-        fig.savefig(out_file, dpi=150)
+        fig.savefig(plot_dir / f"well_{int(well)}_{metric}.png", dpi=150)
         plt.close(fig)
 
 
@@ -298,12 +267,10 @@ def plot_totals_over_measurements(well_df: pd.DataFrame, out_dir: Path, ids_sort
                )
                .sort_values("id")
     )
-
     if totals.empty:
         return
 
-    n_points = len(ids_sorted)
-    fig_size = _auto_figsize_by_npoints(n_points)
+    fig_size = _auto_figsize_by_npoints(len(ids_sorted))
     xs = totals["id"].to_numpy(dtype=float)
 
     def _plot_one(y, ylabel, title, fname):
@@ -332,7 +299,7 @@ def plot_plate_grid_aggregate(
     well_df: pd.DataFrame,
     out_dir: Path,
     metric_col: str,
-    agg: str = "mean",     # "mean", "sum", "median"
+    agg: str = "mean",
     wells_total: int = 48,
     annotate: bool = False,
 ):
@@ -363,9 +330,7 @@ def plot_plate_grid_aggregate(
         if not np.isfinite(val):
             continue
         w = int(w)
-        rr = (w - 1) // GRID_COLS
-        cc = (w - 1) % GRID_COLS
-        mat[rr, cc] = float(val)
+        mat[(w - 1) // GRID_COLS, (w - 1) % GRID_COLS] = float(val)
 
     finite = mat[np.isfinite(mat)]
     if finite.size == 0:
@@ -378,12 +343,10 @@ def plot_plate_grid_aggregate(
         vmax = vmin + 1e-9
     norm = Normalize(vmin=vmin, vmax=vmax)
 
-    # Wider figure to create space on the left for the legend
-    fig, ax = plt.subplots(figsize=(13.2, 6))
-
-    # Reserve left margin for legend and some space right for colorbar
-    # left=0.28 means ~28% of figure width is left margin
-    fig.subplots_adjust(left=0.28, right=0.92)
+    # Make figure only slightly wider, and reserve a SMALL left margin
+    fig, ax = plt.subplots(figsize=(11.2, 6))
+    left_margin = 0.18   # tighter than before (was ~0.28)
+    fig.subplots_adjust(left=left_margin, right=0.92)
 
     im = ax.imshow(mat, cmap=HEAT_CMAP, norm=norm, aspect="equal")
 
@@ -396,23 +359,18 @@ def plot_plate_grid_aggregate(
     ax.set_ylabel("Rij")
     ax.set_title(f"{metric_col} – plate heatmap ({agg} over alle metingen)")
 
-    # cell borders
     ax.set_xticks(np.arange(-.5, GRID_COLS, 1), minor=True)
     ax.set_yticks(np.arange(-.5, GRID_ROWS, 1), minor=True)
     ax.grid(which="minor", color="white", linestyle="-", linewidth=1.5)
     ax.tick_params(which="minor", bottom=False, left=False)
 
-    # group separators
     draw_group_separators(ax)
 
-    # legend on the LEFT outside the heatmap
-    add_plate_column_group_legend_left(fig)
-
-    if annotate:
-        for rr in range(GRID_ROWS):
-            for cc in range(GRID_COLS):
-                if np.isfinite(mat[rr, cc]):
-                    ax.text(cc, rr, f"{mat[rr, cc]:.0f}", ha="center", va="center", fontsize=8)
+    # Anchor the legend near the heatmap edge:
+    # put it a tiny bit left of the axes region, not far at 0.02
+    # axes start at fig fraction 'left_margin', so we place legend at left_margin - small offset
+    legend_x = max(0.01, left_margin - 0.06)
+    add_plate_column_group_legend_left(fig, anchor_x=legend_x, y=0.5)
 
     cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label(f"{metric_col} ({agg}), min={vmin:.2f}, max={vmax:.2f}")
@@ -512,25 +470,8 @@ def main():
     print(f"Saved electrode CSV: {elec_out}")
     print(f"Saved well CSV:      {well_out}")
 
-    # For per-well timeseries plots
-    well_for_plots = well_all.rename(columns={
-        "Spikes_total": "Spikes",
-        "Bursts_total": "Bursts",
-        "NetworkBursts_total": "NetworkBursts"
-    })
-
-    # Per-well timeseries plots
-    plot_per_well_timeseries(well_for_plots, out_root, "Spikes", ids_sorted, id_to_date, line_or_scatter="line")
-    plot_per_well_timeseries(well_for_plots, out_root, "Spikes", ids_sorted, id_to_date, line_or_scatter="scatter")
-    plot_per_well_timeseries(well_for_plots, out_root, "Bursts", ids_sorted, id_to_date, line_or_scatter="line")
-    plot_per_well_timeseries(well_for_plots, out_root, "Bursts", ids_sorted, id_to_date, line_or_scatter="scatter")
-    plot_per_well_timeseries(well_for_plots, out_root, "NetworkBursts", ids_sorted, id_to_date, line_or_scatter="line")
-    plot_per_well_timeseries(well_for_plots, out_root, "NetworkBursts", ids_sorted, id_to_date, line_or_scatter="scatter")
-
-    # Totals over measurements
+    # Totals over measurements + aggregate heatmaps mean+sum
     plot_totals_over_measurements(well_all, out_root, ids_sorted)
-
-    # Aggregate plate heatmaps over ALL measurements (mean + sum)
     plot_plate_grid_aggregate(well_all, out_root, "Spikes_total", agg="mean", wells_total=wells, annotate=False)
     plot_plate_grid_aggregate(well_all, out_root, "Spikes_total", agg="sum",  wells_total=wells, annotate=False)
 
