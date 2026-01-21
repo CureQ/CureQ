@@ -40,7 +40,7 @@ Here, the user can inspect the network burst detection process on this particula
 
 ## Impedance Heatmap
 
-Within the **Impedance Heatmap** tab, a heatmap will be plotted based on the impedance measured before the measurement. 
+Within the **Impedance Heatmap** tab, a heatmap will be plotted based on the impedance measured before the measurement. The impedance is measured per electrode and can give us information about the amount of cells on or around the electrode. For more information abount the impedance measured by Axion, please check [Axion's page](https://www.axionbiosystems.com/technology/impedance).
 
 Note: This heatmap will only show if the impedance is included in the dataset.
 
