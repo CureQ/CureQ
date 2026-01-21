@@ -7,17 +7,19 @@ import seaborn as sns
 import scipy
 
 #%% Setup
-# The path to the counted density in ILastik
+# The paths to the counted density in ILastik
 density_path = "D:/mea_data/cellcountvalidation/counted_cells.csv"
+density_path_bow = "C:/Users/jveer/Desktop/hogeschool/Afstudeerstage BMT jaar 5/Programmas/CureQ/impedance_validation/bow_omni/Bow_density.csv"
 
-# The paths to the hdf5 files for the different impedances
+# The paths to the txt files for the different impedances
 path_09 = "D:/mea_data/cellcountvalidation/09_impedance.txt"
 path_10 = "D:/mea_data/cellcountvalidation/10_impedance.txt"
 path_12 = "D:/mea_data/cellcountvalidation/12_impedance.txt"
 path_16 = "D:/mea_data/cellcountvalidation/16_impedance.txt"
+path_Bow = "C:/Users/jveer/Desktop/hogeschool/Afstudeerstage BMT jaar 5/Programmas/CureQ/impedance_validation/bow_omni/impedance_bow.txt"
 
 mapping_path = "D:/mea_data/cellcountvalidation/mapping.txt"
-              
+mapping_bow_path = "C:/Users/jveer/Desktop/hogeschool/Afstudeerstage BMT jaar 5/Programmas/CureQ/impedance_validation/bow_omni/mapping_bow.txt"
 
 #%% Functions
 
@@ -106,9 +108,12 @@ norm_impedance_10 = normalise_impedance(impedance_10)
 norm_impedance_12 = normalise_impedance(impedance_12)
 norm_impedance_16 = normalise_impedance(impedance_16)
 
+impedance_bow = load_impedance_txt(path_Bow)
+norm_impedance_bow = normalise_impedance(impedance_bow)
 
 # Load mapping
 mapping = load_mapping_txt(mapping_path)
+mapping_bow = load_mapping_txt(mapping_bow_path)
 
 
 
@@ -153,10 +158,34 @@ for index, row in density_df.iterrows():
     else:
         print("ERROR: DAY NOT FOUND")
 
+density_bow_df = pd.read_csv(density_path_bow, header = None)
+density_bow_df.columns = ['electrode', 'value']
+
+density_bow = [0 for i in range(768)]
+
+for index, row in density_bow_df.iterrows():
+    value = float(row["value"])
+    electrode_name = row["electrode"] # A1_0_r1k1 is an example of a name
+    print(electrode_name)
+    wc = int(electrode_name.split("_")[0][1]) # Well col
+    wr = int(ord(electrode_name.split("_")[0][0])) - 64 # Well row
+    er = int(electrode_name.split("_")[2][1]) # Electrode row
+    ec = int(electrode_name.split("_")[2][3]) # Electrode col
+
+    # Get index from mapping
+    index = mapping_bow.loc[(mapping_bow['WellRow'] == wr) & 
+                            (mapping_bow['WellColumn'] == wc) & 
+                            (mapping_bow['ElectrodeColumn'] == ec) & 
+                            (mapping_bow['ElectrodeRow'] == er)].index[0]
+    
+    density_bow[index - 1] = value
+
 norm_density_09 = normalise_density(density_09)
 norm_density_10 = normalise_density(density_10)
 norm_density_12 = normalise_density(density_12)
 norm_density_16 = normalise_density(density_16)
+
+norm_density_bow = normalise_density(density_bow)
 
 
 # Execute pearson correlation test
@@ -164,3 +193,5 @@ plot_correlation(norm_density_09, norm_impedance_09, "Correlation on 9th of apri
 plot_correlation(norm_density_10, norm_impedance_10, "Correlation on 10th of april")
 plot_correlation(norm_density_12, norm_impedance_12, "Correlation on 12th of april")
 plot_correlation(norm_density_16, norm_impedance_16, "Correlation on 16th of april")
+
+plot_correlation(norm_density_bow, norm_impedance_bow, "Correlation of Bow dataset")

@@ -19,8 +19,8 @@ class main(ctk.CTk):
         self.geometry("600x400")
         self.minsize(600,400)
 
-        self.map_path = "D:/mea_data/alle_omni"
-        self.out_path = f"{self.map_path}/output"
+        self.map_path = "C:/Users/jveer/Desktop/hogeschool/Afstudeerstage BMT jaar 5/Programmas/CureQ/impedance_validation/bow_omni/wells"
+        self.out_path = "C:/Users/jveer/Desktop/hogeschool/Afstudeerstage BMT jaar 5/Programmas/CureQ/impedance_validation/bow_omni/electrodes"
         self.image_paths = os.listdir(self.map_path)
         self.current_img = self.image_paths[0]
         self.image_number = 0
@@ -184,8 +184,8 @@ class main(ctk.CTk):
 
                     filename = f"{self.current_img.split('.')[0]}_r{5 - row}k{col}"
                     filepath = f"{self.out_path}/{filename}.jpeg"
-                    if row != 4 or col != 4:
-                        io.imsave(filepath, temp_image)
+                    #if row != 4 or col != 4:
+                    io.imsave(filepath, temp_image)
                     print(f"File made: {filename}")
                     i += 1
 
