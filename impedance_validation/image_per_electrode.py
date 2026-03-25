@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from CTkMessagebox import CTkMessagebox
 from skimage import io, draw
 import numpy as np
 from PIL import Image
@@ -19,8 +20,23 @@ class main(ctk.CTk):
         self.geometry("600x400")
         self.minsize(600,400)
 
-        self.map_path = "C:/Users/jveer/Desktop/hogeschool/Afstudeerstage BMT jaar 5/Programmas/CureQ/impedance_validation/bow_omni/wells"
-        self.out_path = "C:/Users/jveer/Desktop/hogeschool/Afstudeerstage BMT jaar 5/Programmas/CureQ/impedance_validation/bow_omni/electrodes"
+        # Messagebox met uitleg van tool en dat de gebruiker eerst 2 mappen moet selecteren voordat de tool kan worden gebruikt
+        CTkMessagebox(message="Welkom bij de electrode splitter tool! \n\n" \
+        "In deze tool kun je omni images splitsen in aparte afbeeldingen per elektrode. \n\n" \
+        "1. Selecteer eerst de map met de omni image. \n" \
+        "2. Selecteer vervolgens de map waar de gesplitste afbeeldingen per elektrode opgeslagen moeten worden. \n" \
+        "3. Klik op de afbeelding om de linker boven elektrode te selecteren. \n" \
+        "4. Gebruik de knoppen aan de rechterkant om punten te verwijderen, randen te tonen of om de geselecteerde punten op te slaan en naar de volgende afbeelding te gaan.",
+        icon="info", option_1="Thank you!", title="Welcome")
+
+        # Selecteer map met de omni images en map waar de gesplitste images per elektrode opgeslagen moeten worden
+        self.map_path = ctk.filedialog.askdirectory(title="Select map with the omni images")
+        self.out_path = ctk.filedialog.askdirectory(title="Select output directory")
+        print(f"Selected map: {self.map_path}")
+        print(f"Selected output directory: {self.out_path}")
+        print(type(self.map_path))
+
+        # Laad alle afbeeldingen in de map
         self.image_paths = os.listdir(self.map_path)
         self.current_img = self.image_paths[0]
         self.image_number = 0
