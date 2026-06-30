@@ -1,0 +1,14 @@
+# Important note for the Ilastik Electrode segmentation file !
+
+The Ilastik model for segmentating Electrodes is to large to be stored at the GitHub.
+The file size of 107 MB barely exceeds the GitHub file size limit of 100 MB.
+
+For this reason, the Ilastik model is stored at our AUAS Teams environment.
+
+If you want access to the Ilastik segmentation model, ask the active maintainer of the GitHub environment for access to this file.
+
+---
+
+Besides this very large segmentation model, we also have a large example file with an already executed script and output cells for the "Finding_clusters.ipynb" file.
+
+This file is also stored at the AUAS Teams environment.
