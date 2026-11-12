@@ -1,0 +1,86 @@
+name: Build MEAlytics for macOS
+
+# Run manually from the Actions tab, or automatically when you publish a release.
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14          # Apple Silicon (M1/M2/M3/M4)
+            arch: arm64
+          - os: macos-15-intel    # Intel Macs
+            arch: intel
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install . pyinstaller
+
+      - name: Create macOS icon (.icns) from the .ico
+        working-directory: CureQ
+        run: |
+          python - <<'EOF'
+          from PIL import Image
+          img = Image.open("MEAlytics_logo.ico")
+          # use the largest frame in the .ico and upscale to 512x512 for the .icns
+          sizes = img.info.get("sizes") or {img.size}
+          img.size = max(sizes)
+          img.load()
+          img.convert("RGBA").resize((512, 512), Image.LANCZOS).save("MEAlytics_logo.icns")
+          EOF
+
+      - name: Build .app with PyInstaller
+        working-directory: CureQ
+        run: |
+          pyinstaller -n "MEAlytics" __main__.py \
+            --windowed \
+            --icon="MEAlytics_logo.icns" \
+            --add-data="./GUI/MEAlytics_logo.ico:." \
+            --add-data="./GUI/theme.json:." \
+            --collect-all customtkinter \
+            --collect-all CTkMessagebox \
+            --collect-all CTkToolTip \
+            --collect-all CTkColorPicker \
+            --osx-bundle-identifier "nl.hva.cureq.mealytics" \
+            -y
+
+      - name: Ad-hoc code sign (needed on Apple Silicon to launch at all)
+        working-directory: CureQ
+        run: codesign --force --deep --sign - dist/MEAlytics.app
+
+      - name: Package as .dmg and .zip
+        working-directory: CureQ
+        run: |
+          mkdir dmg_src && cp -R dist/MEAlytics.app dmg_src/
+          ln -s /Applications dmg_src/Applications
+          hdiutil create -volname "MEAlytics" -srcfolder dmg_src -ov -format UDZO \
+            "MEAlytics_macOS_${{ matrix.arch }}.dmg"
+          ditto -c -k --keepParent dist/MEAlytics.app "MEAlytics_macOS_${{ matrix.arch }}.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MEAlytics-macOS-${{ matrix.arch }}
+          path: |
+            CureQ/MEAlytics_macOS_${{ matrix.arch }}.dmg
+            CureQ/MEAlytics_macOS_${{ matrix.arch }}.zip
+
+      - name: Attach to GitHub release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            CureQ/MEAlytics_macOS_${{ matrix.arch }}.dmg
